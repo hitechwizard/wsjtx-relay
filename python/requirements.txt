@@ -1,0 +1,2 @@
+pyhamtools==0.10.0
+wsjtx-srv==0.6

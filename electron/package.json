@@ -1,0 +1,32 @@
+{
+  "name": "wsjtx-relay",
+  "version": "1.0.0",
+  "description": "WSJT-X UDP Relay Application",
+  "main": "src/main.js",
+  "homepage": "./",
+  "preload": "src/preload.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build-icon": "node build-icon-jimp.js"
+  },
+  "dependencies": {
+    "@henriquegravina/wsjtxudpparser": "^1.0.0",
+    "electron-store": "^8.1.0"
+  },
+  "devDependencies": {
+    "electron": "latest",
+    "electron-builder": "^26.7.0",
+    "jimp": "^1.6.0"
+  },
+  "build": {
+    "appId": "com.wsjtxrelay.app",
+    "productName": "WSJT-X Relay",
+    "icon": "assets/icon.png",
+    "files": [
+      "src/**",
+      "ui/**",
+      "assets/**"
+    ]
+  }
+}

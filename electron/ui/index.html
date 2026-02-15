@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WSJT-X Relay</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>WSJT-X Relay</h1>
+      <div style="display: flex; gap: 15px; align-items: center;">
+        <button id="startBtn" class="btn btn-primary">Start</button>
+        <button id="stopBtn" class="btn btn-danger" disabled>Stop</button>
+        <button id="settingsBtn" class="btn btn-secondary">Settings</button>
+        <div class="theme-toggle-group">
+          <label for="themeToggle" style="margin: 0; cursor: pointer; color: var(--text-primary);">🌙</label>
+          <input type="checkbox" id="themeToggle" style="cursor: pointer;">
+        </div>
+        <div class="status-badge" id="statusBadge">Stopped</div>
+      </div>
+    </div>
+    <div class="status-panel">
+      <h3>Manual QSO Entry</h3>
+      <div class="qso-grid">
+        <div class="form-group qso-field">
+          <label>DX:</label>
+          <span class="qso-value"><input type="text" id="qso-dx" /></span>
+        </div>
+        <div class="form-group qso-field">
+          <label>RST Sent:</label>
+          <span class="qso-value"><input type="number" id="qso-rst" /></span>
+        </div>
+        <div class="form-group qso-field">
+          <label>RST Rcvd:</label>
+          <span class="qso-value"><input type="number" id="qso-rcvd" /></span>
+        </div>
+        <div class="form-group qso-field">
+          <label>Frequency:</label>
+          <span class="qso-value"><input type="number" id="qso-frequency" /></span>
+        </div>
+        <div class="form-group qso-field">
+          <label>Band:</label>
+          <span class="qso-value"><input type="text" id="qso-band" /></span>
+        </div>
+        <div class="form-group qso-field">
+          <label>Mode:</label>
+          <span class="qso-value">
+            <select id="qso-mode">
+                <option>SSB</option>
+                <option>CW</option>
+            </select>
+            </span>
+        </div>
+        <div class="form-group qso-field">
+          <label></label>
+          <span class="qso-value">
+            <button class="btn btn-primary">Log Contact</button>
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="info-panel">
+      <div class="info-item">
+        <label>Listen Port:</label>
+        <span id="listenPortValue">2237</span>
+      </div>
+      <div class="info-item">
+        <label>Forwards:</label>
+        <span id="forwardsValue">None configured</span>
+      </div>
+    </div>
+
+    <div class="status-panel">
+      <h3>Status Indicators</h3>
+      <div class="indicators-grid">
+        <div class="indicator">
+          <label>Frequency:</label>
+          <span id="frequencyValue" class="indicator-value">—</span>
+        </div>
+        <div class="indicator">
+          <label>Mode:</label>
+          <span id="modeValue" class="indicator-value">—</span>
+        </div>
+        <div class="indicator">
+          <label>TX Enabled:</label>
+          <span id="txEnabledValue" class="indicator-value indicator-off">—</span>
+        </div>
+        <div class="indicator">
+          <label>Transmitting:</label>
+          <span id="transmittingValue" class="indicator-value indicator-off">—</span>
+          <span id="transmitMessage"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="log-section">
+        <div class="log-panel">
+            <h2>Activity Log</h2>
+            <div class="log-container" id="logContainer"></div>
+            <button id="clearLogBtn" class="btn btn-small">Clear Log</button>
+        </div>
+        <div class="log-panel">
+            <h2>QSO Log</h2>
+            <div class="log-container" id="qsoContainer"></div>
+            <button id="clearQsoBtn" class="btn btn-small">Clear Log</button>
+        </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

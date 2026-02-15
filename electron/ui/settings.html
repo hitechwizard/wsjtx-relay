@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - WSJT-X Relay</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container settings-container">
+    <h1>Settings</h1>
+
+    <form id="settingsForm">
+      <div class="form-group">
+        <label>Theme:</label>
+        <div class="theme-selector">
+          <div class="theme-option">
+            <input type="radio" id="themeLight" name="theme" value="light">
+            <label for="themeLight">Light</label>
+          </div>
+          <div class="theme-option">
+            <input type="radio" id="themeDark" name="theme" value="dark">
+            <label for="themeDark">Dark</label>
+          </div>
+        </div>
+        <small>Select your preferred color scheme</small>
+      </div>
+
+      <div class="form-group">
+        <label for="listenPort">Listen Port:</label>
+        <input type="number" id="listenPort" name="listenPort" min="1" max="65535" required>
+        <small>Port to listen on localhost (default: 2237)</small>
+      </div>
+
+      <div class="form-group">
+        <label for="forwardsList">Forward Endpoints (host:port):</label>
+        <div class="forwards-editor">
+          <div id="forwardsList" class="forwards-list"></div>
+          <div class="forwards-add">
+            <input type="text" id="newForward" placeholder="e.g., 127.0.0.1:2238" title="Enter host:port">
+            <button type="button" id="addForwardBtn" class="btn btn-secondary">Add</button>
+          </div>
+        </div>
+        <small>One or more forward endpoints in IPv4:port format</small>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" id="cancelBtn" class="btn btn-secondary">Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>
