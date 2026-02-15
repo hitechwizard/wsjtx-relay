@@ -11,7 +11,6 @@
     "build-icon": "node build-icon-jimp.js"
   },
   "dependencies": {
-    "@henriquegravina/wsjtxudpparser": "^1.0.0",
     "electron-store": "^8.1.0"
   },
   "devDependencies": {

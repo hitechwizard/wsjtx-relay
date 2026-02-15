@@ -1,6 +1,6 @@
 const dgram = require('dgram');
 const EventEmitter = require('events');
-const { WsjtxUdpParser } = require('@henriquegravina/wsjtxudpparser');
+const { WsjtxUdpParser } = require('./WsjtxUdpParser');
 
 const CLIENT_TIMEOUT = 60000; // milliseconds
 
@@ -153,31 +153,12 @@ class WSJTXRelay extends EventEmitter {
   }
 
   decodePayload(data) {
-    const messageTypes = {
-        0: "Heartbeat",
-        1: "Status",
-        2: "Decode",
-        3: "Clear",
-        4: "Reply",
-        5: "QSO Logged",
-        6: "Closed",
-        7: "Replay",
-        8: "Halt TX",
-        9: "Free Text",
-        10: "WSPR Decode",
-        11: "Location",
-        12: "Logged ADIF",
-        13: "Highlight Call",
-        14: "Switch Config",
-        15: "Configure",
-    }
-
     let message = `Not decoded`;
     try {
       const parsed = new WsjtxUdpParser(data);
-      if (parsed && parsed.type in messageTypes) {
+      if (parsed && parsed.type in parsed.MESSAGE_TYPES) {
         // Add type-specific information
-        message = messageTypes[parsed.type];
+        message = parsed.typeText;
         if (parsed.type === 1) {
             const frequency = (Number(parsed.dialFrequency)/1000000).toFixed(4);
             const mode = parsed.mode;
