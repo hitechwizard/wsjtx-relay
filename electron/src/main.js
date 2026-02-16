@@ -12,7 +12,7 @@ const store = new Store({
     listenPort: 2237,
     forwards: [],
     theme: 'light',
-    windowBounds: { width: 800, height: 600 }
+    windowBounds: { width: 1200, height: 800 }
   }
 });
 

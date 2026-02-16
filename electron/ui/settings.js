@@ -6,8 +6,10 @@ const addForwardBtn = document.getElementById('addForwardBtn');
 const cancelBtn = document.getElementById('cancelBtn');
 const themeLightInput = document.getElementById('themeLight');
 const themeDarkInput = document.getElementById('themeDark');
+const qsoContainer = document.getElementById('qsoContainer');
 
 let forwardsData = [];
+let qsoData = [];
 let currentTheme = 'light';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -32,7 +34,8 @@ async function loadSettings() {
   listenPortInput.value = settings.listenPort;
   currentTheme = settings.theme || 'light';
   forwardsData = settings.forwards || [];
-  
+  qsoData = settings.qsos || [];
+
   // Set theme selection
   if (currentTheme === 'dark') {
     themeDarkInput.checked = true;
@@ -41,6 +44,7 @@ async function loadSettings() {
   }
   
   renderForwardsList();
+  renderQSOLog();
 }
 
 function renderForwardsList() {
@@ -63,6 +67,11 @@ function renderForwardsList() {
     item.appendChild(removeBtn);
     forwardsList.appendChild(item);
   });
+}
+
+function renderQSOLog() {
+  qsoContainer.innerHTML = '';
+  
 }
 
 async function loadTheme() {

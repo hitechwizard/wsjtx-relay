@@ -4,6 +4,8 @@
 // WSJT-X networkMessages
 // https://sourceforge.net/p/wsjt/wsjtx/ci/master/tree/NetworkMessage.hpp#l419
 
+const { AdiReader } = require('./adif/AdiReader');
+
 class WsjtxUdpParser {
 
     MESSAGE_TYPES = {
@@ -37,7 +39,6 @@ class WsjtxUdpParser {
         this.type = this.getUint32FromData(this.data,this.offset)
         this.typeText = this.MESSAGE_TYPES[this.type] || 'Unknown';     
         this.id = this.getStringUtf8FromData(this.data,this.offset)
-        
         
         // Get status message
         switch (parseInt(this.type)) {
@@ -217,6 +218,8 @@ class WsjtxUdpParser {
     parseADIFMessage() {
         // ADIF text              utf8 = Variabel lenght
         this.adif = this.getStringUtf8FromData(this.data,this.offset)
+        const adifReader = new AdiReader(this.adif);
+        this.adifData = adifReader.readAll()
     }
 
     // Functions to processs bytes from QStream

@@ -77,6 +77,8 @@ async function loadSettings() {
   } else {
     forwardsValue.textContent = 'None configured';
   }
+
+  
 }
 
 async function loadTheme() {

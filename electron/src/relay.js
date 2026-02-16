@@ -66,6 +66,10 @@ class WSJTXRelay extends EventEmitter {
   }
 
   updateSettings(listenPort, forwards) {
+    // Only restart the relay if the listen/forwards change
+    if (listenPort == this.listenPort && forwards == this.forwards) {
+      return;
+    }
     const wasRunning = this.running;
     if (wasRunning) {
       this.stop();
@@ -190,6 +194,7 @@ class WSJTXRelay extends EventEmitter {
         } else if (parsed.type === 12) {
           message += ` ADIF: ${parsed.adif || ''}`;
           this.emit('qso-logged', parsed.adif);
+          console.log(parsed.adifData);
         }
         message += ` ${parsed.message || ''}`;
       }else{
