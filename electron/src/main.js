@@ -146,8 +146,8 @@ ipcMain.handle('start-relay', () => {
       mainWindow && mainWindow.webContents.send('relay-status-update', statusData);
     });
 
-    relay.on('qso-logged', (adif) => {
-      mainWindow && mainWindow.webContents.send('relay-qso-logged', adif);
+    relay.on('qso-logged', (qso) => {
+      mainWindow && mainWindow.webContents.send('relay-qso-logged', qso);
     });
   }
 

@@ -189,12 +189,10 @@ class WSJTXRelay extends EventEmitter {
             });
         } else if (parsed.type === 5) {
           // QSO Logged
-          message += ` Future decoding of this payload`;
-          // Eventually we'll emit from here vs. from type 12
+          message += `${this.mode} ${this.dxCall} ${this.dialFrequency} ${this.dateTimeOff}`;
         } else if (parsed.type === 12) {
           message += ` ADIF: ${parsed.adif || ''}`;
-          this.emit('qso-logged', parsed.adif);
-          console.log(parsed.adifData);
+          this.emit('qso-logged', parsed.adifData);
         }
         message += ` ${parsed.message || ''}`;
       }else{

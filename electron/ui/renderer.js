@@ -62,8 +62,8 @@ function setupEventListeners() {
     updateStatusIndicators(statusData);
   });
 
-  window.electron.onRelayQsoLogged((adif) => {
-    addLogEntry(adif, 'normal', 'qso');
+  window.electron.onRelayQsoLogged((qso) => {
+    addQsoEntry(qso, 'normal');
   });
 }
 
@@ -148,7 +148,7 @@ function openSettings() {
   window.electron.openSettings();
 }
 
-function addLogEntry(msg, type = 'normal', logType = 'log') {
+function addLogEntry(msg, type = 'normal') {
   const entry = document.createElement('div');
   entry.className = `log-entry ${type}`;
   
@@ -159,26 +159,32 @@ function addLogEntry(msg, type = 'normal', logType = 'log') {
   const timestamp = `${hours}:${minutes}:${seconds}`;
 
   entry.textContent = `[${timestamp}] ${msg}`;
-  
-  let container = logContainer;
-  if (logType == 'qso') {
-    container = qsoContainer;
-  }
-  container.appendChild(entry);
-  container.scrollTop = container.scrollHeight;
+
+  logContainer.appendChild(entry);
+  logContainer.scrollTop = logContainer.scrollHeight;
 
   // Keep only last 1000 entries
-  const entries = container.querySelectorAll('.log-entry');
+  const entries = logContainer.querySelectorAll('.log-entry');
   if (entries.length > 1000) {
     entries[0].remove();
   }
+}
+
+function addQsoEntry(qso, type = 'normal') {
+  const entry = document.createElement('div');
+  entry.className = `log-entry ${type}`;
+
+  entry.textContent = `[${qso.end}] ${qso.call.padEnd(10, ' ')} ${qso.mode.padEnd(8,' ')} ${qso.freq.toString().padEnd(10)} ${qso.band.padEnd(5,' ')} ${qso.tx_pwr}w`;
+  
+  qsoContainer.appendChild(entry);
+  qsoContainer.scrollTop = qsoContainer.scrollHeight;
 }
 
 function updateStatusIndicators(statusData) {
   if (statusData.frequency) {
     frequencyValue.textContent = `${statusData.frequency} MHz`;
     qsoFrequency.value = statusData.frequency;
-    let band = '';
+    let band;
     switch (true) {
         case (statusData.frequency >= 50.0 && statusData.frequency <= 54.0):
             band = '6m';
@@ -213,6 +219,8 @@ function updateStatusIndicators(statusData) {
         case (statusData.frequency >= 1.8 && statusData.frequency <= 2.0):
             band = '160m';
             break;
+        default:
+            band = "OOB";
     }
     qsoBand.value = band;
   }

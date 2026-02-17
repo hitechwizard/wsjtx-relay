@@ -48,6 +48,9 @@ class WsjtxUdpParser {
             case 2:
                 this.parseDecodeMessage();
                 break;
+            case 5:
+                this.parseQSOLoggedMessage();
+                break;
             case 10:
                 this.parseWSPRMessage();
                 break;
@@ -58,56 +61,23 @@ class WsjtxUdpParser {
     }
 
     parseStatusMessage() {
-        // Dial Frequency (Hz)    quint64 = 8 byte long
-        this.dialFrequency = this.getUint64FromData(this.data,this.offset)
-
-        //Mode                   utf8 = Variabel lenght
-        this.mode = this.getStringUtf8FromData(this.data,this.offset)
-
-        //DX call                utf8 = Variabel lenght
-        this.dxcall = this.getStringUtf8FromData(this.data,this.offset)
-
-        //Report                 utf8
-        this.report = this.getStringUtf8FromData(this.data,this.offset)
-
-        //Tx Mode                utf8
-        this.txMode = this.getStringUtf8FromData(this.data,this.offset)
-
-        //Tx Enabled             bool
-        this.txEnabled = this.getBoolFromData(this.data,this.offset)
-
-        //Transmitting           bool
-        this.transmitting = this.getBoolFromData(this.data,this.offset)
-
-        //Decoding               bool
-        this.decoding = this.getBoolFromData(this.data,this.offset)
-
-        //Rx DF                  quint32
-        this.rxDf = this.getUint32FromData(this.data,this.offset)
-
-        //Tx DF                  quint32
-        this.txDf = this.getUint32FromData(this.data,this.offset)
-
-        //DE call                utf8
-        this.deCall = this.getStringUtf8FromData(this.data,this.offset)
-
-        //DE grid                utf8
-        this.deGrid = this.getStringUtf8FromData(this.data,this.offset)
-
-        //DX grid                utf8
-        this.dxGrid = this.getStringUtf8FromData(this.data,this.offset)
-
-        //Tx Watchdog            bool
-        this.txWatchdog = this.getBoolFromData(this.data,this.offset)
-        
-        //Sub-mode               utf8
-        this.subMode = this.getStringUtf8FromData(this.data,this.offset)
-        
-        //Fast mode              bool
-        this.fastMode = this.getBoolFromData(this.data,this.offset)
-
-        //Special Operation Mode quint8
-        this.specialOperationMode = this.getUint8FromData(this.data,this.offset)
+        this.dialFrequency = this.getUint64FromData(this.data,this.offset);
+        this.mode = this.getStringUtf8FromData(this.data,this.offset);
+        this.dxcall = this.getStringUtf8FromData(this.data,this.offset);
+        this.report = this.getStringUtf8FromData(this.data,this.offset);
+        this.txMode = this.getStringUtf8FromData(this.data,this.offset);
+        this.txEnabled = this.getBoolFromData(this.data,this.offset);
+        this.transmitting = this.getBoolFromData(this.data,this.offset);
+        this.decoding = this.getBoolFromData(this.data,this.offset);
+        this.rxDf = this.getUint32FromData(this.data,this.offset);
+        this.txDf = this.getUint32FromData(this.data,this.offset);
+        this.deCall = this.getStringUtf8FromData(this.data,this.offset);
+        this.deGrid = this.getStringUtf8FromData(this.data,this.offset);
+        this.dxGrid = this.getStringUtf8FromData(this.data,this.offset);
+        this.txWatchdog = this.getBoolFromData(this.data,this.offset);
+        this.subMode = this.getStringUtf8FromData(this.data,this.offset);
+        this.fastMode = this.getBoolFromData(this.data,this.offset);
+        this.specialOperationMode = this.getUint8FromData(this.data,this.offset);
         //0 -> NONE
         // 1 -> NA VHF
         //2 -> EU VHF
@@ -116,107 +86,76 @@ class WsjtxUdpParser {
         //5 -> WW DIGI
         //6 -> FOX
         //7 -> HOUND
-        
-
-        //Frequency Tolerance    quint32
-        this.frquencyToalrance = this.getUint32FromData(this.data,this.offset)
-
-        this.trPeriod = this.getUint32FromData(this.data,this.offset)
-    
-        //console.log(`configurationName:${this.offset}`)
-        this.configurationName = this.getStringUtf8FromData(this.data,this.offset)
-
-        //This message does not apear on any test, it always broke my code!
+        this.frquencyToalrance = this.getUint32FromData(this.data,this.offset);
+        this.trPeriod = this.getUint32FromData(this.data,this.offset);
+        this.configurationName = this.getStringUtf8FromData(this.data,this.offset);
         try {
-            this.txMessage = this.getStringUtf8FromData(this.data,this.offset)
+            this.txMessage = this.getStringUtf8FromData(this.data,this.offset);
         }catch (e) {
             //console.log(e);
         };
     }
 
     parseDecodeMessage() {
-        // Get decode messagens and parameters from WSJT-X
-        // New      Bool = 1Byte long
-        this.new = this.getInt8FromData(this.data,this.offset)
-        
-        // Time     QTime = 4 Byte long
-        this.time = this.getUint32FromData(this.data,this.offset)
+        this.new = this.getInt8FromData(this.data,this.offset);
+        this.time = this.getUint32FromData(this.data,this.offset);
+        this.time_utc = this.getUTCTime(this.time);
+        this.snr = this.getInt32FromData(this.data,this.offset);
+        this.delta_time = this.getDoubleFromData(this.data,this.offset);
+        this.delta_freq = this.getUint32FromData(this.data,this.offset);
+        this.mode = this.getStringUtf8FromData(this.data,this.offset);
+        this.message = this.getStringUtf8FromData(this.data,this.offset);
+        this.lowconfidence = this.getInt8FromData(this.data,this.offset);
+        this.offair = this.getInt8FromData(this.data,this.offset);
+    }  
 
-        // Convert time from miliseconds from midnight to UTC
-        let time_seconds = this.time / 1000
-        let hours = Math.floor(time_seconds / 60 / 60);
-        let minutes = Math.floor(time_seconds / 60 ) - (hours * 60);
-        let seconds = time_seconds % 60;
-        //Format linke wsjt-x software
-        this.time_utc = hours.toString().padStart(2, '0') + minutes.toString().padStart(2, '0') + seconds.toString().padStart(2, '0');
-        
+    parseQSOLoggedMessage() {
+        // Date Time off (TODO)
+        this.dateOff = this.getUint64FromData(this.data,this.offset);
+        this.timeOff = this.getUint32FromData(this.data,this.offset);
+        this.timespecOff = this.getUint8FromData(this.data,this.offset);
+        if (this.timespecOff == 2) {
+            this.offsetOff = this.getInt32FromData(this.data,this.offset);
+        }
+        this.dxCall = this.getStringUtf8FromData(this.data,this.offset);
+        this.dxGrid = this.getStringUtf8FromData(this.data,this.offset);
+        this.dialFrequency = this.getUint64FromData(this.data,this.offset);
+        this.mode = this.getStringUtf8FromData(this.data,this.offset);
+        this.rstSent = this.getStringUtf8FromData(this.data,this.offset);
+        this.rptRcvd = this.getStringUtf8FromData(this.data,this.offset);
+        this.txPwr = this.getStringUtf8FromData(this.data,this.offset);
+        this.comments = this.getStringUtf8FromData(this.data,this.offset);
+        this.name = this.getStringUtf8FromData(this.data,this.offset);
 
-        // snr      quint32 = 4 Byte long
-        this.snr = this.getInt32FromData(this.data,this.offset)
-        
-        // Delta time(S)  float(serialized as double) = 8 ByteLong
-        this.delta_time = this.getDoubleFromData(this.data,this.offset)
-        
-        // Delta frequency (Hz)   quint32 = 4 byte long
-        this.delta_freq = this.getUint32FromData(this.data,this.offset)
-
-        //Mode    String UTF8 = Variabel lenght
-        this.mode = this.getStringUtf8FromData(this.data,this.offset)
-
-        //Message                utf8 Variable leght
-        this.message = this.getStringUtf8FromData(this.data,this.offset)
-    
-        // Low confidence         bool = 1Byte long
-        this.lowconfidence = this.getInt8FromData(this.data,this.offset)
-        
-        // Off air                bool = 1Byte long
-        this.offair = this.getInt8FromData(this.data,this.offset)        
-    }    
+        this.dateOn = this.getUint64FromData(this.data,this.offset);
+        this.timeOn = this.getUint32FromData(this.data,this.offset);
+        this.timespecOn = this.getUint8FromData(this.data,this.offset);
+        if (this.timespecOn == 2) {
+            this.offsetOn = this.getInt32FromData(this.data,this.offset);
+        }
+        this.operator = this.getStringUtf8FromData(this.data,this.offset);
+        this.deCall = this.getStringUtf8FromData(this.data,this.offset);
+        this.deGrid = this.getStringUtf8FromData(this.data,this.offset);
+        this.exchangeSent = this.getStringUtf8FromData(this.data,this.offset);
+        this.exchangeRcvd = this.getStringUtf8FromData(this.data,this.offset);
+    }
 
     parseWSPRMessage() {
-        //WSPRDecode
-        // New      Bool = 1Byte long
-        this.new = this.getInt8FromData(this.data,this.offset)
-
-        // Time     QTime = 4 Byte long
-        this.time = this.getUint32FromData(this.data,this.offset)
-
-        // Convert time from miliseconds from midnight to UTC
-        let time_seconds = this.time / 1000
-        let hours = Math.floor(time_seconds / 60 / 60);
-        let minutes = Math.floor(time_seconds / 60 ) - (hours * 60);
-        let seconds = time_seconds % 60;
-        //Format linke wsjt-x software
-        this.time_utc = hours.toString().padStart(2, '0') + minutes.toString().padStart(2, '0') + seconds.toString().padStart(2, '0');
-        
-        // snr      quint32 = 4 Byte long
-        this.snr = this.getUint32FromData(this.data,this.offset)
-
-        // Delta time(S)  float(serialized as double) = 8 ByteLong
-        this.delta_time = this.getDoubleFromData(this.data,this.offset)
-        
-        // Frequency (Hz)   quint64 = 8 byte long
-        this.freq = this.getUint64FromData(this.data,this.offset)
-
-        // Drift (Hz)             qint32
-        this.drift = this.getInt32FromData(this.data,this.offset) 
-
-        // Callsign               utf8 = Variabel lenght
-        this.callsign = this.getStringUtf8FromData(this.data,this.offset)
-
-        // Grid                   utf8 = Variabel lenght
-        this.grid = this.getStringUtf8FromData(this.data,this.offset)
-        
-        // Power (dBm)            qint32
-        this.power = this.getInt32FromData(this.data,this.offset) 
-    
-        // Off air                bool = 1Byte long
-        this.offair = this.getInt8FromData(this.data,this.offset)
+        this.new = this.getInt8FromData(this.data,this.offset);
+        this.time = this.getUint32FromData(this.data,this.offset);
+        this.utc_time = getUTCTime(this.time);
+        this.snr = this.getUint32FromData(this.data,this.offset);
+        this.delta_time = this.getDoubleFromData(this.data,this.offset);
+        this.freq = this.getUint64FromData(this.data,this.offset);
+        this.drift = this.getInt32FromData(this.data,this.offset);
+        this.callsign = this.getStringUtf8FromData(this.data,this.offset);
+        this.grid = this.getStringUtf8FromData(this.data,this.offset);
+        this.power = this.getInt32FromData(this.data,this.offset);
+        this.offair = this.getInt8FromData(this.data,this.offset);
     }
 
     // Get adif from Log QSO of WSJT-X
     parseADIFMessage() {
-        // ADIF text              utf8 = Variabel lenght
         this.adif = this.getStringUtf8FromData(this.data,this.offset)
         const adifReader = new AdiReader(this.adif);
         this.adifData = adifReader.readAll()
@@ -252,8 +191,15 @@ class WsjtxUdpParser {
         this.offset = offset + 4.
         return var_uint32
     }
+
+    getInt64FromData(data,offset){
+        let var_int64 = data.readBigInt64BE(offset) // 8 ByteLong
+        this.offset = offset + 8
+        return var_int64
+    }
+
     getUint64FromData(data,offset){
-        let var_uint64 = this.data.readBigUInt64BE(offset)
+        let var_uint64 = data.readBigUInt64BE(offset)
         this.offset = offset + 8
         return var_uint64
     }
@@ -267,8 +213,8 @@ class WsjtxUdpParser {
         //DX call                utf8 = Variabel lenght
         let string_utf8_size = data.readUInt32BE(offset) // 4 byte long
         if(string_utf8_size < 1){
-            this.offset = offset + 2
-             return null
+            this.offset = offset + 4
+            return null
         }
         else if(string_utf8_size > 1000){
              this.offset = offset + 4
@@ -276,10 +222,20 @@ class WsjtxUdpParser {
         }else{
             offset = offset + 4
             // Get string
-            let string_utf8 = data.toString('utf8',offset, offset + string_utf8_size) // Variable lenght
+            let string_utf8 = data.toString('utf8',offset, offset + string_utf8_size)
             this.offset = offset + string_utf8_size
             return string_utf8
         }
+    }
+
+    getUTCTime(time) {
+        // Convert time from miliseconds from midnight to UTC
+        let time_seconds = time / 1000
+        let hours = Math.floor(time_seconds / 60 / 60);
+        let minutes = Math.floor(time_seconds / 60 ) - (hours * 60);
+        let seconds = time_seconds % 60;
+        //Format linke wsjt-x software
+        return hours.toString().padStart(2, '0') + minutes.toString().padStart(2, '0') + seconds.toString().padStart(2, '0');        
     }
 
 }
