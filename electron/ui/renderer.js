@@ -17,6 +17,12 @@ const transmitMessage = document.getElementById('transmitMessage');
 
 const qsoFrequency = document.getElementById('qso-frequency');
 const qsoBand = document.getElementById('qso-band');
+const qsoLogContactBtn = document.getElementById('qsoLogContact');
+const qsoTimeNowBtn = document.getElementById('qsoTimeNow');
+const qsoDateOn = document.getElementById('qso-dateon');
+const qsoTimeOn = document.getElementById('qso-timeon');
+const deCall = document.getElementById('deCall');
+const deGrid = document.getElementById('deGrid');
 
 let relayRunning = false;
 
@@ -34,6 +40,8 @@ function setupEventListeners() {
   settingsBtn.addEventListener('click', openSettings);
   clearLogBtn.addEventListener('click', clearLog);
   clearQsoBtn.addEventListener('click', clearQsoLog);
+  if (qsoLogContactBtn) qsoLogContactBtn.addEventListener('click', handleQsoLogContact);
+  if (qsoTimeNowBtn) qsoTimeNowBtn.addEventListener('click', handleQsoTimeNow);
   themeToggle.addEventListener('change', toggleTheme);
 
   // Theme change listener
@@ -112,6 +120,62 @@ async function checkRelayStatus() {
   updateStatus(status);
 }
 
+function handleQsoTimeNow() {
+  const now = new Date();
+  // Use UTC date/time to match ADIF expectations
+  const date = now.toISOString().slice(0,10); // YYYY-MM-DD
+  const time = now.toISOString().slice(11,19); // HH:MM:SS
+  if (qsoDateOn) qsoDateOn.value = date;
+  if (qsoTimeOn) qsoTimeOn.value = time;
+}
+
+function handleQsoLogContact() {
+  const qso = {
+    mode: document.getElementById('qso-mode')?.value || '',
+    mysig: document.getElementById('qso-mysig')?.value || '',
+    mysiginfo: document.getElementById('qso-mysiginfo')?.value || '',
+    mystate: document.getElementById('qso-mystate')?.value || '',
+    frequency: parseFloat(qsoFrequency?.value) || 0,
+    band: qsoBand?.value || '',
+    dateon: qsoDateOn?.value || '',
+    timeon: qsoTimeOn?.value || '',
+    dx: document.getElementById('qso-dxcall')?.value || '',
+    rst_sent: document.getElementById('qso-rst')?.value || '',
+    rst_rcvd: document.getElementById('qso-rcvd')?.value || '',
+    siginfo: document.getElementById('qso-siginfo')?.value || '',
+    tx_pwr: document.getElementById('qso-txpwr')?.value || '',
+  };
+
+  // Display in QSO log locally
+  const display = {
+    end: qso.dateon ? `${qso.dateon} ${qso.timeon}` : new Date().toISOString(),
+    call: qso.dx || 'UNKNOWN',
+    mode: qso.mode || '',
+    freq: qso.frequency || 0,
+    band: qso.band || '',
+    tx_pwr: qso.tx_pwr || ''
+  };
+
+  addQsoEntry(display, 'normal');
+
+  // Reset certain fields
+  qsoDateOn.value = '';
+  qsoTimeOn.value = '';
+  document.getElementById('qso-dxcall').value = '';
+  document.getElementById('qso-rst').value = '';
+  document.getElementById('qso-rcvd').value = '';
+  document.getElementById('qso-siginfo').value = '';
+
+
+  // Try to send to main process if handler exists
+  if (window.electron && window.electron.logQso) {
+    //window.electron.logQso(qso).catch(err => console.error('logQso failed', err));
+    console.log("Would have called the QSO emitter");
+  } else {
+    console.log('Manual QSO logged (local):', qso);
+  }
+}
+
 async function startRelay() {
   const result = await window.electron.startRelay();
   if (result.success) {
@@ -171,16 +235,35 @@ function addLogEntry(msg, type = 'normal') {
 }
 
 function addQsoEntry(qso, type = 'normal') {
+  console.log('addQsoEntry');
+  console.log(qso);
   const entry = document.createElement('div');
-  entry.className = `log-entry ${type}`;
+  entry.className = `log-entry ${type} qso-log-entry`;
 
-  entry.textContent = `[${qso.end}] ${qso.call.padEnd(10, ' ')} ${qso.mode.padEnd(8,' ')} ${qso.freq.toString().padEnd(10)} ${qso.band.padEnd(5,' ')} ${qso.tx_pwr}w`;
+  const columns = [
+    `[${qso.end}]`,
+    qso.call, 
+    qso.mode, 
+    `${qso.freq}mhz`,
+    qso.band, 
+    String(qso.tx_pwr.toString() + 'w'),
+  ]
+
+  columns.forEach((col) => {
+    const display = document.createElement('span');
+    display.textContent = col;
+    entry.appendChild(display);
+  });
   
   qsoContainer.appendChild(entry);
   qsoContainer.scrollTop = qsoContainer.scrollHeight;
 }
 
 function updateStatusIndicators(statusData) {
+  
+  deCall.textContent = statusData.deCall;
+  deGrid.textContent = statusData.deGrid;
+
   if (statusData.frequency) {
     frequencyValue.textContent = `${statusData.frequency} MHz`;
     qsoFrequency.value = statusData.frequency;

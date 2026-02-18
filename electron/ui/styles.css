@@ -208,8 +208,8 @@ body {
 
 .qso-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 15px;
+  grid-template-columns: repeat(7, 2fr);
+  gap: 5px;
 }
 
 .qso-field {
@@ -308,6 +308,28 @@ body {
   padding: 4px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   color: var(--text-secondary);
+}
+
+#qsoContainer {
+  padding-top: 0px;
+}
+
+.qso-log-entry {
+  display: grid;
+  grid-template-columns: 4fr 2fr 1fr 2fr 1fr 1fr 1fr;
+  grid-column-gap: 5px;
+  grid-row-gap: 0px;
+  grid-template-areas:
+    "header header header header header header header"
+    "main main main main main main main";
+}
+
+.qso-log-header {
+  grid-area: header;
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-secondary);
+  z-index: 10;
 }
 
 .log-entry:last-child {

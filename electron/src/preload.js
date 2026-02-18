@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('electron', {
   startRelay: () => ipcRenderer.invoke('start-relay'),
   stopRelay: () => ipcRenderer.invoke('stop-relay'),
   getRelayStatus: () => ipcRenderer.invoke('get-relay-status'),
+  // Manual QSO logging
+  logQso: (qso) => ipcRenderer.invoke('log-qso', qso),
   
   // Window control API
   openSettings: () => ipcRenderer.send('open-settings'),

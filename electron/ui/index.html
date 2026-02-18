@@ -10,6 +10,8 @@
   <div class="container">
     <div class="header">
       <h1>WSJT-X Relay</h1>
+      <h3 id="deCall"></h3>
+      <h3 id="deGrid"></h3>
       <div style="display: flex; gap: 15px; align-items: center;">
         <button id="startBtn" class="btn btn-primary">Start</button>
         <button id="stopBtn" class="btn btn-danger" disabled>Stop</button>
@@ -25,8 +27,50 @@
       <h3>Manual QSO Entry</h3>
       <div class="qso-grid">
         <div class="form-group qso-field">
+          <label>Mode:</label>
+          <span class="qso-value">
+            <select id="qso-mode">
+                <option>SSB</option>
+                <option>CW</option>
+            </select>
+          </span>
+        </div>
+        <div class="form-group qso-field">
+          <label>My Sig:</label>
+          <span class="qso-value">
+            <select id="qso-mysig">
+                <option></option>
+                <option>POTA</option>
+            </select>
+          </span>
+        </div>
+        <div class="form-group qso-field">
+          <label>My Sig Info:</label>
+          <span class="qso-value"><input type="text" id="qso-mysiginfo" /></span>
+        </div>
+        <div class="form-group qso-field">
+          <label>My State:</label>
+          <span class="qso-value"><input type="text" id="qso-mystate" /></span>
+        </div>
+        <div class="form-group qso-field">
+          <label>Frequency:</label>
+          <span class="qso-value"><input type="number" id="qso-frequency" /></span>
+        </div>
+        <div class="form-group qso-field">
+          <label>Band:</label>
+          <span class="qso-value"><input type="text" id="qso-band" disabled /></span>
+        </div>
+        <div class="form-group qso-field">
+          <label>Date On:</label>
+          <span class="qso-value"><input type="text" id="qso-dateon" /></span>
+        </div>
+        <div class="form-group qso-field">
+          <label>Time On:</label>
+          <span class="qso-value"><input type="text" id="qso-timeon" /> <button id="qsoTimeNow" class="btn btn-primary" style="margin-left: 25px; margin-top: 5px;">Now</button></span>
+        </div>
+        <div class="form-group qso-field">
           <label>DX:</label>
-          <span class="qso-value"><input type="text" id="qso-dx" /></span>
+          <span class="qso-value"><input type="text" id="qso-dxcall" /></span>
         </div>
         <div class="form-group qso-field">
           <label>RST Sent:</label>
@@ -37,28 +81,16 @@
           <span class="qso-value"><input type="number" id="qso-rcvd" /></span>
         </div>
         <div class="form-group qso-field">
-          <label>Frequency:</label>
-          <span class="qso-value"><input type="number" id="qso-frequency" /></span>
+          <label>Sig Info:</label>
+          <span class="qso-value"><input type="text" id="qso-siginfo" /></span>
         </div>
         <div class="form-group qso-field">
-          <label>Band:</label>
-          <span class="qso-value"><input type="text" id="qso-band" /></span>
+          <label>TX Power:</label>
+          <span class="qso-value"><input type="number" id="qso-txpwr" /></span>
         </div>
-        <div class="form-group qso-field">
-          <label>Mode:</label>
-          <span class="qso-value">
-            <select id="qso-mode">
-                <option>SSB</option>
-                <option>CW</option>
-            </select>
-            </span>
-        </div>
-        <div class="form-group qso-field">
-          <label></label>
-          <span class="qso-value">
-            <button class="btn btn-primary">Log Contact</button>
-          </span>
-        </div>
+        
+        <button id="qsoLogContact" class="btn btn-primary" style="height:50px; margin: 25px;">Log Contact</button>
+
       </div>
     </div>
     <div class="info-panel">
@@ -99,12 +131,21 @@
         <div class="log-panel">
             <h2>Activity Log</h2>
             <div class="log-container" id="logContainer"></div>
-            <button id="clearLogBtn" class="btn btn-small">Clear Log</button>
+            <button id="clearLogBtn" class="btn btn-small btn-danger" style="text-align:center; width: 150px;">Clear Log</button>
         </div>
         <div class="log-panel">
             <h2>QSO Log</h2>
-            <div class="log-container" id="qsoContainer"></div>
-            <button id="clearQsoBtn" class="btn btn-small">Clear Log</button>
+            <div class="log-container" id="qsoContainer">
+              <div class="qso-log-entry qso-log-header">
+                <span>Timestamp</span>
+                <span>DX Call</span>
+                <span>Mode</span>
+                <span>Freq</span>
+                <span>Band</span>
+                <span>Pwr</span>
+              </div>
+            </div>
+            <button id="clearQsoBtn" class="btn btn-small btn-danger" style="text-align: center; width: 150px;">Clear Log</button>
         </div>
   </div>
 

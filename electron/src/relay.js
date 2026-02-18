@@ -164,29 +164,19 @@ class WSJTXRelay extends EventEmitter {
         // Add type-specific information
         message = parsed.typeText;
         if (parsed.type === 1) {
-            const frequency = (Number(parsed.dialFrequency)/1000000).toFixed(4);
-            const mode = parsed.mode;
-            const txEnabled = parsed.txEnabled;
-            const transmitting = parsed.transmitting;
-            const txMessage = parsed.txMessage;
-
-            message += ` Freq: ${frequency} MHz`;
-            message += ` Mode: ${mode}`;
-            if (txEnabled) {
+            parsed.frequency = (Number(parsed.dialFrequency)/1000000).toFixed(4);
+            
+            message += ` Freq: ${parsed.frequency} MHz`;
+            message += ` Mode: ${parsed.mode}`;
+            if (parsed.txEnabled) {
                 message += ` TX Enabled`;
             }
-            if (transmitting) {
-                message += ` Transmitting ${txMessage}`;
+            if (parsed.transmitting) {
+                message += ` Transmitting ${parsed.txMessage}`;
             }
             
             // Emit status update for UI indicators
-            this.emit('status-update', {
-              frequency,
-              mode,
-              txEnabled,
-              transmitting,
-              txMessage
-            });
+            this.emit('status-update', parsed);
         } else if (parsed.type === 5) {
           // QSO Logged
           message += `${this.mode} ${this.dxCall} ${this.dialFrequency} ${this.dateTimeOff}`;

@@ -166,6 +166,15 @@ ipcMain.handle('get-relay-status', () => {
   return relay ? (relay.running ? 'running' : 'stopped') : 'stopped';
 });
 
+ipcMain.handle('log-qso', (event, qso) => {
+  if (relay) {
+    // Forward manual QSO to relay event listeners
+    relay.emit('qso-logged', qso);
+    return { success: true };
+  }
+  return { success: false, error: 'Relay not running' };
+});
+
 ipcMain.on('open-settings', createSettingsWindow);
 
 ipcMain.on('close-settings', () => {
