@@ -13,8 +13,13 @@ contextBridge.exposeInMainWorld('electron', {
   startRelay: () => ipcRenderer.invoke('start-relay'),
   stopRelay: () => ipcRenderer.invoke('stop-relay'),
   getRelayStatus: () => ipcRenderer.invoke('get-relay-status'),
+  
   // Manual QSO logging
   logQso: (qso) => ipcRenderer.invoke('log-qso', qso),
+  
+  // QSO persistence API
+  saveQso: (qso) => ipcRenderer.invoke('save-qso', qso),
+  clearQsos: () => ipcRenderer.invoke('clear-qsos', qso),
   
   // Window control API
   openSettings: () => ipcRenderer.send('open-settings'),

@@ -12,7 +12,8 @@ const store = new Store({
     listenPort: 2237,
     forwards: [],
     theme: 'light',
-    windowBounds: { width: 1200, height: 800 }
+    windowBounds: { width: 1200, height: 800 },
+    qsos: []
   }
 });
 
@@ -94,7 +95,8 @@ ipcMain.handle('get-settings', () => {
   return {
     listenPort: store.get('listenPort'),
     forwards: store.get('forwards'),
-    theme: store.get('theme')
+    theme: store.get('theme'),
+    qsos: store.get('qsos')
   };
 });
 
@@ -173,6 +175,18 @@ ipcMain.handle('log-qso', (event, qso) => {
     return { success: true };
   }
   return { success: false, error: 'Relay not running' };
+});
+
+ipcMain.handle('save-qso', (event, qso) => {
+  const qsos = store.get('qsos', []);
+  qsos.push(qso);
+  store.set('qsos', qsos);
+  return { success: true };
+});
+
+ipcMain.handle('clear-qsos', () => {
+  store.set('qsos', []);
+  return { success: true };
 });
 
 ipcMain.on('open-settings', createSettingsWindow);

@@ -6,6 +6,7 @@ const clearQsoBtn = document.getElementById('clearQsoBtn');
 const statusBadge = document.getElementById('statusBadge');
 const logContainer = document.getElementById('logContainer');
 const qsoContainer = document.getElementById('qsoContainer');
+const qsoCount = document.getElementById('qsoCount');
 const listenPortValue = document.getElementById('listenPortValue');
 const forwardsValue = document.getElementById('forwardsValue');
 const themeToggle = document.getElementById('themeToggle');
@@ -70,8 +71,10 @@ function setupEventListeners() {
     updateStatusIndicators(statusData);
   });
 
-  window.electron.onRelayQsoLogged((qso) => {
+  window.electron.onRelayQsoLogged(async (qso) => {
     addQsoEntry(qso, 'normal');
+    // Save QSO from relay to persistent storage
+    await window.electron.saveQso(qso);
   });
 }
 
@@ -86,7 +89,10 @@ async function loadSettings() {
     forwardsValue.textContent = 'None configured';
   }
 
-  
+  // Load and display persisted QSOs
+  const qsos = settings.qsos || [];
+  qsos.forEach(qso => addQsoEntry(qso, 'normal'));
+  updateQsoCount();
 }
 
 async function loadTheme() {
@@ -129,7 +135,7 @@ function handleQsoTimeNow() {
   if (qsoTimeOn) qsoTimeOn.value = time;
 }
 
-function handleQsoLogContact() {
+async function handleQsoLogContact() {
   const qso = {
     mode: document.getElementById('qso-mode')?.value || '',
     mysig: document.getElementById('qso-mysig')?.value || '',
@@ -146,17 +152,10 @@ function handleQsoLogContact() {
     tx_pwr: document.getElementById('qso-txpwr')?.value || '',
   };
 
-  // Display in QSO log locally
-  const display = {
-    end: qso.dateon ? `${qso.dateon} ${qso.timeon}` : new Date().toISOString(),
-    call: qso.dx || 'UNKNOWN',
-    mode: qso.mode || '',
-    freq: qso.frequency || 0,
-    band: qso.band || '',
-    tx_pwr: qso.tx_pwr || ''
-  };
+  addQsoEntry(qso, 'normal');
 
-  addQsoEntry(display, 'normal');
+  // Save QSO to persistent storage
+  await window.electron.saveQso(display);
 
   // Reset certain fields
   qsoDateOn.value = '';
@@ -235,28 +234,43 @@ function addLogEntry(msg, type = 'normal') {
 }
 
 function addQsoEntry(qso, type = 'normal') {
-  console.log('addQsoEntry');
-  console.log(qso);
+  
   const entry = document.createElement('div');
   entry.className = `log-entry ${type} qso-log-entry`;
 
+  // Field Formatting should happen here.
+  const display = {
+    start: qso.start ? qso.start : qso.end ? qso.end : '0000-00-00T00:00:00Z',
+    call: qso.call || 'UNKNOWN',
+    mode: qso.mode || '',
+    freq: qso.freq.toFixed(4) || 0,
+    band: qso.band || '',
+    tx_pwr: qso.tx_pwr || ''
+  };
+
+  // Make the start smaller
+  let start = display.start.split('T');
+  display.start = `${start[0].substr(5,5)} @ ${start[1].substr(0,5)}`
+
+  // Ensure columns are rendered in order
   const columns = [
-    `[${qso.end}]`,
-    qso.call, 
-    qso.mode, 
-    `${qso.freq}mhz`,
-    qso.band, 
-    String(qso.tx_pwr.toString() + 'w'),
+    display.start,
+    display.call, 
+    display.mode, 
+    display.freq,
+    display.band, 
+    display.tx_pwr,
   ]
 
   columns.forEach((col) => {
-    const display = document.createElement('span');
-    display.textContent = col;
-    entry.appendChild(display);
+    const span = document.createElement('span');
+    span.textContent = col;
+    entry.appendChild(span);
   });
   
   qsoContainer.appendChild(entry);
   qsoContainer.scrollTop = qsoContainer.scrollHeight;
+  updateQsoCount();
 }
 
 function updateStatusIndicators(statusData) {
@@ -316,10 +330,10 @@ function updateStatusIndicators(statusData) {
     if (statusData.txEnabled) {
       txEnabledValue.textContent = 'Yes';
       txEnabledValue.classList.remove('indicator-off');
-      txEnabledValue.classList.add('indicator-on');
+      txEnabledValue.classList.add('indicator-tx-enabled');
     } else {
       txEnabledValue.textContent = 'No';
-      txEnabledValue.classList.remove('indicator-on');
+      txEnabledValue.classList.remove('indicator-tx-enabled');
       txEnabledValue.classList.add('indicator-off');
     }
   }
@@ -328,10 +342,10 @@ function updateStatusIndicators(statusData) {
     if (statusData.transmitting) {
       transmittingValue.textContent = 'Yes';
       transmittingValue.classList.remove('indicator-off');
-      transmittingValue.classList.add('indicator-on');
+      transmittingValue.classList.add('indicator-transmitting');
     } else {
       transmittingValue.textContent = 'No';
-      transmittingValue.classList.remove('indicator-on');
+      transmittingValue.classList.remove('indicator-transmitting');
       transmittingValue.classList.add('indicator-off');
     }
   }
@@ -345,4 +359,25 @@ function clearLog() {
 }
 function clearQsoLog() {
   qsoContainer.innerHTML = '';
+  // Clear the header
+  const header = document.createElement('div');
+  header.className = 'qso-log-entry qso-log-header';
+  header.innerHTML = `
+    <span>Timestamp</span>
+    <span>DX Call</span>
+    <span>Mode</span>
+    <span>Freq</span>
+    <span>Band</span>
+    <span>Pwr</span>
+  `;
+  qsoContainer.appendChild(header);
+  
+  // Clear persistent storage
+  window.electron.clearQsos();
+  updateQsoCount();
+}
+
+function updateQsoCount() {
+  const entries = qsoContainer.querySelectorAll('.qso-log-entry:not(.qso-log-header)');
+  qsoCount.textContent = `(${entries.length})`;
 }

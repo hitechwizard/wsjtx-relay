@@ -6,10 +6,8 @@ const addForwardBtn = document.getElementById('addForwardBtn');
 const cancelBtn = document.getElementById('cancelBtn');
 const themeLightInput = document.getElementById('themeLight');
 const themeDarkInput = document.getElementById('themeDark');
-const qsoContainer = document.getElementById('qsoContainer');
 
 let forwardsData = [];
-let qsoData = [];
 let currentTheme = 'light';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -34,7 +32,6 @@ async function loadSettings() {
   listenPortInput.value = settings.listenPort;
   currentTheme = settings.theme || 'light';
   forwardsData = settings.forwards || [];
-  qsoData = settings.qsos || [];
 
   // Set theme selection
   if (currentTheme === 'dark') {
@@ -44,7 +41,6 @@ async function loadSettings() {
   }
   
   renderForwardsList();
-  renderQSOLog();
 }
 
 function renderForwardsList() {
@@ -97,7 +93,7 @@ function addForward() {
   }
   
   // Validate format: host:port
-  const parts = value.rsplit(':', 1);
+  const parts = value.split(':');
   if (parts.length !== 2) {
     alert('Invalid format. Use: host:port (e.g., 127.0.0.1:2238)');
     return;
@@ -172,12 +168,4 @@ function closeWindow() {
 function isValidIPv4(ip) {
   const ipRegex = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
   return ipRegex.test(ip);
-}
-
-// Polyfill for rsplit (not available in JavaScript)
-if (!String.prototype.rsplit) {
-  String.prototype.rsplit = function(sep, maxsplit) {
-    const split = this.split(sep);
-    return maxsplit ? [split.slice(0, -maxsplit).join(sep)].concat(split.slice(-maxsplit)) : split;
-  };
 }

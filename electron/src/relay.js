@@ -182,7 +182,9 @@ class WSJTXRelay extends EventEmitter {
           message += `${this.mode} ${this.dxCall} ${this.dialFrequency} ${this.dateTimeOff}`;
         } else if (parsed.type === 12) {
           message += ` ADIF: ${parsed.adif || ''}`;
-          this.emit('qso-logged', parsed.adifData);
+          parsed.adifData.forEach((qso) => {
+            this.emit('qso-logged', qso);
+          });
         }
         message += ` ${parsed.message || ''}`;
       }else{

@@ -15,6 +15,9 @@
   --red: #e74c3c;
   --red-dark: #c0392b;
   --red-light: rgba(231, 76, 60, 0.3);
+  --yellow: #f39c12;
+  --yellow-dark: #e67e22;
+  --yellow-light: rgba(243, 156, 18, 0.3);
   --gray: #95a5a6;
   --gray-dark: #7f8c8d;
   --scrollbar-track: #f1f1f1;
@@ -39,6 +42,9 @@ body.dark-theme {
   --red: #ef5350;
   --red-dark: #e53935;
   --red-light: rgba(239, 83, 80, 0.2);
+  --yellow: #ffb74d;
+  --yellow-dark: #ff9800;
+  --yellow-light: rgba(255, 183, 77, 0.2);
   --gray: #90a4ae;
   --gray-dark: #78909c;
   --scrollbar-track: #2d2d2d;
@@ -267,6 +273,28 @@ body {
 
 .indicator-value.indicator-off {
   color: var(--text-tertiary);
+}
+
+.indicator-value.indicator-tx-enabled {
+  background-color: var(--yellow);
+  color: #000;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+.indicator-value.indicator-transmitting {
+  background-color: var(--red);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+.indicator-transmitting-row .indicator-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .log-section {

@@ -119,10 +119,12 @@
           <label>TX Enabled:</label>
           <span id="txEnabledValue" class="indicator-value indicator-off">—</span>
         </div>
-        <div class="indicator">
+        <div class="indicator indicator-transmitting-row">
           <label>Transmitting:</label>
-          <span id="transmittingValue" class="indicator-value indicator-off">—</span>
-          <span id="transmitMessage"></span>
+          <div class="indicator-content">
+            <span id="transmittingValue" class="indicator-value indicator-off">—</span>
+            <span id="transmitMessage" style="margin-left: 8px; font-size: 12px;"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -134,7 +136,7 @@
             <button id="clearLogBtn" class="btn btn-small btn-danger" style="text-align:center; width: 150px;">Clear Log</button>
         </div>
         <div class="log-panel">
-            <h2>QSO Log</h2>
+            <h2>QSO Log <span id="qsoCount">(0)</span></h2>
             <div class="log-container" id="qsoContainer">
               <div class="qso-log-entry qso-log-header">
                 <span>Timestamp</span>
