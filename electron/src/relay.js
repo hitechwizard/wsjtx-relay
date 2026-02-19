@@ -85,7 +85,7 @@ class WSJTXRelay extends EventEmitter {
 
   handleMessage(data, rinfo) {
     const srcAddr = `${rinfo.address}:${rinfo.port}`;
-    const srcKey = srcAddr;
+    const srcKey = `${rinfo.address}|${rinfo.port}`;
 
     // Check if this is from a forward endpoint
     const fromForward = this.forwards.find(f => f.host === rinfo.address && f.port === rinfo.port);
