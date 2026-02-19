@@ -25,6 +25,7 @@ const wsjtxFields = [
 
 let qsos = [];
 let changedQsos = new Set();
+let hasUnsavedChanges = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
   await loadTheme();
@@ -95,7 +96,7 @@ function renderQsoList() {
         <strong>${qso.call || '—'}</strong> on <strong>${qso.band || '—'}</strong>
         <div style="font-size: 12px; color: var(--text-secondary);">${formatDateTime(qso.start || qso.end)}</div>
       </div>
-      <div style="display: flex; gap: 8px;">
+      <div class="qso-card-actions">
         <button class="btn btn-secondary btn-sm btn-resend" data-index="${index}">Resend</button>
         <button class="btn btn-danger btn-sm btn-delete" data-index="${index}">Delete</button>
       </div>
@@ -182,6 +183,7 @@ function handleFieldChange(e) {
   const field = e.target.dataset.field;
   qsos[index][field] = e.target.value;
   changedQsos.add(index);
+  hasUnsavedChanges = true;
   
   // Highlight changed record
   const card = e.target.closest('.qso-editor-card');
@@ -197,6 +199,7 @@ function handleDeleteQso(e) {
   if (confirm(`Delete QSO with ${qso.call || '—'} on ${qso.band || '—'}?`)) {
     qsos.splice(index, 1);
     changedQsos.delete(index);
+    hasUnsavedChanges = true;
     renderQsoList();
     
     // After deletion, we need to update indices in changedQsos
@@ -237,6 +240,7 @@ async function handleSaveChanges() {
     // Notify the main window to refresh the QSO log
     window.electron.notifyQsoDataChanged();
     changedQsos.clear();
+    hasUnsavedChanges = false;
     // Remove highlight from changed records
     qsoListContainer.querySelectorAll('.qso-editor-card').forEach((card) => {
       card.classList.remove('changed');
@@ -327,6 +331,12 @@ async function handleResendAllQsos() {
 }
 
 function closeWindow() {
+  if (hasUnsavedChanges || changedQsos.size > 0) {
+    const shouldClose = confirm('You have unsaved changes. Close without saving?');
+    if (!shouldClose) {
+      return;
+    }
+  }
   // Notify the main window to refresh the QSO log
   window.electron.notifyQsoDataChanged();
   window.electron.closeQsoEditor();

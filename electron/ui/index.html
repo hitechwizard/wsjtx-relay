@@ -61,7 +61,8 @@
         </div>
         <div class="form-group qso-field">
           <label>Time On:</label>
-          <span class="qso-value"><input type="text" id="qso-timeon" /> <button id="qsoTimeNow" class="btn btn-primary" style="margin-left: 25px; margin-top: 5px;">Now</button></span>
+          <span class="qso-value"><input type="text" id="qso-timeon" /></span>
+          <button id="qsoTimeNow" class="btn btn-primary" style="margin-top: 10px;">Now</button>
         </div>
         <div class="form-group qso-field">
           <label>DX Call:</label>
@@ -83,10 +84,9 @@
           <label>Their Park:</label>
           <span class="qso-value"><input type="text" id="qso-siginfo" /></span>
         </div>
-        
-        
-        <button id="qsoLogContact" class="btn btn-primary" style="height:50px; margin: 25px;">Log Contact</button>
-
+        <div style="margin-left: 25px; margin-top: 50px;">
+          <button id="qsoLogContact" class="btn btn-primary" style="height:50px; width: 125px;">Log Contact</button>
+        </div>
       </div>
     </div>
 
@@ -127,7 +127,9 @@
         <div class="log-panel">
             <h2>Activity Log</h2>
             <div class="log-container" id="logContainer"></div>
-            <button id="clearLogBtn" class="btn btn-small btn-danger" style="text-align:center; width: 150px;">Clear Log</button>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+              <button id="clearLogBtn" class="btn btn-danger" style="text-align:center; width: 150px;">Clear Log</button>
+            </div>
         </div>
         <div class="log-panel">
             <h2 style="display: flex; justify-content: space-between; align-items: center;">
@@ -145,7 +147,7 @@
               </div>
             </div>
             <div style="display: flex; gap: 10px; margin-top: 10px;">
-              <button id="clearQsoBtn" class="btn btn-small btn-danger" style="text-align: center; width: 150px;">Clear Log</button>
+              <button id="clearQsoBtn" class="btn btn-danger" style="text-align: center; width: 150px;">Clear Log</button>
               <button id="qsoEditorBtn" class="btn btn-secondary" style="text-align: center; width: 150px;">QSO Editor</button>
             </div>
         </div>

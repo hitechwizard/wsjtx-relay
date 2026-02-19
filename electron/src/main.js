@@ -388,11 +388,7 @@ app.on('ready', () => {
           accelerator: 'CmdOrCtrl+,',
           click: createSettingsWindow
         },
-        {
-          label: 'QSO Editor',
-          accelerator: 'CmdOrCtrl+E',
-          click: createQsoEditorWindow
-        },
+        { type: 'separator' },
         {
           label: 'Exit',
           accelerator: 'CmdOrCtrl+Q',
@@ -409,6 +405,12 @@ app.on('ready', () => {
     {
     label: 'Window',
       submenu: [
+        {
+          label: 'QSO Editor',
+          accelerator: 'CmdOrCtrl+E',
+          click: createQsoEditorWindow
+        },
+        { type: 'separator' },
         { role: 'minimize' },
         { role: 'zoom' },
         ...(isMac
@@ -440,6 +442,7 @@ app.on('ready', () => {
   ];
 
   if (isMac) {
+    template[0].submenu.unshift({ type: 'separator' });
     template[0].submenu.unshift({ role: 'about' });
   }
 

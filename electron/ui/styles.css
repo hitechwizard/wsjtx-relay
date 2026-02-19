@@ -242,7 +242,7 @@ body {
 
 .qso-grid {
   display: grid;
-  grid-template-columns: repeat(8, 2fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 5px;
 }
 
@@ -712,8 +712,16 @@ body {
   border-bottom: 1px solid var(--border-light);
 }
 
-.qso-editor-card-header > div {
+.qso-editor-card-header > div:not(.qso-card-actions) {
   flex: 1;
+}
+
+.qso-editor-card-header .qso-card-actions {
+  display: flex;
+  gap: 20px;
+  justify-content: flex-end;
+  margin-left: auto;
+  flex: 0 0 auto;
 }
 
 .qso-editor-card-header strong {
