@@ -1,6 +1,8 @@
 const qsoListContainer = document.getElementById('qsoListContainer');
 const saveQsoChanges = document.getElementById('saveQsoChanges');
 const cancelQsoChanges = document.getElementById('cancelQsoChanges');
+const importQsosBtn = document.getElementById('importQsosBtn');
+const exportQsosBtn = document.getElementById('exportQsosBtn');
 
 const wsjtxFields = [
     {
@@ -32,6 +34,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 function setupEventListeners() {
   saveQsoChanges.addEventListener('click', handleSaveChanges);
   cancelQsoChanges.addEventListener('click', closeWindow);
+  importQsosBtn.addEventListener('click', handleImportQsos);
+  exportQsosBtn.addEventListener('click', handleExportQsos);
 
   // Theme change listener
   window.electron.onThemeChanged((theme) => {
@@ -234,6 +238,41 @@ function addSuccessMessage(msg) {
 function addErrorMessage(msg) {
   // Simple error notification
   console.error('Error:', msg);
+}
+
+async function handleExportQsos() {
+  try {
+    const result = await window.electron.exportQsosAdif();
+    if (result.success) {
+      addSuccessMessage(`QSOs exported to ${result.filePath}`);
+    } else {
+      addErrorMessage(result.error || 'Export failed');
+    }
+  } catch (err) {
+    addErrorMessage(`Export error: ${err.message}`);
+  }
+}
+
+async function handleImportQsos() {
+  try {
+    const result = await window.electron.importQsosAdif();
+    if (result.success) {
+      const importedCount = result.qsos?.length || 0;
+      const shouldMerge = confirm(`Import ${importedCount} QSOs from file? They will be added to your current list.`);
+      
+      if (shouldMerge) {
+        // Merge imported QSOs with existing ones
+        const mergedQsos = [...qsos, ...result.qsos];
+        await window.electron.updateQsos(mergedQsos);
+        await loadQsos();
+        addSuccessMessage(`${importedCount} QSOs imported successfully`);
+      }
+    } else {
+      addErrorMessage(result.error || 'Import failed');
+    }
+  } catch (err) {
+    addErrorMessage(`Import error: ${err.message}`);
+  }
 }
 
 function closeWindow() {

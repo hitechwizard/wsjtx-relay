@@ -669,7 +669,8 @@ body {
 
 .qso-editor-footer {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
   gap: 10px;
   padding: 20px;
   border-top: 1px solid var(--border-color);
