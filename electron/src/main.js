@@ -8,6 +8,8 @@ const AdiReader = require('./adif/AdiReader');
 
 const { WsjtxUdpParser } = require('./WsjtxUdpParser');
 
+const isMac = process.platform === 'darwin';
+
 let mainWindow;
 let settingsWindow;
 let qsoEditorWindow;
@@ -377,9 +379,9 @@ ipcMain.on('qso-data-changed', () => {
 app.on('ready', () => {
   createWindow();
 
-  const menu = Menu.buildFromTemplate([
+  const template = [
     {
-      label: 'File',
+      label: (isMac ? app.name : 'File'),
       submenu: [
         {
           label: 'Preferences',
@@ -403,25 +405,45 @@ app.on('ready', () => {
         }
       ]
     },
+
     {
-      label: 'Edit',
+    label: 'Window',
       submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
-        { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' }
-      ]
+        { role: 'minimize' },
+        { role: 'zoom' },
+        ...(isMac
+          ? [{ type: 'separator' }, { role: 'front' }, { type: 'separator' }, { role: 'window' }]
+          : [{ role: 'close' }]),
+      ],
     },
-    {
-      label: 'View',
-      submenu: [
-        { role: 'reload' },
-        { role: 'toggleDevTools' }
+
+    ...(!app.isPackaged
+      ? [
+          {
+            label: 'DevTools',
+            submenu: [{ role: 'reload' }, { role: 'forceReload' }, { role: 'toggleDevTools' }],
+          },
+        ]
+      : []),
+
+    ...(!isMac
+    ? [
+        {
+          label: 'Help',
+          submenu: [
+            { role: 'about' },
+          ],
+        },
       ]
-    }
-  ]);
+    : []),
+
+  ];
+
+  if (isMac) {
+    template[0].submenu.unshift({ role: 'about' });
+  }
+
+  const menu = Menu.buildFromTemplate(template);
 
   Menu.setApplicationMenu(menu);
 });

@@ -269,7 +269,7 @@ body {
 
 .indicators-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(3, 1fr) 2fr 1fr 2fr;
   gap: 15px;
 }
 
@@ -457,6 +457,19 @@ body {
 
 .qso-dupe-wrap:hover .qso-dupe-tooltip {
   display: block;
+}
+
+.qso-pota-wrap {
+  grid-column: 7;
+  justify-self: end;
+  position: relative;
+  display: inline-block;
+}
+
+.qso-pota-icon {
+  font-size: 18px;
+  cursor: help;
+  margin-left: 8px;
 }
 
 /* ============================================================================

@@ -383,6 +383,18 @@ function addQsoEntry(qso, type = 'normal') {
     }
 
     entry.appendChild(wrap);
+  } else if (qso.sig_info) {
+    // Display POTA pine tree icon if sig_info is defined
+    const wrap = document.createElement('span');
+    wrap.className = 'qso-pota-wrap';
+
+    const pota = document.createElement('span');
+    pota.className = 'qso-pota-icon';
+    pota.title = `POTA: ${qso.sig_info}`;
+    pota.textContent = '🌲';
+
+    wrap.appendChild(pota);
+    entry.appendChild(wrap);
   }
 
   qsoContainer.appendChild(entry);
