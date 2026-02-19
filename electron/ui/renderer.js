@@ -8,6 +8,7 @@ const statusBadge = document.getElementById('statusBadge');
 const logContainer = document.getElementById('logContainer');
 const qsoContainer = document.getElementById('qsoContainer');
 const qsoCount = document.getElementById('qsoCount');
+const qsoLastHour = document.getElementById('qsoLastHour');
 const listenPortValue = document.getElementById('listenPortValue');
 const forwardsValue = document.getElementById('forwardsValue');
 const themeToggle = document.getElementById('themeToggle');
@@ -48,6 +49,20 @@ function setupEventListeners() {
   if (qsoTimeNowBtn) qsoTimeNowBtn.addEventListener('click', handleQsoTimeNow);
   themeToggle.addEventListener('change', toggleTheme);
 
+  // Uppercase conversion for call and state inputs
+  const qsoDxCall = document.getElementById('qso-dxcall');
+  const qsoState = document.getElementById('qso-state');
+  if (qsoDxCall) {
+    qsoDxCall.addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase();
+    });
+  }
+  if (qsoState) {
+    qsoState.addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase();
+    });
+  }
+
   // Theme change listener
   window.electron.onThemeChanged((theme) => {
     applyTheme(theme);
@@ -84,6 +99,9 @@ function setupEventListeners() {
     // Save QSO from relay to persistent storage
     await window.electron.saveQso(qso);
   });
+
+  // Update last hour count every minute
+  setInterval(updateQsoLastHourCount, 60000);
 }
 
 async function loadSettings() {
@@ -359,6 +377,7 @@ function addQsoEntry(qso, type = 'normal') {
   // Apply row striping for readability
   applyQsoRowStripes();
   updateQsoCount();
+  updateQsoLastHourCount();
 }
 
 function applyQsoRowStripes() {
@@ -391,6 +410,7 @@ async function refreshQsoLog() {
     addQsoEntry(qso, 'normal');
   });
   updateQsoCount();
+  updateQsoLastHourCount();
 }
 
 function updateStatusIndicators(statusData) {
@@ -501,4 +521,20 @@ function clearQsoLog() {
 function updateQsoCount() {
   const entries = qsoContainer.querySelectorAll('.qso-log-entry:not(.qso-log-header)');
   qsoCount.textContent = `(${entries.length})`;
+}
+
+function updateQsoLastHourCount() {
+  const now = new Date();
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+  
+  const lastHourCount = qsoList.filter(qso => {
+    const startTimeStr = qso.start || qso.end;
+    if (!startTimeStr) return false;
+    const qsoTime = new Date(startTimeStr);
+    return qsoTime >= oneHourAgo && qsoTime <= now;
+  }).length;
+  
+  if (qsoLastHour) {
+    qsoLastHour.textContent = `Last Hour: ${lastHourCount}`;
+  }
 }

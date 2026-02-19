@@ -2,6 +2,24 @@ const qsoListContainer = document.getElementById('qsoListContainer');
 const saveQsoChanges = document.getElementById('saveQsoChanges');
 const cancelQsoChanges = document.getElementById('cancelQsoChanges');
 
+const wsjtxFields = [
+    {
+        'band': { label: 'Band', type: 'enum', values: [ '160M', '80M', '40M', '30M', '20M', '17M', '15M', '12M', '10M', '6M', '2M', '70CM', '23CM', ] },
+        'call': { label: 'DX Call', type: 'string' },
+        'comment': { label: 'Comment', type: 'string' },
+        'freq': { label: 'Frequency (Mhz)', type: 'number' },
+        'gridsquare': { label: 'Gridsquare', type: 'string', regexp: '^[A-Z]{2}[0-9]{2}(?:[A-Z]{2})?$'},
+        'mode': { label: 'Mode', type: 'enum', values: [ 'CW', 'SSB', 'FT8', 'FT4' ]},
+        'operator': { label: 'Operator', type: 'string' },
+        'rst_sent': { label: 'RST Sent', type: 'string' },
+        'rst_recvd': { label: 'RST Rcvd', type: 'string' },
+        'station_callsign': { label: 'DE Call', type: 'string' },
+        'tx_pwr': { label: 'TX Pwr', type: 'number' },
+        'start': { label: 'Start', type: 'string' },
+        'end': { label: 'End', type: 'string' },
+    }
+]
+
 let qsos = [];
 let changedQsos = new Set();
 
@@ -95,16 +113,16 @@ function renderQsoList() {
         <input type="text" class="qso-field" data-field="end" data-index="${index}" value="${qso.end || ''}" />
       </div>
       <div class="editor-field">
-        <label>RX RST</label>
-        <input type="number" class="qso-field" data-field="rxrst" data-index="${index}" value="${qso.rxrst || ''}" />
+        <label>RST Rcvd</label>
+        <input type="text" class="qso-field" data-field="rst_rcvd" data-index="${index}" value="${qso.rst_rcvd || ''}" />
       </div>
       <div class="editor-field">
-        <label>TX RST</label>
-        <input type="number" class="qso-field" data-field="txrst" data-index="${index}" value="${qso.txrst || ''}" />
+        <label>RST Sent</label>
+        <input type="text" class="qso-field" data-field="rst_sent data-index="${index}" value="${qso.rst_sent || ''}" />
       </div>
       <div class="editor-field">
         <label>TX Power (W)</label>
-        <input type="number" class="qso-field" data-field="txpwr" data-index="${index}" value="${qso.txpwr || ''}" />
+        <input type="number" class="qso-field" data-field="tx_pwr" data-index="${index}" value="${qso.tx_pwr || ''}" />
       </div>
       <div class="editor-field">
         <label>My Sig</label>
@@ -117,6 +135,10 @@ function renderQsoList() {
       <div class="editor-field">
         <label>Sig Info</label>
         <input type="text" class="qso-field" data-field="siginfo" data-index="${index}" value="${qso.siginfo || ''}" />
+      </div>
+      <div class="editor-field">
+        <label>Comment</label>
+        <input type="text" class="qso-field" data-field="comment" data-index="${index}" value="${qso.comment || ''}" />
       </div>
     `;
 

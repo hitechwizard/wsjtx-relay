@@ -36,7 +36,7 @@
           </span>
         </div>
         <div class="form-group qso-field">
-          <label>My Sig:</label>
+          <label>POTA:</label>
           <span class="qso-value">
             <select id="qso-mysig">
                 <option></option>
@@ -45,7 +45,7 @@
           </span>
         </div>
         <div class="form-group qso-field">
-          <label>My Sig Info:</label>
+          <label>My Park:</label>
           <span class="qso-value"><input type="text" id="qso-mysiginfo" /></span>
         </div>
         <div class="form-group qso-field">
@@ -61,6 +61,10 @@
           <span class="qso-value"><input type="text" id="qso-band" disabled /></span>
         </div>
         <div class="form-group qso-field">
+          <label>TX Power:</label>
+          <span class="qso-value"><input type="number" id="qso-txpwr" /></span>
+        </div>
+        <div class="form-group qso-field">
           <label>Date On:</label>
           <span class="qso-value"><input type="text" id="qso-dateon" /></span>
         </div>
@@ -69,7 +73,7 @@
           <span class="qso-value"><input type="text" id="qso-timeon" /> <button id="qsoTimeNow" class="btn btn-primary" style="margin-left: 25px; margin-top: 5px;">Now</button></span>
         </div>
         <div class="form-group qso-field">
-          <label>DX:</label>
+          <label>DX Call:</label>
           <span class="qso-value"><input type="text" id="qso-dxcall" /></span>
         </div>
         <div class="form-group qso-field">
@@ -81,13 +85,14 @@
           <span class="qso-value"><input type="number" id="qso-rcvd" /></span>
         </div>
         <div class="form-group qso-field">
-          <label>Sig Info:</label>
-          <span class="qso-value"><input type="text" id="qso-siginfo" /></span>
+          <label>State:</label>
+          <span class="qso-value"><input type="text" id="qso-state" /></span>
         </div>
         <div class="form-group qso-field">
-          <label>TX Power:</label>
-          <span class="qso-value"><input type="number" id="qso-txpwr" /></span>
+          <label>Their Park:</label>
+          <span class="qso-value"><input type="text" id="qso-siginfo" /></span>
         </div>
+        
         
         <button id="qsoLogContact" class="btn btn-primary" style="height:50px; margin: 25px;">Log Contact</button>
 
@@ -136,7 +141,10 @@
             <button id="clearLogBtn" class="btn btn-small btn-danger" style="text-align:center; width: 150px;">Clear Log</button>
         </div>
         <div class="log-panel">
-            <h2>QSO Log <span id="qsoCount">(0)</span></h2>
+            <h2 style="display: flex; justify-content: space-between; align-items: center;">
+              <span>QSO Log <span id="qsoCount">(0)</span></span>
+              <span id="qsoLastHour" style="font-size: 0.85em; color: var(--text-secondary);">Last Hour: 0</span>
+            </h2>
             <div class="log-container" id="qsoContainer">
               <div class="qso-log-entry qso-log-header">
                 <span>Timestamp</span>
