@@ -19,11 +19,17 @@ contextBridge.exposeInMainWorld('electron', {
   
   // QSO persistence API
   saveQso: (qso) => ipcRenderer.invoke('save-qso', qso),
-  clearQsos: () => ipcRenderer.invoke('clear-qsos', qso),
+  clearQsos: () => ipcRenderer.invoke('clear-qsos'),
+  getQsos: () => ipcRenderer.invoke('get-qsos'),
+  updateQsos: (qsos) => ipcRenderer.invoke('update-qsos', qsos),
+  updateQso: (index, qso) => ipcRenderer.invoke('update-qso', index, qso),
+  deleteQso: (index) => ipcRenderer.invoke('delete-qso', index),
   
   // Window control API
   openSettings: () => ipcRenderer.send('open-settings'),
+  openEditQso: () => ipcRenderer.send('open-edit-qso'),
   closeSettings: () => ipcRenderer.send('close-settings'),
+  closeEditQso: () => ipcRenderer.send('close-edit-qso'),
   
   // Events from relay
   onRelayLog: (callback) => ipcRenderer.on('relay-log', (event, msg) => callback(msg)),
@@ -31,5 +37,7 @@ contextBridge.exposeInMainWorld('electron', {
   onRelayError: (callback) => ipcRenderer.on('relay-error', (event, msg) => callback(msg)),
   onRelayDecode: (callback) => ipcRenderer.on('relay-decode', (event, msg) => callback(msg)),
   onRelayStatusUpdate: (callback) => ipcRenderer.on('relay-status-update', (event, statusData) => callback(statusData)),
-  onRelayQsoLogged: (callback) => ipcRenderer.on('relay-qso-logged', (event, qsoData) => callback(qsoData))
+  onRelayQsoLogged: (callback) => ipcRenderer.on('relay-qso-logged', (event, qsoData) => callback(qsoData)),
+  onQsoDataRefresh: (callback) => ipcRenderer.on('qso-data-refresh', (event) => callback()),
+  notifyQsoDataChanged: () => ipcRenderer.send('qso-data-changed')
 });

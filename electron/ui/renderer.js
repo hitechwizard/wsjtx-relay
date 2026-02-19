@@ -3,6 +3,7 @@ const stopBtn = document.getElementById('stopBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 const clearLogBtn = document.getElementById('clearLogBtn');
 const clearQsoBtn = document.getElementById('clearQsoBtn');
+const editQsoBtn = document.getElementById('editQsoBtn');
 const statusBadge = document.getElementById('statusBadge');
 const logContainer = document.getElementById('logContainer');
 const qsoContainer = document.getElementById('qsoContainer');
@@ -42,6 +43,7 @@ function setupEventListeners() {
   settingsBtn.addEventListener('click', openSettings);
   clearLogBtn.addEventListener('click', clearLog);
   clearQsoBtn.addEventListener('click', clearQsoLog);
+  editQsoBtn.addEventListener('click', openEditQso);
   if (qsoLogContactBtn) qsoLogContactBtn.addEventListener('click', handleQsoLogContact);
   if (qsoTimeNowBtn) qsoTimeNowBtn.addEventListener('click', handleQsoTimeNow);
   themeToggle.addEventListener('change', toggleTheme);
@@ -49,6 +51,11 @@ function setupEventListeners() {
   // Theme change listener
   window.electron.onThemeChanged((theme) => {
     applyTheme(theme);
+  });
+
+  // QSO data refresh listener
+  window.electron.onQsoDataRefresh(() => {
+    refreshQsoLog();
   });
 
   // Relay events
@@ -227,6 +234,10 @@ function openSettings() {
   window.electron.openSettings();
 }
 
+function openEditQso() {
+  window.electron.openEditQso();
+}
+
 function addLogEntry(msg, type = 'normal') {
   const entry = document.createElement('div');
   entry.className = `log-entry ${type}`;
@@ -360,6 +371,26 @@ function applyQsoRowStripes() {
       row.classList.add('qso-row-odd');
     }
   });
+}
+
+async function refreshQsoLog() {
+  // Clear the QSO log container (but keep the header)
+  const header = qsoContainer.querySelector('.qso-log-header');
+  qsoContainer.innerHTML = '';
+  if (header) {
+    qsoContainer.appendChild(header);
+  }
+
+  // Reset the in-memory list
+  qsoList = [];
+
+  // Reload QSOs from settings
+  const settings = await window.electron.getSettings();
+  const qsos = settings.qsos || [];
+  qsos.forEach(qso => {
+    addQsoEntry(qso, 'normal');
+  });
+  updateQsoCount();
 }
 
 function updateStatusIndicators(statusData) {

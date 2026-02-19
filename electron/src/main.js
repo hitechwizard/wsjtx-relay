@@ -8,6 +8,7 @@ const { WsjtxUdpParser } = require('./WsjtxUdpParser');
 
 let mainWindow;
 let settingsWindow;
+let editQsoWindow;
 let relay;
 
 const store = new Store({
@@ -90,6 +91,44 @@ function createSettingsWindow() {
 
   settingsWindow.once('ready-to-show', () => {
     settingsWindow.show();
+  });
+}
+
+function createEditQsoWindow() {
+  if (editQsoWindow) {
+    editQsoWindow.focus();
+    return;
+  }
+
+  editQsoWindow = new BrowserWindow({
+    width: 1000,
+    height: 700,
+    parent: mainWindow,
+    modal: true,
+    show: false,
+    icon: path.join(__dirname, '../assets/icon.png'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  });
+
+  editQsoWindow.loadFile(path.join(__dirname, '../ui/edit-qso.html'));
+
+  // Send initial theme to edit QSO window when ready
+  editQsoWindow.webContents.on('did-finish-load', () => {
+    const theme = store.get('theme', 'light');
+    editQsoWindow.webContents.send('theme-changed', theme);
+  });
+
+  editQsoWindow.on('closed', () => {
+    editQsoWindow = null;
+  });
+
+  editQsoWindow.once('ready-to-show', () => {
+    editQsoWindow.show();
   });
 }
 
@@ -205,6 +244,35 @@ ipcMain.handle('clear-qsos', () => {
   return { success: true };
 });
 
+ipcMain.handle('get-qsos', () => {
+  return store.get('qsos', []);
+});
+
+ipcMain.handle('update-qsos', (event, qsos) => {
+  store.set('qsos', qsos);
+  return { success: true };
+});
+
+ipcMain.handle('update-qso', (event, index, qso) => {
+  const qsos = store.get('qsos', []);
+  if (index >= 0 && index < qsos.length) {
+    qsos[index] = qso;
+    store.set('qsos', qsos);
+    return { success: true };
+  }
+  return { success: false, error: 'Invalid index' };
+});
+
+ipcMain.handle('delete-qso', (event, index) => {
+  const qsos = store.get('qsos', []);
+  if (index >= 0 && index < qsos.length) {
+    qsos.splice(index, 1);
+    store.set('qsos', qsos);
+    return { success: true };
+  }
+  return { success: false, error: 'Invalid index' };
+});
+
 ipcMain.on('open-settings', createSettingsWindow);
 
 ipcMain.on('close-settings', () => {
@@ -214,8 +282,23 @@ ipcMain.on('close-settings', () => {
   }
 });
 
+ipcMain.on('open-edit-qso', createEditQsoWindow);
+
+ipcMain.on('close-edit-qso', () => {
+  if (editQsoWindow) {
+    editQsoWindow.close();
+    editQsoWindow = null;
+  }
+});
+
 ipcMain.handle('get-theme', () => {
   return store.get('theme', 'light');
+});
+
+ipcMain.on('qso-data-changed', () => {
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send('qso-data-refresh');
+  }
 });
 
 app.on('ready', () => {
@@ -229,6 +312,11 @@ app.on('ready', () => {
           label: 'Preferences',
           accelerator: 'CmdOrCtrl+,',
           click: createSettingsWindow
+        },
+        {
+          label: 'Edit QSO Data',
+          accelerator: 'CmdOrCtrl+E',
+          click: createEditQsoWindow
         },
         {
           label: 'Exit',

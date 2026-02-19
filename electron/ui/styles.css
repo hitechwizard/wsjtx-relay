@@ -593,3 +593,143 @@ body {
   font-weight: normal;
   color: var(--text-primary);
 }
+/* Edit QSO Page Styles */
+.edit-qso-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: var(--bg-primary);
+}
+
+.edit-qso-header {
+  padding: 20px;
+  border-bottom: 2px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.edit-qso-header h1 {
+  color: var(--header-color);
+  margin: 0;
+  font-size: 24px;
+}
+
+.edit-qso-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  min-height: 0;
+}
+
+.qso-edit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.qso-edit-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 15px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.qso-edit-card:hover {
+  border-color: var(--blue);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.qso-edit-card.changed {
+  border-color: var(--yellow);
+  background-color: var(--bg-tertiary);
+}
+
+.qso-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.qso-card-header > div {
+  flex: 1;
+}
+
+.qso-card-header strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.qso-edit-fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.edit-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.edit-field input {
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  transition: border-color 0.2s;
+}
+
+.edit-field input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px var(--blue-light);
+}
+
+.edit-qso-footer {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+  background-color: var(--bg-primary);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn-delete {
+  background-color: var(--red);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.btn-delete:hover {
+  background-color: var(--red-dark);
+}
+
+.settings-container {
+  max-width: 600px;
+}
