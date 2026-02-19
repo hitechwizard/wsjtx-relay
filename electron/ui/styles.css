@@ -297,6 +297,59 @@ body {
   gap: 8px;
 }
 
+/* wrapper for dupe tag + tooltip positioned into grid */
+.qso-dupe-wrap {
+  grid-column: 7;
+  justify-self: end;
+  position: relative;
+  display: inline-block;
+}
+
+.qso-dupe-tag {
+  background-color: var(--red);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  align-self: center;
+}
+
+/* Custom tooltip bubble */
+.qso-dupe-tooltip {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  padding: 6px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-size: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  display: none;
+  z-index: 50;
+}
+
+.qso-dupe-wrap:hover .qso-dupe-tooltip {
+  display: block;
+}
+
+/* Striped rows for QSO log */
+.qso-row-even {
+  background-color: var(--bg-tertiary);
+}
+
+.qso-row-odd {
+  background-color: transparent;
+}
+
+/* Tooltip styling (uses native title if present) */
+.qso-dupe-tag[title] {
+  cursor: help;
+}
+
 .log-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -311,6 +364,7 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+  max-width: 600px;
 }
 
 .log-panel h2 {
@@ -344,7 +398,7 @@ body {
 
 .qso-log-entry {
   display: grid;
-  grid-template-columns: 4fr 2fr 1fr 2fr 1fr 1fr 1fr;
+  grid-template-columns: 3fr 3fr 1fr 2fr 1fr 1fr 50px;
   grid-column-gap: 5px;
   grid-row-gap: 0px;
   grid-template-areas:

@@ -85,7 +85,7 @@ class WSJTXRelay extends EventEmitter {
 
   handleMessage(data, rinfo) {
     const srcAddr = `${rinfo.address}:${rinfo.port}`;
-    const srcKey = `${rinfo.address}|${rinfo.port}`;
+    const srcKey = srcAddr;
 
     // Check if this is from a forward endpoint
     const fromForward = this.forwards.find(f => f.host === rinfo.address && f.port === rinfo.port);
@@ -113,7 +113,12 @@ class WSJTXRelay extends EventEmitter {
 
     } else {
       // Packet from client -> forward to all forwards
-      let logMsg = `${srcAddr} -> `;
+      let logMsg = '';
+      if (rinfo.address == undefined) {
+        logMsg += 'Manual QSO -> ';
+      }else{
+        logMsg += `${srcAddr} -> `;
+      }
 
       this.forwards.forEach((fwd) => {
         this.socket.send(data, fwd.port, fwd.host, (err) => {
@@ -123,11 +128,13 @@ class WSJTXRelay extends EventEmitter {
         });
 
         // Store mapping
-        const fwdKey = `${fwd.host}|${fwd.port}`;
-        if (!this.mapping.has(fwdKey)) {
-          this.mapping.set(fwdKey, new Map());
+        if (rinfo.address != undefined && rinfo.port != undefined) {
+          const fwdKey = `${fwd.host}|${fwd.port}`;
+          if (!this.mapping.has(fwdKey)) {
+            this.mapping.set(fwdKey, new Map());
+          }
+          this.mapping.get(fwdKey).set(srcKey, Date.now());
         }
-        this.mapping.get(fwdKey).set(srcKey, Date.now());
       });
       logMsg += this.decodePayload(data);
       this.emit('log', logMsg);  

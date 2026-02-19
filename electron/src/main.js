@@ -2,6 +2,9 @@ const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
 const WSJTXRelay = require('./relay');
+const { AdiWriter } = require('./adif/AdiWriter');
+
+const { WsjtxUdpParser } = require('./WsjtxUdpParser');
 
 let mainWindow;
 let settingsWindow;
@@ -170,8 +173,21 @@ ipcMain.handle('get-relay-status', () => {
 
 ipcMain.handle('log-qso', (event, qso) => {
   if (relay) {
-    // Forward manual QSO to relay event listeners
-    relay.emit('qso-logged', qso);
+    // This is where we create a WSJT-X Type 12 Packet and send it to all the forwards
+    const adiWriter = new AdiWriter('WSJT-X Relay', '1.0.0')
+    adiWriter.writeContact(qso);
+    const adif = adiWriter.getData();
+    const magicBytes = Buffer.from([0xAD, 0xBC, 0xCB, 0xDA]);
+    const version = Buffer.from([0x00, 0x00, 0x00, 0x02]);
+    const type = Buffer.from([0x00, 0x00, 0x00, 0x0C]); // 12 -> ADIF
+    const id = Buffer.concat([Buffer.from([ 0x00, 0x00, 0x00, 0x06]), Buffer.from('WSJT-X')]);
+    const adif_length = Buffer.alloc(4);
+    adif_length.writeUint32BE(adif.length);
+    const adif_buffer = Buffer.from(adif);
+    const packet = Buffer.concat([magicBytes, version, type, id, adif_length, adif_buffer]);
+    // packet is ready to go.... SEND IT!
+    relay.handleMessage(packet, {});
+
     return { success: true };
   }
   return { success: false, error: 'Relay not running' };

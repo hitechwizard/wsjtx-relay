@@ -26,6 +26,7 @@ const deCall = document.getElementById('deCall');
 const deGrid = document.getElementById('deGrid');
 
 let relayRunning = false;
+let qsoList = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -90,8 +91,11 @@ async function loadSettings() {
   }
 
   // Load and display persisted QSOs
+  qsoList = [];
   const qsos = settings.qsos || [];
-  qsos.forEach(qso => addQsoEntry(qso, 'normal'));
+  qsos.forEach(qso => {
+    addQsoEntry(qso, 'normal');
+  });
   updateQsoCount();
 }
 
@@ -136,26 +140,39 @@ function handleQsoTimeNow() {
 }
 
 async function handleQsoLogContact() {
+
+  /*
   const qso = {
-    mode: document.getElementById('qso-mode')?.value || '',
     mysig: document.getElementById('qso-mysig')?.value || '',
     mysiginfo: document.getElementById('qso-mysiginfo')?.value || '',
     mystate: document.getElementById('qso-mystate')?.value || '',
-    frequency: parseFloat(qsoFrequency?.value) || 0,
-    band: qsoBand?.value || '',
-    dateon: qsoDateOn?.value || '',
-    timeon: qsoTimeOn?.value || '',
-    dx: document.getElementById('qso-dxcall')?.value || '',
+    siginfo: document.getElementById('qso-siginfo')?.value || '',
+  };
+  */
+
+  const dateon = qsoDateOn?.value || '';
+  const timeon = qsoTimeOn?.value || '';
+  const timestamp = `${dateon}T${timeon}Z`;
+
+  // Matching WSJT-X's ADIF
+  const qso = {
+    call: document.getElementById('qso-dxcall')?.value || '',
+    mode: document.getElementById('qso-mode')?.value || '',
     rst_sent: document.getElementById('qso-rst')?.value || '',
     rst_rcvd: document.getElementById('qso-rcvd')?.value || '',
-    siginfo: document.getElementById('qso-siginfo')?.value || '',
+    band: qsoBand?.value || '',
+    freq: parseFloat(qsoFrequency?.value) || 0,
+    station_callsign: document.getElementById('deCall').textContent,
+    my_gridsquare: document.getElementById('deGrid').textContent,
     tx_pwr: document.getElementById('qso-txpwr')?.value || '',
-  };
-
+    comment: '',
+    start: timestamp,
+    end: timestamp,
+  }
   addQsoEntry(qso, 'normal');
 
   // Save QSO to persistent storage
-  await window.electron.saveQso(display);
+  await window.electron.saveQso(qso);
 
   // Reset certain fields
   qsoDateOn.value = '';
@@ -168,8 +185,7 @@ async function handleQsoLogContact() {
 
   // Try to send to main process if handler exists
   if (window.electron && window.electron.logQso) {
-    //window.electron.logQso(qso).catch(err => console.error('logQso failed', err));
-    console.log("Would have called the QSO emitter");
+    window.electron.logQso(qso).catch(err => console.error('logQso failed', err));
   } else {
     console.log('Manual QSO logged (local):', qso);
   }
@@ -234,43 +250,116 @@ function addLogEntry(msg, type = 'normal') {
 }
 
 function addQsoEntry(qso, type = 'normal') {
-  
   const entry = document.createElement('div');
   entry.className = `log-entry ${type} qso-log-entry`;
 
   // Field Formatting should happen here.
+  const isoStart = qso.start ? qso.start : qso.end ? qso.end : '0000-00-00T00:00:00Z';
   const display = {
-    start: qso.start ? qso.start : qso.end ? qso.end : '0000-00-00T00:00:00Z',
+    start: isoStart,
     call: qso.call || 'UNKNOWN',
     mode: qso.mode || '',
-    freq: qso.freq.toFixed(4) || 0,
+    freq: (typeof qso.freq === 'number') ? qso.freq.toFixed(4) : (qso.freq || ''),
     band: qso.band || '',
     tx_pwr: qso.tx_pwr || ''
   };
 
-  // Make the start smaller
-  let start = display.start.split('T');
-  display.start = `${start[0].substr(5,5)} @ ${start[1].substr(0,5)}`
+  // Make the start smaller for display (MM-DD @ HH:MM)
+  let startParts = display.start.split('T');
+  if (startParts.length >= 2) {
+    const datePart = startParts[0];
+    const timePart = startParts[1];
+    display.start = `${datePart.substr(5,5)} @ ${timePart.substr(0,5)}`;
+  }
 
   // Ensure columns are rendered in order
   const columns = [
     display.start,
-    display.call, 
-    display.mode, 
+    display.call,
+    display.mode,
     display.freq,
-    display.band, 
+    display.band,
     display.tx_pwr,
-  ]
+  ];
 
   columns.forEach((col) => {
     const span = document.createElement('span');
     span.textContent = col;
     entry.appendChild(span);
   });
-  
+
+  // Duplicate detection: match on call, band, and start date (YYYY-MM-DD)
+  const incomingCall = (qso.call || '').toUpperCase();
+  const incomingBand = qso.band || '';
+  const incomingDate = (isoStart.split('T')[0]) || '';
+  const incomingMode = (qso.mode || '').toUpperCase();
+
+  const isDupe = qsoList.some(existing => {
+    const exCall = (existing.call || '').toUpperCase();
+    const exBand = existing.band || '';
+    const exIso = existing.start || existing.end || '';
+    const exDate = exIso.split('T')[0] || '';
+    const exMode = (existing.mode || '').toUpperCase();
+    return exCall === incomingCall && exBand === incomingBand && exDate === incomingDate && exMode === incomingMode;
+  });
+
+  let dupeMatch = null;
+  if (isDupe) {
+    // find the matching existing entry to show details in tooltip
+    dupeMatch = qsoList.find(existing => {
+      const exCall = (existing.call || '').toUpperCase();
+      const exBand = existing.band || '';
+      const exIso = existing.start || existing.end || '';
+      const exDate = exIso.split('T')[0] || '';
+      const exMode = (existing.mode || '').toUpperCase();
+      return exCall === incomingCall && exBand === incomingBand && exDate === incomingDate && exMode === incomingMode;
+    });
+
+    const wrap = document.createElement('span');
+    wrap.className = 'qso-dupe-wrap';
+
+    const tag = document.createElement('span');
+    tag.className = 'qso-dupe-tag';
+    tag.textContent = 'DUPE';
+
+    if (dupeMatch) {
+      const exIso = dupeMatch.start || dupeMatch.end || '';
+      const exDate = exIso.split('T')[0] || '';
+      const exTime = (exIso.split('T')[1] || '').substr(0,8) || '';
+      const exMode = dupeMatch.mode || '';
+      // Custom tooltip element with details including time
+      const tooltip = document.createElement('span');
+      tooltip.className = 'qso-dupe-tooltip';
+      tooltip.textContent = `Duplicate of ${dupeMatch.call} ${dupeMatch.band} ${exDate} ${exTime} ${exMode}`;
+      wrap.appendChild(tag);
+      wrap.appendChild(tooltip);
+    } else {
+      wrap.appendChild(tag);
+    }
+
+    entry.appendChild(wrap);
+  }
+
   qsoContainer.appendChild(entry);
   qsoContainer.scrollTop = qsoContainer.scrollHeight;
+
+  // Maintain in-memory list for future duplicate detection
+  qsoList.push(qso);
+  // Apply row striping for readability
+  applyQsoRowStripes();
   updateQsoCount();
+}
+
+function applyQsoRowStripes() {
+  const rows = Array.from(qsoContainer.querySelectorAll('.qso-log-entry:not(.qso-log-header)'));
+  rows.forEach((row, idx) => {
+    row.classList.remove('qso-row-odd', 'qso-row-even');
+    if ((idx % 2) === 0) {
+      row.classList.add('qso-row-even');
+    } else {
+      row.classList.add('qso-row-odd');
+    }
+  });
 }
 
 function updateStatusIndicators(statusData) {
@@ -374,6 +463,7 @@ function clearQsoLog() {
   
   // Clear persistent storage
   window.electron.clearQsos();
+  qsoList = [];
   updateQsoCount();
 }
 
