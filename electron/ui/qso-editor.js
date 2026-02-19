@@ -3,6 +3,7 @@ const saveQsoChanges = document.getElementById('saveQsoChanges');
 const cancelQsoChanges = document.getElementById('cancelQsoChanges');
 const importQsosBtn = document.getElementById('importQsosBtn');
 const exportQsosBtn = document.getElementById('exportQsosBtn');
+const resendAllQsosBtn = document.getElementById('resendAllQsosBtn');
 
 const wsjtxFields = [
     {
@@ -36,6 +37,7 @@ function setupEventListeners() {
   cancelQsoChanges.addEventListener('click', closeWindow);
   importQsosBtn.addEventListener('click', handleImportQsos);
   exportQsosBtn.addEventListener('click', handleExportQsos);
+  resendAllQsosBtn.addEventListener('click', handleResendAllQsos);
 
   // Theme change listener
   window.electron.onThemeChanged((theme) => {
@@ -86,7 +88,10 @@ function renderQsoList() {
         <strong>${qso.call || '—'}</strong> on <strong>${qso.band || '—'}</strong>
         <div style="font-size: 12px; color: var(--text-secondary);">${formatDateTime(qso.start || qso.end)}</div>
       </div>
-      <button class="btn btn-danger btn-sm btn-delete" data-index="${index}">Delete</button>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-secondary btn-sm btn-resend" data-index="${index}">Resend</button>
+        <button class="btn btn-danger btn-sm btn-delete" data-index="${index}">Delete</button>
+      </div>
     `;
 
     const formDiv = document.createElement('div');
@@ -159,6 +164,10 @@ function renderQsoList() {
   qsoListContainer.querySelectorAll('.btn-delete').forEach((btn) => {
     btn.addEventListener('click', handleDeleteQso);
   });
+
+  qsoListContainer.querySelectorAll('.btn-resend').forEach((btn) => {
+    btn.addEventListener('click', handleResendQso);
+  });
 }
 
 function handleFieldChange(e) {
@@ -193,6 +202,25 @@ function handleDeleteQso(e) {
       }
     });
     changedQsos = updatedChangedQsos;
+  }
+}
+
+async function handleResendQso(e) {
+  const index = parseInt(e.target.dataset.index);
+  const qso = qsos[index];
+  
+  try {
+    const result = await window.electron.resendQso(qso);
+    if (result.success) {
+      alert(`✓ QSO ${qso.call || '—'} resent to forwarders successfully`);
+      addSuccessMessage(`QSO ${qso.call || '—'} resent to forwarders`);
+    } else {
+      alert(`✗ Failed to resend QSO: ${result.error || 'Unknown error'}`);
+      addErrorMessage(result.error || 'Failed to resend QSO');
+    }
+  } catch (err) {
+    alert(`✗ Resend error: ${err.message}`);
+    addErrorMessage(`Resend error: ${err.message}`);
   }
 }
 
@@ -275,6 +303,24 @@ async function handleImportQsos() {
   }
 }
 
+async function handleResendAllQsos() {
+  try {
+    const result = await window.electron.resendAllQsos();
+    if (result.success) {
+      alert(`✓ ${result.count} QSOs resent to forwarders successfully`);
+      addSuccessMessage(`${result.count} QSOs resent to forwarders`);
+    } else {
+      alert(`✗ Failed to resend QSOs: ${result.error || 'Unknown error'}`);
+      addErrorMessage(result.error || 'Failed to resend QSOs');
+    }
+  } catch (err) {
+    alert(`✗ Resend error: ${err.message}`);
+    addErrorMessage(`Resend error: ${err.message}`);
+  }
+}
+
 function closeWindow() {
+  // Notify the main window to refresh the QSO log
+  window.electron.notifyQsoDataChanged();
   window.electron.closeQsoEditor();
 }

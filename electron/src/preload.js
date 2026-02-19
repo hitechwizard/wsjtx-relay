@@ -26,6 +26,8 @@ contextBridge.exposeInMainWorld('electron', {
   deleteQso: (index) => ipcRenderer.invoke('delete-qso', index),
   exportQsosAdif: () => ipcRenderer.invoke('export-qsos-adif'),
   importQsosAdif: () => ipcRenderer.invoke('import-qsos-adif'),
+  resendQso: (qso) => ipcRenderer.invoke('resend-qso', qso),
+  resendAllQsos: () => ipcRenderer.invoke('resend-all-qsos'),
   
   // Window control API
   openSettings: () => ipcRenderer.send('open-settings'),

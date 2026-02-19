@@ -1,13 +1,29 @@
+/* ============================================================================
+   WSJT-X Relay Styles
+   ============================================================================ */
+
+/* ============================================================================
+   1. THEME VARIABLES
+   ============================================================================ */
+
+/* Light Theme (Default) */
 :root {
+  /* Background Colors */
   --bg-primary: #f5f5f5;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f9f9f9;
+
+  /* Text Colors */
   --text-primary: #333333;
   --text-secondary: #555555;
   --text-tertiary: #7f8c8d;
+  --header-color: #2c3e50;
+
+  /* Border Colors */
   --border-color: #ddd;
   --border-light: #e0e0e0;
-  --header-color: #2c3e50;
+
+  /* Status & Action Colors */
   --blue: #3498db;
   --blue-dark: #2980b9;
   --blue-light: rgba(52, 152, 219, 0.3);
@@ -20,11 +36,14 @@
   --yellow-light: rgba(243, 156, 18, 0.3);
   --gray: #95a5a6;
   --gray-dark: #7f8c8d;
+
+  /* Scrollbar Colors */
   --scrollbar-track: #f1f1f1;
   --scrollbar-thumb: #bdc3c7;
   --scrollbar-thumb-hover: #95a5a6;
 }
 
+/* Dark Theme */
 body.dark-theme {
   --bg-primary: #1e1e1e;
   --bg-secondary: #2d2d2d;
@@ -52,6 +71,10 @@ body.dark-theme {
   --scrollbar-thumb-hover: #777777;
 }
 
+/* ============================================================================
+   2. GLOBAL STYLES
+   ============================================================================ */
+
 * {
   margin: 0;
   padding: 0;
@@ -71,6 +94,10 @@ body {
   margin: 0 auto;
   padding: 20px;
 }
+
+/* ============================================================================
+   3. HEADER & LAYOUT
+   ============================================================================ */
 
 .header {
   display: flex;
@@ -106,15 +133,9 @@ body {
   color: white;
 }
 
-.qso-panel {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-  padding: 20px;
-  background-color: var(--bg-secondary);
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
+/* ============================================================================
+   4. BUTTONS
+   ============================================================================ */
 
 .btn {
   padding: 10px 20px;
@@ -165,6 +186,40 @@ body {
   font-size: 12px;
 }
 
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn-delete {
+  background-color: var(--red);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.btn-delete:hover {
+  background-color: var(--red-dark);
+}
+
+/* ============================================================================
+   5. PANELS & CONTAINERS
+   ============================================================================ */
+
+.qso-panel {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 20px;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .status-panel {
   padding: 20px;
   background-color: var(--bg-secondary);
@@ -180,6 +235,10 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
+/* ============================================================================
+   6. QSO INPUT FORM
+   ============================================================================ */
 
 .qso-grid {
   display: grid;
@@ -204,9 +263,13 @@ body {
   font-weight: 500;
 }
 
+/* ============================================================================
+   7. STATUS INDICATORS
+   ============================================================================ */
+
 .indicators-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr) 2fr 1fr 2fr;
+  grid-template-columns: repeat(6, 1fr);
   gap: 15px;
 }
 
@@ -268,58 +331,9 @@ body {
   gap: 8px;
 }
 
-/* wrapper for dupe tag + tooltip positioned into grid */
-.qso-dupe-wrap {
-  grid-column: 7;
-  justify-self: end;
-  position: relative;
-  display: inline-block;
-}
-
-.qso-dupe-tag {
-  background-color: var(--red);
-  color: white;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  align-self: center;
-}
-
-/* Custom tooltip bubble */
-.qso-dupe-tooltip {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 8px);
-  background: rgba(0,0,0,0.85);
-  color: #fff;
-  padding: 6px 8px;
-  border-radius: 6px;
-  white-space: nowrap;
-  font-size: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  display: none;
-  z-index: 50;
-}
-
-.qso-dupe-wrap:hover .qso-dupe-tooltip {
-  display: block;
-}
-
-/* Striped rows for QSO log */
-.qso-row-even {
-  background-color: var(--bg-tertiary);
-}
-
-.qso-row-odd {
-  background-color: transparent;
-}
-
-/* Tooltip styling (uses native title if present) */
-.qso-dupe-tag[title] {
-  cursor: help;
-}
+/* ============================================================================
+   8. QSO LOG DISPLAY
+   ============================================================================ */
 
 .log-section {
   display: grid;
@@ -363,6 +377,19 @@ body {
   color: var(--text-secondary);
 }
 
+.log-entry:last-child {
+  border-bottom: none;
+}
+
+.log-entry.error {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.log-entry.success {
+  color: var(--green);
+}
+
 #qsoContainer {
   padding-top: 0px;
 }
@@ -385,20 +412,57 @@ body {
   z-index: 10;
 }
 
-.log-entry:last-child {
-  border-bottom: none;
+.qso-row-even {
+  background-color: var(--bg-tertiary);
 }
 
-.log-entry.error {
-  color: var(--red);
-  font-weight: 600;
+.qso-row-odd {
+  background-color: transparent;
 }
 
-.log-entry.success {
-  color: var(--green);
+/* Duplicate QSO Indicator */
+.qso-dupe-wrap {
+  grid-column: 7;
+  justify-self: end;
+  position: relative;
+  display: inline-block;
 }
 
-/* Settings Page Styles */
+.qso-dupe-tag {
+  background-color: var(--red);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  align-self: center;
+  cursor: help;
+}
+
+.qso-dupe-tooltip {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 6px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-size: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  display: none;
+  z-index: 50;
+}
+
+.qso-dupe-wrap:hover .qso-dupe-tooltip {
+  display: block;
+}
+
+/* ============================================================================
+   9. FORM STYLES (SETTINGS & GENERAL)
+   ============================================================================ */
+
 .settings-container {
   max-width: 600px;
 }
@@ -446,6 +510,20 @@ body {
   color: var(--text-tertiary);
   font-size: 12px;
 }
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.form-actions .btn {
+  flex: 1;
+}
+
+/* ============================================================================
+   10. FORWARDS EDITOR
+   ============================================================================ */
 
 .forwards-editor {
   margin-top: 10px;
@@ -500,17 +578,10 @@ body {
   flex: 1;
 }
 
-.form-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 25px;
-}
+/* ============================================================================
+   11. SCROLLBAR STYLES
+   ============================================================================ */
 
-.form-actions .btn {
-  flex: 1;
-}
-
-/* Scrollbar Styling */
 .log-container::-webkit-scrollbar {
   width: 8px;
 }
@@ -529,7 +600,10 @@ body {
   background: var(--scrollbar-thumb-hover);
 }
 
-/* Theme Toggle Styles */
+/* ============================================================================
+   12. THEME TOGGLE
+   ============================================================================ */
+
 .theme-toggle-group {
   display: flex;
   margin-left: 25px;
@@ -560,7 +634,11 @@ body {
   font-weight: normal;
   color: var(--text-primary);
 }
-/* QSO Editor Page Styles */
+
+/* ============================================================================
+   13. QSO EDITOR PAGE
+   ============================================================================ */
+
 .qso-editor-wrapper {
   display: flex;
   flex-direction: column;
@@ -676,24 +754,4 @@ body {
   border-top: 1px solid var(--border-color);
   flex-shrink: 0;
   background-color: var(--bg-primary);
-}
-
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 12px;
-}
-
-.btn-delete {
-  background-color: var(--red);
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.2s;
-}
-
-.btn-delete:hover {
-  background-color: var(--red-dark);
 }

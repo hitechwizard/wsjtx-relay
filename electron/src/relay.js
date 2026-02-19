@@ -1,6 +1,7 @@
 const dgram = require('dgram');
 const EventEmitter = require('events');
 const { WsjtxUdpParser } = require('./WsjtxUdpParser');
+const { AdiWriter } = require('./adif/AdiWriter');
 
 const CLIENT_TIMEOUT = 60000; // milliseconds
 
@@ -201,6 +202,52 @@ class WSJTXRelay extends EventEmitter {
       this.emit('error', err);
     }
     return message
+  }
+
+  createAdifPacket(qso) {
+    // This is where we create a WSJT-X Type 12 Packet and send it to all the forwards
+    const adiWriter = new AdiWriter('WSJT-X Relay', '1.0.0')
+    adiWriter.writeContact(qso);
+    const adif = adiWriter.getData();
+    const magicBytes = Buffer.from([0xAD, 0xBC, 0xCB, 0xDA]);
+    const version = Buffer.from([0x00, 0x00, 0x00, 0x02]);
+    const type= Buffer.from([0x00, 0x00, 0x00, 0x0C]); // 12 -> ADIF
+    const id = Buffer.concat([Buffer.from([ 0x00, 0x00, 0x00, 0x06]), Buffer.from('WSJT-X')]);
+    const adif_length = Buffer.alloc(4);
+    adif_length.writeUint32BE(adif.length);
+    const adif_buffer = Buffer.from(adif);
+    const packet = Buffer.concat([magicBytes, version, type, id, adif_length, adif_buffer]);
+    // packet is ready to go.... SEND IT!
+    return packet;
+  };
+
+
+  resendQsos(qsos) {
+    if (!Array.isArray(qsos)) {
+      qsos = [qsos];
+    }
+
+    if (this.forwards.length === 0) {
+      this.emit('log', 'No forwarders configured - QSOs not forwarded');
+      return;
+    }
+
+    qsos.forEach(qso => {
+      const qsoInfo = `${qso.call || 'UNKNOWN'} ${qso.band || '?'} ${qso.mode || '?'} ${qso.start || 'N/A'}`;
+      
+      // Convert QSO to JSON and send as UDP packet to each forwarder
+      const buffer = this.createAdifPacket(qso);
+
+      this.forwards.forEach((fwd) => {
+        this.socket.send(buffer, fwd.port, fwd.host, (err) => {
+          if (err) {
+            this.emit('error', `Error resending QSO to ${fwd.host}:${fwd.port}: ${err.message}`);
+          } else {
+            this.emit('log', `Resending -> ${fwd.host}:${fwd.port} ${qsoInfo}`);
+          }
+        });
+      });
+    });
   }
 }
 
