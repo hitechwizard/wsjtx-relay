@@ -166,15 +166,6 @@ function handleQsoTimeNow() {
 
 async function handleQsoLogContact() {
 
-  /*
-  const qso = {
-    mysig: document.getElementById('qso-mysig')?.value || '',
-    mysiginfo: document.getElementById('qso-mysiginfo')?.value || '',
-    mystate: document.getElementById('qso-mystate')?.value || '',
-    siginfo: document.getElementById('qso-siginfo')?.value || '',
-  };
-  */
-
   const dateon = qsoDateOn?.value || '';
   const timeon = qsoTimeOn?.value || '';
   const timestamp = `${dateon}T${timeon}Z`;
@@ -194,10 +185,43 @@ async function handleQsoLogContact() {
     start: timestamp,
     end: timestamp,
   }
+
+  // Add POTA fields
+  const pota = {
+    qso_date: dateon.replaceAll('-',''),
+    time_on: timeon.replaceAll(':',''),
+    my_sig_info: document.getElementById('qso-mysiginfo')?.value || undefined,
+    my_state: document.getElementById('qso-mystate')?.value || undefined,
+    sig_info: document.getElementById('qso-siginfo')?.value || undefined,
+    state: document.getElementById('qso-state')?.value || undefined,
+  };
+
+  if (pota.my_sig_info != undefined) {
+    pota.my_sig = 'POTA';
+  }
+
+  if (pota.sig_info != undefined) {
+    pota.sig = 'POTA';
+  }
+
+  // Add non-undefined POTA attributes to QSO
+  Object.entries(pota).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') {
+      qso[key] = value;
+    }
+  });
+
   addQsoEntry(qso, 'normal');
 
   // Save QSO to persistent storage
   await window.electron.saveQso(qso);
+
+  // Send to forwarders via relay
+  try {
+    await window.electron.resendQso(qso);
+  } catch (err) {
+    console.error('Failed to send QSO to forwarders:', err);
+  }
 
   // Reset certain fields
   qsoDateOn.value = '';
@@ -206,14 +230,6 @@ async function handleQsoLogContact() {
   document.getElementById('qso-rst').value = '';
   document.getElementById('qso-rcvd').value = '';
   document.getElementById('qso-siginfo').value = '';
-
-
-  // Try to send to main process if handler exists
-  if (window.electron && window.electron.logQso) {
-    window.electron.logQso(qso).catch(err => console.error('logQso failed', err));
-  } else {
-    console.log('Manual QSO logged (local):', qso);
-  }
 }
 
 async function startRelay() {

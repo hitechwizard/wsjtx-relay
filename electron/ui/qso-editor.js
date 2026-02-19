@@ -135,15 +135,15 @@ function renderQsoList() {
       </div>
       <div class="editor-field">
         <label>My Sig</label>
-        <input type="text" class="qso-field" data-field="mysig" data-index="${index}" value="${qso.mysig || ''}" />
+        <input type="text" class="qso-field" data-field="my_sig" data-index="${index}" value="${qso.my_sig || ''}" />
       </div>
       <div class="editor-field">
         <label>My Sig Info</label>
-        <input type="text" class="qso-field" data-field="mysiginfo" data-index="${index}" value="${qso.mysiginfo || ''}" />
+        <input type="text" class="qso-field" data-field="my_sig_info" data-index="${index}" value="${qso.my_sig_info || ''}" />
       </div>
       <div class="editor-field">
         <label>Sig Info</label>
-        <input type="text" class="qso-field" data-field="siginfo" data-index="${index}" value="${qso.siginfo || ''}" />
+        <input type="text" class="qso-field" data-field="sig_info" data-index="${index}" value="${qso.sig_info || ''}" />
       </div>
       <div class="editor-field">
         <label>Comment</label>
