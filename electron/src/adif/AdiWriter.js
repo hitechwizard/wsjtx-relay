@@ -1,13 +1,13 @@
-const dateformat = require("dateformat");
-const fields = require("./fields");
+const dateformat = require('dateformat');
+const fields = require('./fields');
 
 class AdiWriter {
   constructor(programid, programversion) {
-    this.data = "# node-adif export\n";
-    this.writeField("adif_ver", "3.0.4");
-    this.writeField("programid", programid || "node-adif");
-    if (programversion) this.writeField("programversion", programversion);
-    this.data += "<EOH>\n\n";
+    this.data = '# node-adif export\n';
+    this.writeField('adif_ver', '3.0.4');
+    this.writeField('programid', programid || 'node-adif');
+    if (programversion) this.writeField('programversion', programversion);
+    this.data += '<EOH>\n\n';
   }
 
   getData() {
@@ -23,12 +23,12 @@ class AdiWriter {
   }
 
   writeFldigiLine(contact) {
-    this.data = "";
+    this.data = '';
 
     for (const key in contact) {
       this.writeProperty(key, contact[key]);
     }
-    this.data += "<EOR>";
+    this.data += '<EOR>';
 
     return this.data;
   }
@@ -37,27 +37,27 @@ class AdiWriter {
     for (const key in contact) {
       this.writeProperty(key, contact[key]);
     }
-    this.data += "<EOR>\n\n";
+    this.data += '<EOR>\n\n';
   }
 
   writeProperty(key, value) {
     let outKey = key;
-    if (key === "_id") outKey = "app_cloudshack_id";
-    else if (key === "_rev") outKey = "app_cloudshack_rev";
-    else if (key === "start") {
+    if (key === '_id') outKey = 'app_cloudshack_id';
+    else if (key === '_rev') outKey = 'app_cloudshack_rev';
+    else if (key === 'start') {
       const date = new Date(value);
-      this.writeField("qso_date", dateformat(date, "UTC:yyyymmdd"));
-      this.writeField("time_on", dateformat(date, "UTC:HHMMss"));
+      this.writeField('qso_date', dateformat(date, 'UTC:yyyymmdd'));
+      this.writeField('time_on', dateformat(date, 'UTC:HHMMss'));
       return;
-    } else if (key === "end") {
+    } else if (key === 'end') {
       const date = new Date(value);
-      this.writeField("qso_date_off", dateformat(date, "UTC:yyyymmdd"));
-      this.writeField("time_off", dateformat(date, "UTC:HHMMss"));
+      this.writeField('qso_date_off', dateformat(date, 'UTC:yyyymmdd'));
+      this.writeField('time_off', dateformat(date, 'UTC:HHMMss'));
       return;
     }
 
     if (!(outKey in fields)) {
-      console.log("adif: unknown adif field", outKey);
+      console.log('adif: unknown adif field', outKey);
       return;
     }
 
@@ -68,7 +68,7 @@ class AdiWriter {
   }
 
   writeField(key, value) {
-    this.data += "<" + key.toUpperCase() + ":" + value.length + ">";
+    this.data += '<' + key.toUpperCase() + ':' + value.length + '>';
     this.data += value;
   }
 }

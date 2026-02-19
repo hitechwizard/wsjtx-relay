@@ -6,8 +6,6 @@ const WSJTXRelay = require('./relay');
 const { AdiWriter } = require('./adif/AdiWriter');
 const AdiReader = require('./adif/AdiReader');
 
-const { WsjtxUdpParser } = require('./WsjtxUdpParser');
-
 const isMac = process.platform === 'darwin';
 
 let mainWindow;
@@ -21,8 +19,8 @@ const store = new Store({
     forwards: [],
     theme: 'light',
     windowBounds: { width: 1200, height: 800 },
-    qsos: []
-  }
+    qsos: [],
+  },
 });
 
 function createWindow() {
@@ -37,8 +35,8 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
-    }
+      sandbox: true,
+    },
   });
 
   mainWindow.loadFile(path.join(__dirname, '../ui/index.html'));
@@ -77,8 +75,8 @@ function createSettingsWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
-    }
+      sandbox: true,
+    },
   });
 
   settingsWindow.loadFile(path.join(__dirname, '../ui/settings.html'));
@@ -115,8 +113,8 @@ function createQsoEditorWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
-    }
+      sandbox: true,
+    },
   });
 
   qsoEditorWindow.loadFile(path.join(__dirname, '../ui/qso-editor.html'));
@@ -142,7 +140,7 @@ ipcMain.handle('get-settings', () => {
     listenPort: store.get('listenPort'),
     forwards: store.get('forwards'),
     theme: store.get('theme'),
-    qsos: store.get('qsos')
+    qsos: store.get('qsos'),
   };
 });
 
@@ -152,19 +150,19 @@ ipcMain.handle('save-settings', (event, { listenPort, forwards, theme }) => {
   if (theme) {
     store.set('theme', theme);
   }
-  
+
   // Update relay if running
   if (relay && relay.running) {
     relay.updateSettings(listenPort, forwards);
   }
-  
+
   // Notify all windows about theme change
   if (theme) {
-    BrowserWindow.getAllWindows().forEach(window => {
+    BrowserWindow.getAllWindows().forEach((window) => {
       window.webContents.send('theme-changed', theme);
     });
   }
-  
+
   return { success: true };
 });
 
@@ -281,7 +279,7 @@ ipcMain.handle('resend-qso', (event, qso) => {
   return { success: false, error: 'Relay not available' };
 });
 
-ipcMain.handle('resend-all-qsos', (event) => {
+ipcMain.handle('resend-all-qsos', () => {
   const qsos = store.get('qsos', []);
   if (relay) {
     try {
@@ -298,16 +296,16 @@ ipcMain.handle('resend-all-qsos', (event) => {
   return { success: false, error: 'Relay not available' };
 });
 
-ipcMain.handle('export-qsos-adif', async (event) => {
+ipcMain.handle('export-qsos-adif', async () => {
   const qsos = store.get('qsos', []);
-  
+
   const { filePath } = await dialog.showSaveDialog(qsoEditorWindow, {
     title: 'Export QSOs to ADIF',
     defaultPath: `qsos-${new Date().toISOString().split('T')[0]}.adi`,
     filters: [
       { name: 'ADIF Files', extensions: ['adi', 'adif'] },
-      { name: 'All Files', extensions: ['*'] }
-    ]
+      { name: 'All Files', extensions: ['*'] },
+    ],
   });
 
   if (filePath) {
@@ -320,18 +318,18 @@ ipcMain.handle('export-qsos-adif', async (event) => {
       return { success: false, error: err.message };
     }
   }
-  
+
   return { success: false, error: 'Export cancelled' };
 });
 
-ipcMain.handle('import-qsos-adif', async (event) => {
+ipcMain.handle('import-qsos-adif', async () => {
   const { filePaths } = await dialog.showOpenDialog(qsoEditorWindow, {
     title: 'Import QSOs from ADIF',
     filters: [
       { name: 'ADIF Files', extensions: ['adi', 'adif'] },
-      { name: 'All Files', extensions: ['*'] }
+      { name: 'All Files', extensions: ['*'] },
     ],
-    properties: ['openFile']
+    properties: ['openFile'],
   });
 
   if (filePaths && filePaths.length > 0) {
@@ -344,7 +342,7 @@ ipcMain.handle('import-qsos-adif', async (event) => {
       return { success: false, error: err.message };
     }
   }
-  
+
   return { success: false, error: 'Import cancelled' };
 });
 
@@ -381,12 +379,12 @@ app.on('ready', () => {
 
   const template = [
     {
-      label: (isMac ? app.name : 'File'),
+      label: isMac ? app.name : 'File',
       submenu: [
         {
           label: 'Preferences',
           accelerator: 'CmdOrCtrl+,',
-          click: createSettingsWindow
+          click: createSettingsWindow,
         },
         { type: 'separator' },
         {
@@ -397,18 +395,18 @@ app.on('ready', () => {
               relay.stop();
             }
             app.quit();
-          }
-        }
-      ]
+          },
+        },
+      ],
     },
 
     {
-    label: 'Window',
+      label: 'Window',
       submenu: [
         {
           label: 'QSO Editor',
           accelerator: 'CmdOrCtrl+E',
-          click: createQsoEditorWindow
+          click: createQsoEditorWindow,
         },
         { type: 'separator' },
         { role: 'minimize' },
@@ -429,16 +427,13 @@ app.on('ready', () => {
       : []),
 
     ...(!isMac
-    ? [
-        {
-          label: 'Help',
-          submenu: [
-            { role: 'about' },
-          ],
-        },
-      ]
-    : []),
-
+      ? [
+          {
+            label: 'Help',
+            submenu: [{ role: 'about' }],
+          },
+        ]
+      : []),
   ];
 
   if (isMac) {

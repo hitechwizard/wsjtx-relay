@@ -82,11 +82,15 @@ body.dark-theme {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans',
+    'Helvetica Neue', sans-serif;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.6;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 .container {
@@ -400,8 +404,8 @@ body {
   grid-column-gap: 5px;
   grid-row-gap: 0px;
   grid-template-areas:
-    "header header header header header header header"
-    "main main main main main main main";
+    'header header header header header header header'
+    'main main main main main main main';
 }
 
 .qso-log-header {
@@ -495,8 +499,8 @@ body {
   color: var(--header-color);
 }
 
-.form-group input[type="number"],
-.form-group input[type="text"],
+.form-group input[type='number'],
+.form-group input[type='text'],
 .form-group select {
   width: 100%;
   padding: 10px;
@@ -509,8 +513,8 @@ body {
   transition: border-color 0.2s ease;
 }
 
-.form-group input[type="number"]:focus,
-.form-group input[type="text"]:focus,
+.form-group input[type='number']:focus,
+.form-group input[type='text']:focus,
 .form-group select:focus {
   outline: none;
   border-color: var(--blue);
@@ -636,7 +640,7 @@ body {
   gap: 6px;
 }
 
-.theme-option input[type="radio"] {
+.theme-option input[type='radio'] {
   cursor: pointer;
   accent-color: var(--blue);
 }

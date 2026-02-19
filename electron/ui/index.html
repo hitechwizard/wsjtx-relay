@@ -1,158 +1,183 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WSJT-X Relay</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>WSJT-X Relay</h1>
-      <h3 id="deCall"></h3>
-      <h3 id="deGrid"></h3>
-      <div style="display: flex; gap: 15px; align-items: center;">
-        <button id="startBtn" class="btn btn-primary">Start</button>
-        <button id="stopBtn" class="btn btn-danger" disabled>Stop</button>
-        <button id="settingsBtn" class="btn btn-secondary">Settings</button>
-        <div class="theme-toggle-group">
-          <label for="themeToggle" style="margin: 0; cursor: pointer; color: var(--text-primary);">🌙</label>
-          <input type="checkbox" id="themeToggle" style="cursor: pointer;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WSJT-X Relay</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>WSJT-X Relay</h1>
+        <h3 id="deCall"></h3>
+        <h3 id="deGrid"></h3>
+        <div style="display: flex; gap: 15px; align-items: center">
+          <button id="startBtn" class="btn btn-primary">Start</button>
+          <button id="stopBtn" class="btn btn-danger" disabled>Stop</button>
+          <button id="settingsBtn" class="btn btn-secondary">Settings</button>
+          <div class="theme-toggle-group">
+            <label for="themeToggle" style="margin: 0; cursor: pointer; color: var(--text-primary)"
+              >🌙</label
+            >
+            <input type="checkbox" id="themeToggle" style="cursor: pointer" />
+          </div>
+          <div class="status-badge" id="statusBadge">Stopped</div>
         </div>
-        <div class="status-badge" id="statusBadge">Stopped</div>
       </div>
-    </div>
-    <div class="status-panel">
-      <h3>Manual QSO Entry</h3>
-      <div class="qso-grid">
-        <div class="form-group qso-field">
-          <label>Mode:</label>
-          <span class="qso-value">
-            <select id="qso-mode">
+      <div class="status-panel">
+        <h3>Manual QSO Entry</h3>
+        <div class="qso-grid">
+          <div class="form-group qso-field">
+            <label>Mode:</label>
+            <span class="qso-value">
+              <select id="qso-mode">
                 <option>SSB</option>
                 <option>CW</option>
-            </select>
-          </span>
-        </div>
-        <div class="form-group qso-field">
-          <label>My Park:</label>
-          <span class="qso-value"><input type="text" id="qso-mysiginfo" /></span>
-        </div>
-        <div class="form-group qso-field">
-          <label>My State:</label>
-          <span class="qso-value"><input type="text" id="qso-mystate" /></span>
-        </div>
-        <div class="form-group qso-field">
-          <label>Frequency:</label>
-          <span class="qso-value"><input type="number" id="qso-frequency" /></span>
-        </div>
-        <div class="form-group qso-field">
-          <label>Band:</label>
-          <span class="qso-value"><input type="text" id="qso-band" disabled /></span>
-        </div>
-        <div class="form-group qso-field">
-          <label>TX Power:</label>
-          <span class="qso-value"><input type="number" id="qso-txpwr" /></span>
-        </div>
-        <div class="form-group qso-field">
-          <label>Date On:</label>
-          <span class="qso-value"><input type="text" id="qso-dateon" /></span>
-        </div>
-        <div class="form-group qso-field">
-          <label>Time On:</label>
-          <span class="qso-value"><input type="text" id="qso-timeon" /></span>
-          <button id="qsoTimeNow" class="btn btn-primary" style="margin-top: 10px;">Now</button>
-        </div>
-        <div class="form-group qso-field">
-          <label>DX Call:</label>
-          <span class="qso-value"><input type="text" id="qso-dxcall" /></span>
-        </div>
-        <div class="form-group qso-field">
-          <label>RST Sent:</label>
-          <span class="qso-value"><input type="text" id="qso-rst" /></span>
-        </div>
-        <div class="form-group qso-field">
-          <label>RST Rcvd:</label>
-          <span class="qso-value"><input type="text" id="qso-rcvd" /></span>
-        </div>
-        <div class="form-group qso-field">
-          <label>State:</label>
-          <span class="qso-value"><input type="text" id="qso-state" /></span>
-        </div>
-        <div class="form-group qso-field">
-          <label>Their Park:</label>
-          <span class="qso-value"><input type="text" id="qso-siginfo" /></span>
-        </div>
-        <div style="margin-left: 25px; margin-top: 50px;">
-          <button id="qsoLogContact" class="btn btn-primary" style="height:50px; width: 125px;">Log Contact</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="status-panel">
-      <h3>Status Indicators</h3>
-      <div class="indicators-grid">
-        <div class="indicator">
-          <label>Frequency:</label>
-          <span id="frequencyValue" class="indicator-value">—</span>
-        </div>
-        <div class="indicator">
-          <label>Mode:</label>
-          <span id="modeValue" class="indicator-value">—</span>
-        </div>
-        <div class="indicator">
-          <label>TX Enabled:</label>
-          <span id="txEnabledValue" class="indicator-value indicator-off">—</span>
-        </div>
-        <div class="indicator indicator-transmitting-row">
-          <label>Transmitting:</label>
-          <div class="indicator-content">
-            <span id="transmittingValue" class="indicator-value indicator-off">—</span>
-            <span id="transmitMessage" style="margin-left: 8px; font-size: 12px;"></span>
+              </select>
+            </span>
+          </div>
+          <div class="form-group qso-field">
+            <label>My Park:</label>
+            <span class="qso-value"><input type="text" id="qso-mysiginfo" /></span>
+          </div>
+          <div class="form-group qso-field">
+            <label>My State:</label>
+            <span class="qso-value"><input type="text" id="qso-mystate" /></span>
+          </div>
+          <div class="form-group qso-field">
+            <label>Frequency:</label>
+            <span class="qso-value"><input type="number" id="qso-frequency" /></span>
+          </div>
+          <div class="form-group qso-field">
+            <label>Band:</label>
+            <span class="qso-value"><input type="text" id="qso-band" disabled /></span>
+          </div>
+          <div class="form-group qso-field">
+            <label>TX Power:</label>
+            <span class="qso-value"><input type="number" id="qso-txpwr" /></span>
+          </div>
+          <div class="form-group qso-field">
+            <label>Date On:</label>
+            <span class="qso-value"><input type="text" id="qso-dateon" /></span>
+          </div>
+          <div class="form-group qso-field">
+            <label>Time On:</label>
+            <span class="qso-value"><input type="text" id="qso-timeon" /></span>
+            <button id="qsoTimeNow" class="btn btn-primary" style="margin-top: 10px">Now</button>
+          </div>
+          <div class="form-group qso-field">
+            <label>DX Call:</label>
+            <span class="qso-value"><input type="text" id="qso-dxcall" /></span>
+          </div>
+          <div class="form-group qso-field">
+            <label>RST Sent:</label>
+            <span class="qso-value"><input type="text" id="qso-rst" /></span>
+          </div>
+          <div class="form-group qso-field">
+            <label>RST Rcvd:</label>
+            <span class="qso-value"><input type="text" id="qso-rcvd" /></span>
+          </div>
+          <div class="form-group qso-field">
+            <label>State:</label>
+            <span class="qso-value"><input type="text" id="qso-state" /></span>
+          </div>
+          <div class="form-group qso-field">
+            <label>Their Park:</label>
+            <span class="qso-value"><input type="text" id="qso-siginfo" /></span>
+          </div>
+          <div style="margin-left: 25px; margin-top: 50px">
+            <button id="qsoLogContact" class="btn btn-primary" style="height: 50px; width: 125px">
+              Log Contact
+            </button>
           </div>
         </div>
-        <div class="indicator">
-          <label>Listen Port:</label>
-          <span id="listenPortValue" class="indicator-value">2237</span>
+      </div>
+
+      <div class="status-panel">
+        <h3>Status Indicators</h3>
+        <div class="indicators-grid">
+          <div class="indicator">
+            <label>Frequency:</label>
+            <span id="frequencyValue" class="indicator-value">—</span>
+          </div>
+          <div class="indicator">
+            <label>Mode:</label>
+            <span id="modeValue" class="indicator-value">—</span>
+          </div>
+          <div class="indicator">
+            <label>TX Enabled:</label>
+            <span id="txEnabledValue" class="indicator-value indicator-off">—</span>
+          </div>
+          <div class="indicator indicator-transmitting-row">
+            <label>Transmitting:</label>
+            <div class="indicator-content">
+              <span id="transmittingValue" class="indicator-value indicator-off">—</span>
+              <span id="transmitMessage" style="margin-left: 8px; font-size: 12px"></span>
+            </div>
+          </div>
+          <div class="indicator">
+            <label>Listen Port:</label>
+            <span id="listenPortValue" class="indicator-value">2237</span>
+          </div>
+          <div class="indicator">
+            <label>Forwards:</label>
+            <span id="forwardsValue" class="indicator-value">None configured</span>
+          </div>
         </div>
-        <div class="indicator">
-          <label>Forwards:</label>
-          <span id="forwardsValue" class="indicator-value">None configured</span>
+      </div>
+
+      <div class="log-section">
+        <div class="log-panel">
+          <h2>Activity Log</h2>
+          <div class="log-container" id="logContainer"></div>
+          <div style="display: flex; gap: 10px; margin-top: 10px">
+            <button
+              id="clearLogBtn"
+              class="btn btn-danger"
+              style="text-align: center; width: 150px"
+            >
+              Clear Log
+            </button>
+          </div>
+        </div>
+        <div class="log-panel">
+          <h2 style="display: flex; justify-content: space-between; align-items: center">
+            <span>QSO Log <span id="qsoCount">(0)</span></span>
+            <span id="qsoLastHour" style="font-size: 0.85em; color: var(--text-secondary)"
+              >Last Hour: 0</span
+            >
+          </h2>
+          <div class="log-container" id="qsoContainer">
+            <div class="qso-log-entry qso-log-header">
+              <span>Timestamp</span>
+              <span>DX Call</span>
+              <span>Mode</span>
+              <span>Freq</span>
+              <span>Band</span>
+              <span>Pwr</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 10px">
+            <button
+              id="clearQsoBtn"
+              class="btn btn-danger"
+              style="text-align: center; width: 150px"
+            >
+              Clear Log
+            </button>
+            <button
+              id="qsoEditorBtn"
+              class="btn btn-secondary"
+              style="text-align: center; width: 150px"
+            >
+              QSO Editor
+            </button>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="log-section">
-        <div class="log-panel">
-            <h2>Activity Log</h2>
-            <div class="log-container" id="logContainer"></div>
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-              <button id="clearLogBtn" class="btn btn-danger" style="text-align:center; width: 150px;">Clear Log</button>
-            </div>
-        </div>
-        <div class="log-panel">
-            <h2 style="display: flex; justify-content: space-between; align-items: center;">
-              <span>QSO Log <span id="qsoCount">(0)</span></span>
-              <span id="qsoLastHour" style="font-size: 0.85em; color: var(--text-secondary);">Last Hour: 0</span>
-            </h2>
-            <div class="log-container" id="qsoContainer">
-              <div class="qso-log-entry qso-log-header">
-                <span>Timestamp</span>
-                <span>DX Call</span>
-                <span>Mode</span>
-                <span>Freq</span>
-                <span>Band</span>
-                <span>Pwr</span>
-              </div>
-            </div>
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-              <button id="clearQsoBtn" class="btn btn-danger" style="text-align: center; width: 150px;">Clear Log</button>
-              <button id="qsoEditorBtn" class="btn btn-secondary" style="text-align: center; width: 150px;">QSO Editor</button>
-            </div>
-        </div>
-  </div>
-
-  <script src="renderer.js"></script>
-</body>
+    <script src="renderer.js"></script>
+  </body>
 </html>

@@ -108,9 +108,9 @@ async function loadSettings() {
   const settings = await window.electron.getSettings();
   listenPortValue.textContent = settings.listenPort;
   window.currentForwards = settings.forwards || [];
-  
+
   if (settings.forwards.length > 0) {
-    forwardsValue.textContent = settings.forwards.map(f => `${f.host}:${f.port}`).join(', ');
+    forwardsValue.textContent = settings.forwards.map((f) => `${f.host}:${f.port}`).join(', ');
   } else {
     forwardsValue.textContent = 'None configured';
   }
@@ -118,7 +118,7 @@ async function loadSettings() {
   // Load and display persisted QSOs
   qsoList = [];
   const qsos = settings.qsos || [];
-  qsos.forEach(qso => {
+  qsos.forEach((qso) => {
     addQsoEntry(qso, 'normal');
   });
   updateQsoCount();
@@ -143,11 +143,13 @@ function toggleTheme() {
   const theme = themeToggle.checked ? 'dark' : 'light';
   applyTheme(theme);
   // Save theme preference
-  window.electron.saveSettings({
-    theme,
-    listenPort: parseInt(listenPortValue.textContent),
-    forwards: window.currentForwards || []
-  }).catch(err => console.error('Error saving theme:', err));
+  window.electron
+    .saveSettings({
+      theme,
+      listenPort: parseInt(listenPortValue.textContent),
+      forwards: window.currentForwards || [],
+    })
+    .catch((err) => console.error('Error saving theme:', err));
 }
 
 async function checkRelayStatus() {
@@ -158,14 +160,13 @@ async function checkRelayStatus() {
 function handleQsoTimeNow() {
   const now = new Date();
   // Use UTC date/time to match ADIF expectations
-  const date = now.toISOString().slice(0,10); // YYYY-MM-DD
-  const time = now.toISOString().slice(11,19); // HH:MM:SS
+  const date = now.toISOString().slice(0, 10); // YYYY-MM-DD
+  const time = now.toISOString().slice(11, 19); // HH:MM:SS
   if (qsoDateOn) qsoDateOn.value = date;
   if (qsoTimeOn) qsoTimeOn.value = time;
 }
 
 async function handleQsoLogContact() {
-
   const dateon = qsoDateOn?.value || '';
   const timeon = qsoTimeOn?.value || '';
   const timestamp = `${dateon}T${timeon}Z`;
@@ -184,12 +185,12 @@ async function handleQsoLogContact() {
     comment: '',
     start: timestamp,
     end: timestamp,
-  }
+  };
 
   // Add POTA fields
   const pota = {
-    qso_date: dateon.replaceAll('-',''),
-    time_on: timeon.replaceAll(':',''),
+    qso_date: dateon.replaceAll('-', ''),
+    time_on: timeon.replaceAll(':', ''),
     my_sig_info: document.getElementById('qso-mysiginfo')?.value || undefined,
     my_state: document.getElementById('qso-mystate')?.value || undefined,
     sig_info: document.getElementById('qso-siginfo')?.value || undefined,
@@ -250,7 +251,7 @@ async function stopRelay() {
 
 function updateStatus(status) {
   relayRunning = status === 'running';
-  
+
   if (relayRunning) {
     statusBadge.textContent = 'Running';
     statusBadge.className = 'status-badge running';
@@ -275,7 +276,7 @@ function openQsoEditor() {
 function addLogEntry(msg, type = 'normal') {
   const entry = document.createElement('div');
   entry.className = `log-entry ${type}`;
-  
+
   const date = new Date();
   const hours = date.getUTCHours().toString().padStart(2, '0');
   const minutes = date.getUTCMinutes().toString().padStart(2, '0');
@@ -304,9 +305,9 @@ function addQsoEntry(qso, type = 'normal') {
     start: isoStart,
     call: qso.call || 'UNKNOWN',
     mode: qso.mode || '',
-    freq: (typeof qso.freq === 'number') ? qso.freq.toFixed(4) : (qso.freq || ''),
+    freq: typeof qso.freq === 'number' ? qso.freq.toFixed(4) : qso.freq || '',
     band: qso.band || '',
-    tx_pwr: qso.tx_pwr || ''
+    tx_pwr: qso.tx_pwr || '',
   };
 
   // Make the start smaller for display (MM-DD @ HH:MM)
@@ -314,7 +315,7 @@ function addQsoEntry(qso, type = 'normal') {
   if (startParts.length >= 2) {
     const datePart = startParts[0];
     const timePart = startParts[1];
-    display.start = `${datePart.substr(5,5)} @ ${timePart.substr(0,5)}`;
+    display.start = `${datePart.substr(5, 5)} @ ${timePart.substr(0, 5)}`;
   }
 
   // Ensure columns are rendered in order
@@ -336,28 +337,38 @@ function addQsoEntry(qso, type = 'normal') {
   // Duplicate detection: match on call, band, and start date (YYYY-MM-DD)
   const incomingCall = (qso.call || '').toUpperCase();
   const incomingBand = qso.band || '';
-  const incomingDate = (isoStart.split('T')[0]) || '';
+  const incomingDate = isoStart.split('T')[0] || '';
   const incomingMode = (qso.mode || '').toUpperCase();
 
-  const isDupe = qsoList.some(existing => {
+  const isDupe = qsoList.some((existing) => {
     const exCall = (existing.call || '').toUpperCase();
     const exBand = existing.band || '';
     const exIso = existing.start || existing.end || '';
     const exDate = exIso.split('T')[0] || '';
     const exMode = (existing.mode || '').toUpperCase();
-    return exCall === incomingCall && exBand === incomingBand && exDate === incomingDate && exMode === incomingMode;
+    return (
+      exCall === incomingCall &&
+      exBand === incomingBand &&
+      exDate === incomingDate &&
+      exMode === incomingMode
+    );
   });
 
   let dupeMatch = null;
   if (isDupe) {
     // find the matching existing entry to show details in tooltip
-    dupeMatch = qsoList.find(existing => {
+    dupeMatch = qsoList.find((existing) => {
       const exCall = (existing.call || '').toUpperCase();
       const exBand = existing.band || '';
       const exIso = existing.start || existing.end || '';
       const exDate = exIso.split('T')[0] || '';
       const exMode = (existing.mode || '').toUpperCase();
-      return exCall === incomingCall && exBand === incomingBand && exDate === incomingDate && exMode === incomingMode;
+      return (
+        exCall === incomingCall &&
+        exBand === incomingBand &&
+        exDate === incomingDate &&
+        exMode === incomingMode
+      );
     });
 
     const wrap = document.createElement('span');
@@ -370,7 +381,7 @@ function addQsoEntry(qso, type = 'normal') {
     if (dupeMatch) {
       const exIso = dupeMatch.start || dupeMatch.end || '';
       const exDate = exIso.split('T')[0] || '';
-      const exTime = (exIso.split('T')[1] || '').substr(0,8) || '';
+      const exTime = (exIso.split('T')[1] || '').substr(0, 8) || '';
       const exMode = dupeMatch.mode || '';
       // Custom tooltip element with details including time
       const tooltip = document.createElement('span');
@@ -412,7 +423,7 @@ function applyQsoRowStripes() {
   const rows = Array.from(qsoContainer.querySelectorAll('.qso-log-entry:not(.qso-log-header)'));
   rows.forEach((row, idx) => {
     row.classList.remove('qso-row-odd', 'qso-row-even');
-    if ((idx % 2) === 0) {
+    if (idx % 2 === 0) {
       row.classList.add('qso-row-even');
     } else {
       row.classList.add('qso-row-odd');
@@ -434,7 +445,7 @@ async function refreshQsoLog() {
   // Reload QSOs from settings
   const settings = await window.electron.getSettings();
   const qsos = settings.qsos || [];
-  qsos.forEach(qso => {
+  qsos.forEach((qso) => {
     addQsoEntry(qso, 'normal');
   });
   updateQsoCount();
@@ -442,20 +453,19 @@ async function refreshQsoLog() {
 }
 
 function updateStatusIndicators(statusData) {
-  
   deCall.textContent = statusData.deCall;
   deGrid.textContent = statusData.deGrid;
 
   if (statusData.frequency) {
     frequencyValue.textContent = `${statusData.frequency} MHz`;
-    qsoFrequency.value = statusData.frequency; 
+    qsoFrequency.value = statusData.frequency;
     qsoBand.value = freqToBand(statusData.frequency);
   }
-  
+
   if (statusData.mode) {
     modeValue.textContent = statusData.mode;
   }
-  
+
   if (statusData.txEnabled !== undefined) {
     if (statusData.txEnabled) {
       txEnabledValue.textContent = 'Yes';
@@ -467,7 +477,7 @@ function updateStatusIndicators(statusData) {
       txEnabledValue.classList.add('indicator-off');
     }
   }
-  
+
   if (statusData.transmitting !== undefined) {
     if (statusData.transmitting) {
       transmittingValue.textContent = 'Yes';
@@ -488,41 +498,41 @@ function updateStatusIndicators(statusData) {
 function freqToBand(freq) {
   let band;
   switch (true) {
-    case (freq >= 50.0 && freq <= 54.0):
-        band = '6m';
-        break;
-    case (freq >= 28.0 && freq <= 29.7):
-        band = '10m';
-        break;
-    case (freq >= 24.890 && freq <= 24.990):
-        band = '12m';
-        break;
-    case (freq >= 21.0 && freq <= 21.450):
-        band = '15m';
-        break;
-    case (freq >= 18.068 && freq <= 18.168):
-        band = '17m';
-        break;
-    case (freq >= 14.0 && freq <= 14.350):
-        band = '20m';
-        break;
-    case (freq >= 10.1 && freq <= 10.150):
-        band = '30m';
-        break;
-    case (freq >= 7.0 && freq <= 7.3):
-        band = '40m';
-        break;
-    case (freq >= 5.3 && freq <= 5.5):
-        band = '60m';
-        break;
-    case (freq >= 3.5 && freq <= 4.0):
-        band = '80m';
-        break;
-    case (freq >= 1.8 && freq <= 2.0):
-        band = '160m';
-        break;
+    case freq >= 50.0 && freq <= 54.0:
+      band = '6m';
+      break;
+    case freq >= 28.0 && freq <= 29.7:
+      band = '10m';
+      break;
+    case freq >= 24.89 && freq <= 24.99:
+      band = '12m';
+      break;
+    case freq >= 21.0 && freq <= 21.45:
+      band = '15m';
+      break;
+    case freq >= 18.068 && freq <= 18.168:
+      band = '17m';
+      break;
+    case freq >= 14.0 && freq <= 14.35:
+      band = '20m';
+      break;
+    case freq >= 10.1 && freq <= 10.15:
+      band = '30m';
+      break;
+    case freq >= 7.0 && freq <= 7.3:
+      band = '40m';
+      break;
+    case freq >= 5.3 && freq <= 5.5:
+      band = '60m';
+      break;
+    case freq >= 3.5 && freq <= 4.0:
+      band = '80m';
+      break;
+    case freq >= 1.8 && freq <= 2.0:
+      band = '160m';
+      break;
     default:
-        band = "OOB";
+      band = 'OOB';
   }
   return band;
 }
@@ -548,7 +558,7 @@ function clearQsoLog() {
     <span>Pwr</span>
   `;
   qsoContainer.appendChild(header);
-  
+
   // Clear persistent storage
   window.electron.clearQsos();
   qsoList = [];
@@ -564,14 +574,14 @@ function updateQsoCount() {
 function updateQsoLastHourCount() {
   const now = new Date();
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-  
-  const lastHourCount = qsoList.filter(qso => {
+
+  const lastHourCount = qsoList.filter((qso) => {
     const startTimeStr = qso.start || qso.end;
     if (!startTimeStr) return false;
     const qsoTime = new Date(startTimeStr);
     return qsoTime >= oneHourAgo && qsoTime <= now;
   }).length;
-  
+
   if (qsoLastHour) {
     qsoLastHour.textContent = `Last Hour: ${lastHourCount}`;
   }

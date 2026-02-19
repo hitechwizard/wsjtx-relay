@@ -1,34 +1,34 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QSO Editor</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <div class="qso-editor-wrapper">
-    <div class="qso-editor-header">
-      <h1>QSO Editor</h1>
-    </div>
-
-    <div class="qso-editor-content">
-      <div id="qsoListContainer" class="qso-editor-list"></div>
-    </div>
-
-    <div class="qso-editor-footer">
-      <div style="display: flex; gap: 10px;">
-        <button id="importQsosBtn" class="btn btn-secondary">Import ADIF</button>
-        <button id="exportQsosBtn" class="btn btn-secondary">Export ADIF</button>
-        <button id="resendAllQsosBtn" class="btn btn-secondary">Resend All</button>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QSO Editor</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="qso-editor-wrapper">
+      <div class="qso-editor-header">
+        <h1>QSO Editor</h1>
       </div>
-      <div style="display: flex; gap: 10px;">
-        <button id="saveQsoChanges" class="btn btn-primary">Save All Changes</button>
-        <button id="cancelQsoChanges" class="btn btn-secondary">Close</button>
+
+      <div class="qso-editor-content">
+        <div id="qsoListContainer" class="qso-editor-list"></div>
+      </div>
+
+      <div class="qso-editor-footer">
+        <div style="display: flex; gap: 10px">
+          <button id="importQsosBtn" class="btn btn-secondary">Import ADIF</button>
+          <button id="exportQsosBtn" class="btn btn-secondary">Export ADIF</button>
+          <button id="resendAllQsosBtn" class="btn btn-secondary">Resend All</button>
+        </div>
+        <div style="display: flex; gap: 10px">
+          <button id="saveQsoChanges" class="btn btn-primary">Save All Changes</button>
+          <button id="cancelQsoChanges" class="btn btn-secondary">Close</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <script src="qso-editor.js"></script>
-</body>
+    <script src="qso-editor.js"></script>
+  </body>
 </html>

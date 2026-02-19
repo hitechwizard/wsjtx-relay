@@ -1,5 +1,5 @@
-const datetime = require("./datetime");
-const fields = require("./fields");
+const datetime = require('./datetime');
+const fields = require('./fields');
 
 const PARSE_NIL = 0;
 const PARSE_NAME = 1;
@@ -44,13 +44,13 @@ class AdiReader {
         if (value) {
           contact[name] = value;
         }
-      } else if (name === "eor") {
+      } else if (name === 'eor') {
         break;
-      } else if (name === "eoh") {
+      } else if (name === 'eoh') {
         contact = {};
         continue;
       } else {
-        console.log("adif: unknown adif field", name);
+        console.log('adif: unknown adif field', name);
         continue;
       }
     }
@@ -62,24 +62,24 @@ class AdiReader {
 
   readField() {
     let state = PARSE_NIL;
-    let fieldName = "";
-    let fieldLength = "";
-    let fieldType = "";
-    let fieldValue = "";
+    let fieldName = '';
+    let fieldLength = '';
+    let fieldType = '';
+    let fieldValue = '';
 
     for (; this.pos < this.data.length; this.pos++) {
       const c = this.data[this.pos];
 
       switch (state) {
         case PARSE_NIL:
-          if (c === "<") state = PARSE_NAME;
+          if (c === '<') state = PARSE_NAME;
           break;
 
         case PARSE_NAME:
-          if (c === ":") {
+          if (c === ':') {
             fieldName = fieldName.toLowerCase();
             state = PARSE_LENGTH;
-          } else if (c === ">") {
+          } else if (c === '>') {
             fieldName = fieldName.toLowerCase();
             return [fieldName, null];
           } else {
@@ -88,10 +88,10 @@ class AdiReader {
           break;
 
         case PARSE_LENGTH:
-          if (c === ":") {
+          if (c === ':') {
             fieldLength = parseInt(fieldLength, 10);
             state = PARSE_TYPE;
-          } else if (c === ">") {
+          } else if (c === '>') {
             fieldLength = parseInt(fieldLength, 10);
             state = PARSE_VALUE;
           } else {
@@ -100,7 +100,7 @@ class AdiReader {
           break;
 
         case PARSE_TYPE:
-          if (c === ">") state = PARSE_VALUE;
+          if (c === '>') state = PARSE_VALUE;
           else fieldType += c;
           break;
 
@@ -118,6 +118,7 @@ class AdiReader {
       }
     }
 
+    console.log(fieldType);
     return null;
   }
 }

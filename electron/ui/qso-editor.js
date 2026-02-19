@@ -5,23 +5,43 @@ const importQsosBtn = document.getElementById('importQsosBtn');
 const exportQsosBtn = document.getElementById('exportQsosBtn');
 const resendAllQsosBtn = document.getElementById('resendAllQsosBtn');
 
+/* Will use this in the future for data validation
 const wsjtxFields = [
-    {
-        'band': { label: 'Band', type: 'enum', values: [ '160M', '80M', '40M', '30M', '20M', '17M', '15M', '12M', '10M', '6M', '2M', '70CM', '23CM', ] },
-        'call': { label: 'DX Call', type: 'string' },
-        'comment': { label: 'Comment', type: 'string' },
-        'freq': { label: 'Frequency (Mhz)', type: 'number' },
-        'gridsquare': { label: 'Gridsquare', type: 'string', regexp: '^[A-Z]{2}[0-9]{2}(?:[A-Z]{2})?$'},
-        'mode': { label: 'Mode', type: 'enum', values: [ 'CW', 'SSB', 'FT8', 'FT4' ]},
-        'operator': { label: 'Operator', type: 'string' },
-        'rst_sent': { label: 'RST Sent', type: 'string' },
-        'rst_recvd': { label: 'RST Rcvd', type: 'string' },
-        'station_callsign': { label: 'DE Call', type: 'string' },
-        'tx_pwr': { label: 'TX Pwr', type: 'number' },
-        'start': { label: 'Start', type: 'string' },
-        'end': { label: 'End', type: 'string' },
-    }
-]
+  {
+    band: {
+      label: 'Band',
+      type: 'enum',
+      values: [
+        '160M',
+        '80M',
+        '40M',
+        '30M',
+        '20M',
+        '17M',
+        '15M',
+        '12M',
+        '10M',
+        '6M',
+        '2M',
+        '70CM',
+        '23CM',
+      ],
+    },
+    call: { label: 'DX Call', type: 'string' },
+    comment: { label: 'Comment', type: 'string' },
+    freq: { label: 'Frequency (Mhz)', type: 'number' },
+    gridsquare: { label: 'Gridsquare', type: 'string', regexp: '^[A-Z]{2}[0-9]{2}(?:[A-Z]{2})?$' },
+    mode: { label: 'Mode', type: 'enum', values: ['CW', 'SSB', 'FT8', 'FT4'] },
+    operator: { label: 'Operator', type: 'string' },
+    rst_sent: { label: 'RST Sent', type: 'string' },
+    rst_recvd: { label: 'RST Rcvd', type: 'string' },
+    station_callsign: { label: 'DE Call', type: 'string' },
+    tx_pwr: { label: 'TX Pwr', type: 'number' },
+    start: { label: 'Start', type: 'string' },
+    end: { label: 'End', type: 'string' },
+  },
+];
+*/
 
 let qsos = [];
 let changedQsos = new Set();
@@ -80,7 +100,8 @@ function renderQsoList() {
   qsoListContainer.innerHTML = '';
 
   if (qsos.length === 0) {
-    qsoListContainer.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-secondary); text-align: center; padding: 20px;">No QSO records found</p>';
+    qsoListContainer.innerHTML =
+      '<p style="grid-column: 1/-1; color: var(--text-secondary); text-align: center; padding: 20px;">No QSO records found</p>';
     return;
   }
 
@@ -184,7 +205,7 @@ function handleFieldChange(e) {
   qsos[index][field] = e.target.value;
   changedQsos.add(index);
   hasUnsavedChanges = true;
-  
+
   // Highlight changed record
   const card = e.target.closest('.qso-editor-card');
   if (card) {
@@ -195,13 +216,13 @@ function handleFieldChange(e) {
 function handleDeleteQso(e) {
   const index = parseInt(e.target.dataset.index);
   const qso = qsos[index];
-  
+
   if (confirm(`Delete QSO with ${qso.call || '—'} on ${qso.band || '—'}?`)) {
     qsos.splice(index, 1);
     changedQsos.delete(index);
     hasUnsavedChanges = true;
     renderQsoList();
-    
+
     // After deletion, we need to update indices in changedQsos
     const updatedChangedQsos = new Set();
     changedQsos.forEach((idx) => {
@@ -218,7 +239,7 @@ function handleDeleteQso(e) {
 async function handleResendQso(e) {
   const index = parseInt(e.target.dataset.index);
   const qso = qsos[index];
-  
+
   try {
     const result = await window.electron.resendQso(qso);
     if (result.success) {
@@ -297,8 +318,10 @@ async function handleImportQsos() {
     const result = await window.electron.importQsosAdif();
     if (result.success) {
       const importedCount = result.qsos?.length || 0;
-      const shouldMerge = confirm(`Import ${importedCount} QSOs from file? They will be added to your current list.`);
-      
+      const shouldMerge = confirm(
+        `Import ${importedCount} QSOs from file? They will be added to your current list.`,
+      );
+
       if (shouldMerge) {
         // Merge imported QSOs with existing ones
         const mergedQsos = [...qsos, ...result.qsos];

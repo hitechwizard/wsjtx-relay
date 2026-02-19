@@ -1,26 +1,38 @@
 {
-  "name": "wsjtx-relay",
+  "name": "WSJT-X Relay",
   "version": "1.0.0",
-  "description": "WSJT-X UDP Relay Application",
+  "description": "WSJT-X Relay runs as a middle-man between WSJT-X and applications that consume WSJT-X UDP packets. It also has a fairly extensive QSO Editor allowing the user to import/export ADIF files. This simplifies operating during a POTA Activation and creating logs for upload.",
   "main": "src/main.js",
-  "homepage": "./",
+  "author": "Jesse Jarrell - W1BBT",
+  "homepage": "https://github.com/hitechwizard/wsjtx-relay",
   "preload": "src/preload.js",
   "scripts": {
     "start": "electron .",
-    "dev": "electron . --dev",
-    "build-icon": "node build-icon-jimp.js"
+    "format": "prettier --write .",
+    "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
+    "dev": "electron --no-sandbox .",
+    "postinstall": "electron-builder install-app-deps",
+    "build:unpack": "electron-builder --dir",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:arm": "electron-builder --armv7l --arm64",
+    "build:arm32": "electron-builder --armv7l",
+    "build:arm64": "electron-builder --arm64",
+    "build:all": "electron-builder --win --mac --linux --armv7l --arm64"
   },
   "dependencies": {
     "dateformat": "~1.0.11",
     "electron-store": "^8.1.0"
   },
   "devDependencies": {
+    "@electron-toolkit/eslint-config": "^2.1.0",
     "electron": "latest",
     "electron-builder": "^26.7.0",
     "jimp": "^1.6.0"
   },
   "build": {
-    "appId": "com.wsjtxrelay.app",
+    "appId": "net.hitechwizard.wsjtxrelay",
     "productName": "WSJT-X Relay",
     "icon": "assets/icon.png",
     "files": [

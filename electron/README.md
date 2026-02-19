@@ -20,11 +20,13 @@ A modern desktop application for relaying WSJT-X UDP packets between multiple en
 ### Setup
 
 1. Navigate to the electron directory:
+
 ```bash
 cd electron
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
@@ -76,6 +78,7 @@ npx electron-builder
 ## Configuration Persistence
 
 Settings are automatically saved to:
+
 - **macOS**: `~/Library/Application Support/wsjtx-relay/config.json`
 - **Windows**: `%APPDATA%\wsjtx-relay\config.json`
 - **Linux**: `~/.config/wsjtx-relay/config.json`
@@ -113,16 +116,20 @@ forwards            One or more forward endpoints (host:port format)
 ## Troubleshooting
 
 ### Port Already in Use
+
 If you get an error that the relay port is in use:
+
 1. Change the listen port in Settings
 2. Check what other processes are using the port with:
    - **macOS/Linux**: `lsof -i :PORT_NUMBER`
    - **Windows**: `netstat -ano | findstr :PORT_NUMBER`
 
 ### Settings Not Saving
+
 Check that the app has write permissions to its config directory.
 
 ### Relay Crashes on Startup
+
 - Verify all forward endpoints are in valid IPv4:port format
 - Ensure at least one forward endpoint is configured
 
@@ -156,13 +163,13 @@ electron/
 
 The Electron app is a complete port of the original Python application with several improvements:
 
-| Feature | Python | Electron |
-|---------|--------|----------|
-| Configuration | Command line args | Settings GUI |
-| Persistence | None | Automatic |
-| Logging | Console output | In-app log panel |
-| Control | Start at launch | Start/stop controls |
-| Monitoring | Terminal | Real-time UI dashboard |
+| Feature       | Python            | Electron               |
+| ------------- | ----------------- | ---------------------- |
+| Configuration | Command line args | Settings GUI           |
+| Persistence   | None              | Automatic              |
+| Logging       | Console output    | In-app log panel       |
+| Control       | Start at launch   | Start/stop controls    |
+| Monitoring    | Terminal          | Real-time UI dashboard |
 
 ## Security Notes
 

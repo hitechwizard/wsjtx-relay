@@ -34,7 +34,10 @@ class WSJTXRelay extends EventEmitter {
     });
 
     this.socket.bind(this.listenPort, this.listenAddress, () => {
-      this.emit('log', `Listening on ${this.listenAddress}:${this.listenPort}, forwarding to: ${this.forwards.map(f => `${f.host}:${f.port}`).join(', ')}`);
+      this.emit(
+        'log',
+        `Listening on ${this.listenAddress}:${this.listenPort}, forwarding to: ${this.forwards.map((f) => `${f.host}:${f.port}`).join(', ')}`,
+      );
       this.emit('status', 'running');
     });
 
@@ -89,7 +92,9 @@ class WSJTXRelay extends EventEmitter {
     const srcKey = `${rinfo.address}|${rinfo.port}`;
 
     // Check if this is from a forward endpoint
-    const fromForward = this.forwards.find(f => f.host === rinfo.address && f.port === rinfo.port);
+    const fromForward = this.forwards.find(
+      (f) => f.host === rinfo.address && f.port === rinfo.port,
+    );
 
     if (fromForward) {
       // Packet from forward -> send back to mapped clients
@@ -111,13 +116,12 @@ class WSJTXRelay extends EventEmitter {
       } else {
         this.emit('log', `${srcAddr} -> <no-mapping> (dropped) (${data.length} bytes)`);
       }
-
     } else {
       // Packet from client -> forward to all forwards
       let logMsg = '';
       if (rinfo.address == undefined) {
         logMsg += 'Manual QSO -> ';
-      }else{
+      } else {
         logMsg += `${srcAddr} -> `;
       }
 
@@ -138,7 +142,7 @@ class WSJTXRelay extends EventEmitter {
         }
       });
       logMsg += this.decodePayload(data);
-      this.emit('log', logMsg);  
+      this.emit('log', logMsg);
     }
   }
 
@@ -154,14 +158,14 @@ class WSJTXRelay extends EventEmitter {
         }
       });
 
-      clientsToDelete.forEach(ca => clients.delete(ca));
+      clientsToDelete.forEach((ca) => clients.delete(ca));
 
       if (clients.size === 0) {
         forwardsToDelete.push(fwdAddr);
       }
     });
 
-    forwardsToDelete.forEach(fa => this.mapping.delete(fa));
+    forwardsToDelete.forEach((fa) => this.mapping.delete(fa));
   }
 
   decodePayload(data) {
@@ -172,19 +176,19 @@ class WSJTXRelay extends EventEmitter {
         // Add type-specific information
         message = parsed.typeText;
         if (parsed.type === 1) {
-            parsed.frequency = (Number(parsed.dialFrequency)/1000000).toFixed(4);
-            
-            message += ` Freq: ${parsed.frequency} MHz`;
-            message += ` Mode: ${parsed.mode}`;
-            if (parsed.txEnabled) {
-                message += ` TX Enabled`;
-            }
-            if (parsed.transmitting) {
-                message += ` Transmitting ${parsed.txMessage}`;
-            }
-            
-            // Emit status update for UI indicators
-            this.emit('status-update', parsed);
+          parsed.frequency = (Number(parsed.dialFrequency) / 1000000).toFixed(4);
+
+          message += ` Freq: ${parsed.frequency} MHz`;
+          message += ` Mode: ${parsed.mode}`;
+          if (parsed.txEnabled) {
+            message += ` TX Enabled`;
+          }
+          if (parsed.transmitting) {
+            message += ` Transmitting ${parsed.txMessage}`;
+          }
+
+          // Emit status update for UI indicators
+          this.emit('status-update', parsed);
         } else if (parsed.type === 5) {
           // QSO Logged
           message += `${this.mode} ${this.dxCall} ${this.dialFrequency} ${this.dateTimeOff}`;
@@ -195,32 +199,31 @@ class WSJTXRelay extends EventEmitter {
           });
         }
         message += ` ${parsed.message || ''}`;
-      }else{
+      } else {
         message = `Unknown message type: ${parsed.type}`;
       }
     } catch (err) {
       this.emit('error', err);
     }
-    return message
+    return message;
   }
 
   createAdifPacket(qso) {
     // This is where we create a WSJT-X Type 12 Packet and send it to all the forwards
-    const adiWriter = new AdiWriter('WSJT-X Relay', '1.0.0')
+    const adiWriter = new AdiWriter('WSJT-X Relay', '1.0.0');
     adiWriter.writeContact(qso);
     const adif = adiWriter.getData();
-    const magicBytes = Buffer.from([0xAD, 0xBC, 0xCB, 0xDA]);
+    const magicBytes = Buffer.from([0xad, 0xbc, 0xcb, 0xda]);
     const version = Buffer.from([0x00, 0x00, 0x00, 0x02]);
-    const type= Buffer.from([0x00, 0x00, 0x00, 0x0C]); // 12 -> ADIF
-    const id = Buffer.concat([Buffer.from([ 0x00, 0x00, 0x00, 0x06]), Buffer.from('WSJT-X')]);
+    const type = Buffer.from([0x00, 0x00, 0x00, 0x0c]); // 12 -> ADIF
+    const id = Buffer.concat([Buffer.from([0x00, 0x00, 0x00, 0x06]), Buffer.from('WSJT-X')]);
     const adif_length = Buffer.alloc(4);
     adif_length.writeUint32BE(adif.length);
     const adif_buffer = Buffer.from(adif);
     const packet = Buffer.concat([magicBytes, version, type, id, adif_length, adif_buffer]);
     // packet is ready to go.... SEND IT!
     return packet;
-  };
-
+  }
 
   resendQsos(qsos) {
     if (!Array.isArray(qsos)) {
@@ -232,9 +235,9 @@ class WSJTXRelay extends EventEmitter {
       return;
     }
 
-    qsos.forEach(qso => {
+    qsos.forEach((qso) => {
       const qsoInfo = `${qso.call || 'UNKNOWN'} ${qso.band || '?'} ${qso.mode || '?'} ${qso.start || 'N/A'}`;
-      
+
       // Convert QSO to JSON and send as UDP packet to each forwarder
       const buffer = this.createAdifPacket(qso);
 
