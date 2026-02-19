@@ -241,9 +241,9 @@ class WSJTXRelay extends EventEmitter {
       this.forwards.forEach((fwd) => {
         this.socket.send(buffer, fwd.port, fwd.host, (err) => {
           if (err) {
-            this.emit('error', `Error resending QSO to ${fwd.host}:${fwd.port}: ${err.message}`);
+            this.emit('error', `Error sending QSO to ${fwd.host}:${fwd.port}: ${err.message}`);
           } else {
-            this.emit('log', `Resending -> ${fwd.host}:${fwd.port} ${qsoInfo}`);
+            this.emit('log', `Sending -> ${fwd.host}:${fwd.port} ${qsoInfo}`);
           }
         });
       });

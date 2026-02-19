@@ -62,6 +62,13 @@ async function loadQsos() {
   try {
     qsos = await window.electron.getQsos();
     renderQsoList();
+    // Scroll to bottom of QSO list after rendering
+    setTimeout(() => {
+      const contentDiv = document.querySelector('.qso-editor-content');
+      if (contentDiv) {
+        contentDiv.scrollTop = contentDiv.scrollHeight;
+      }
+    }, 0);
   } catch (error) {
     console.error('Failed to load QSOs:', error);
     addErrorMessage('Failed to load QSO data');

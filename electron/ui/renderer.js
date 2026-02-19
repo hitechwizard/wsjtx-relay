@@ -436,46 +436,8 @@ function updateStatusIndicators(statusData) {
 
   if (statusData.frequency) {
     frequencyValue.textContent = `${statusData.frequency} MHz`;
-    qsoFrequency.value = statusData.frequency;
-    let band;
-    switch (true) {
-        case (statusData.frequency >= 50.0 && statusData.frequency <= 54.0):
-            band = '6m';
-            break;
-        case (statusData.frequency >= 28.0 && statusData.frequency <= 29.7):
-            band = '10m';
-            break;
-        case (statusData.frequency >= 24.890 && statusData.frequency <= 24.990):
-            band = '12m';
-            break;
-        case (statusData.frequency >= 21.0 && statusData.frequency <= 21.450):
-            band = '15m';
-            break;
-        case (statusData.frequency >= 18.068 && statusData.frequency <= 18.168):
-            band = '17m';
-            break;
-        case (statusData.frequency >= 14.0 && statusData.frequency <= 14.350):
-            band = '20m';
-            break;
-        case (statusData.frequency >= 10.1 && statusData.frequency <= 10.150):
-            band = '30m';
-            break;
-        case (statusData.frequency >= 7.0 && statusData.frequency <= 7.3):
-            band = '40m';
-            break;
-        case (statusData.frequency >= 5.3 && statusData.frequency <= 5.5):
-            band = '60m';
-            break;
-        case (statusData.frequency >= 3.5 && statusData.frequency <= 4.0):
-            band = '80m';
-            break;
-        case (statusData.frequency >= 1.8 && statusData.frequency <= 2.0):
-            band = '160m';
-            break;
-        default:
-            band = "OOB";
-    }
-    qsoBand.value = band;
+    qsoFrequency.value = statusData.frequency; 
+    qsoBand.value = freqToBand(statusData.frequency);
   }
   
   if (statusData.mode) {
@@ -510,6 +472,49 @@ function updateStatusIndicators(statusData) {
     transmitMessage.textContent = statusData.txMessage;
   }
 }
+
+function freqToBand(freq) {
+  let band;
+  switch (true) {
+    case (freq >= 50.0 && freq <= 54.0):
+        band = '6m';
+        break;
+    case (freq >= 28.0 && freq <= 29.7):
+        band = '10m';
+        break;
+    case (freq >= 24.890 && freq <= 24.990):
+        band = '12m';
+        break;
+    case (freq >= 21.0 && freq <= 21.450):
+        band = '15m';
+        break;
+    case (freq >= 18.068 && freq <= 18.168):
+        band = '17m';
+        break;
+    case (freq >= 14.0 && freq <= 14.350):
+        band = '20m';
+        break;
+    case (freq >= 10.1 && freq <= 10.150):
+        band = '30m';
+        break;
+    case (freq >= 7.0 && freq <= 7.3):
+        band = '40m';
+        break;
+    case (freq >= 5.3 && freq <= 5.5):
+        band = '60m';
+        break;
+    case (freq >= 3.5 && freq <= 4.0):
+        band = '80m';
+        break;
+    case (freq >= 1.8 && freq <= 2.0):
+        band = '160m';
+        break;
+    default:
+        band = "OOB";
+  }
+  return band;
+}
+
 function clearLog() {
   logContainer.innerHTML = '';
 }
