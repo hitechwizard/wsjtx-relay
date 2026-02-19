@@ -3,7 +3,7 @@ const stopBtn = document.getElementById('stopBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 const clearLogBtn = document.getElementById('clearLogBtn');
 const clearQsoBtn = document.getElementById('clearQsoBtn');
-const editQsoBtn = document.getElementById('editQsoBtn');
+const qsoEditorBtn = document.getElementById('qsoEditorBtn');
 const statusBadge = document.getElementById('statusBadge');
 const logContainer = document.getElementById('logContainer');
 const qsoContainer = document.getElementById('qsoContainer');
@@ -43,7 +43,7 @@ function setupEventListeners() {
   settingsBtn.addEventListener('click', openSettings);
   clearLogBtn.addEventListener('click', clearLog);
   clearQsoBtn.addEventListener('click', clearQsoLog);
-  editQsoBtn.addEventListener('click', openEditQso);
+  qsoEditorBtn.addEventListener('click', openQsoEditor);
   if (qsoLogContactBtn) qsoLogContactBtn.addEventListener('click', handleQsoLogContact);
   if (qsoTimeNowBtn) qsoTimeNowBtn.addEventListener('click', handleQsoTimeNow);
   themeToggle.addEventListener('change', toggleTheme);
@@ -234,8 +234,8 @@ function openSettings() {
   window.electron.openSettings();
 }
 
-function openEditQso() {
-  window.electron.openEditQso();
+function openQsoEditor() {
+  window.electron.openQsoEditor();
 }
 
 function addLogEntry(msg, type = 'normal') {

@@ -27,9 +27,9 @@ contextBridge.exposeInMainWorld('electron', {
   
   // Window control API
   openSettings: () => ipcRenderer.send('open-settings'),
-  openEditQso: () => ipcRenderer.send('open-edit-qso'),
+  openQsoEditor: () => ipcRenderer.send('open-qso-editor'),
   closeSettings: () => ipcRenderer.send('close-settings'),
-  closeEditQso: () => ipcRenderer.send('close-edit-qso'),
+  closeQsoEditor: () => ipcRenderer.send('close-qso-editor'),
   
   // Events from relay
   onRelayLog: (callback) => ipcRenderer.on('relay-log', (event, msg) => callback(msg)),

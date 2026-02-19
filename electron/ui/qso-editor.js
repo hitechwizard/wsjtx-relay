@@ -54,11 +54,11 @@ function renderQsoList() {
 
   qsos.forEach((qso, index) => {
     const itemDiv = document.createElement('div');
-    itemDiv.className = 'qso-edit-card';
+    itemDiv.className = 'qso-editor-card';
     itemDiv.dataset.index = index;
 
     const headerDiv = document.createElement('div');
-    headerDiv.className = 'qso-card-header';
+    headerDiv.className = 'qso-editor-card-header';
     headerDiv.innerHTML = `
       <div>
         <strong>${qso.call || '—'}</strong> on <strong>${qso.band || '—'}</strong>
@@ -68,53 +68,53 @@ function renderQsoList() {
     `;
 
     const formDiv = document.createElement('div');
-    formDiv.className = 'qso-edit-fields';
+    formDiv.className = 'qso-editor-fields';
     formDiv.innerHTML = `
-      <div class="edit-field">
+      <div class="editor-field">
         <label>Call</label>
         <input type="text" class="qso-field" data-field="call" data-index="${index}" value="${qso.call || ''}" />
       </div>
-      <div class="edit-field">
+      <div class="editor-field">
         <label>Band</label>
         <input type="text" class="qso-field" data-field="band" data-index="${index}" value="${qso.band || ''}" />
       </div>
-      <div class="edit-field">
+      <div class="editor-field">
         <label>Mode</label>
         <input type="text" class="qso-field" data-field="mode" data-index="${index}" value="${qso.mode || ''}" />
       </div>
-      <div class="edit-field">
+      <div class="editor-field">
         <label>Frequency (Hz)</label>
         <input type="number" class="qso-field" data-field="freq" data-index="${index}" value="${qso.freq || ''}" />
       </div>
-      <div class="edit-field">
+      <div class="editor-field">
         <label>Start Time</label>
         <input type="text" class="qso-field" data-field="start" data-index="${index}" value="${qso.start || ''}" />
       </div>
-      <div class="edit-field">
+      <div class="editor-field">
         <label>End Time</label>
         <input type="text" class="qso-field" data-field="end" data-index="${index}" value="${qso.end || ''}" />
       </div>
-      <div class="edit-field">
+      <div class="editor-field">
         <label>RX RST</label>
         <input type="number" class="qso-field" data-field="rxrst" data-index="${index}" value="${qso.rxrst || ''}" />
       </div>
-      <div class="edit-field">
+      <div class="editor-field">
         <label>TX RST</label>
         <input type="number" class="qso-field" data-field="txrst" data-index="${index}" value="${qso.txrst || ''}" />
       </div>
-      <div class="edit-field">
+      <div class="editor-field">
         <label>TX Power (W)</label>
         <input type="number" class="qso-field" data-field="txpwr" data-index="${index}" value="${qso.txpwr || ''}" />
       </div>
-      <div class="edit-field">
+      <div class="editor-field">
         <label>My Sig</label>
         <input type="text" class="qso-field" data-field="mysig" data-index="${index}" value="${qso.mysig || ''}" />
       </div>
-      <div class="edit-field">
+      <div class="editor-field">
         <label>My Sig Info</label>
         <input type="text" class="qso-field" data-field="mysiginfo" data-index="${index}" value="${qso.mysiginfo || ''}" />
       </div>
-      <div class="edit-field">
+      <div class="editor-field">
         <label>Sig Info</label>
         <input type="text" class="qso-field" data-field="siginfo" data-index="${index}" value="${qso.siginfo || ''}" />
       </div>
@@ -142,7 +142,7 @@ function handleFieldChange(e) {
   changedQsos.add(index);
   
   // Highlight changed record
-  const card = e.target.closest('.qso-edit-card');
+  const card = e.target.closest('.qso-editor-card');
   if (card) {
     card.classList.add('changed');
   }
@@ -177,7 +177,7 @@ async function handleSaveChanges() {
     window.electron.notifyQsoDataChanged();
     changedQsos.clear();
     // Remove highlight from changed records
-    qsoListContainer.querySelectorAll('.qso-edit-card').forEach((card) => {
+    qsoListContainer.querySelectorAll('.qso-editor-card').forEach((card) => {
       card.classList.remove('changed');
     });
     addSuccessMessage('All changes saved successfully');
@@ -215,5 +215,5 @@ function addErrorMessage(msg) {
 }
 
 function closeWindow() {
-  window.electron.closeEditQso();
+  window.electron.closeQsoEditor();
 }

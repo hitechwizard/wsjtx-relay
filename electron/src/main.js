@@ -8,7 +8,7 @@ const { WsjtxUdpParser } = require('./WsjtxUdpParser');
 
 let mainWindow;
 let settingsWindow;
-let editQsoWindow;
+let qsoEditorWindow;
 let relay;
 
 const store = new Store({
@@ -94,13 +94,13 @@ function createSettingsWindow() {
   });
 }
 
-function createEditQsoWindow() {
-  if (editQsoWindow) {
-    editQsoWindow.focus();
+function createQsoEditorWindow() {
+  if (qsoEditorWindow) {
+    qsoEditorWindow.focus();
     return;
   }
 
-  editQsoWindow = new BrowserWindow({
+  qsoEditorWindow = new BrowserWindow({
     width: 1000,
     height: 700,
     parent: mainWindow,
@@ -115,20 +115,20 @@ function createEditQsoWindow() {
     }
   });
 
-  editQsoWindow.loadFile(path.join(__dirname, '../ui/edit-qso.html'));
+  qsoEditorWindow.loadFile(path.join(__dirname, '../ui/qso-editor.html'));
 
-  // Send initial theme to edit QSO window when ready
-  editQsoWindow.webContents.on('did-finish-load', () => {
+  // Send initial theme to QSO editor window when ready
+  qsoEditorWindow.webContents.on('did-finish-load', () => {
     const theme = store.get('theme', 'light');
-    editQsoWindow.webContents.send('theme-changed', theme);
+    qsoEditorWindow.webContents.send('theme-changed', theme);
   });
 
-  editQsoWindow.on('closed', () => {
-    editQsoWindow = null;
+  qsoEditorWindow.on('closed', () => {
+    qsoEditorWindow = null;
   });
 
-  editQsoWindow.once('ready-to-show', () => {
-    editQsoWindow.show();
+  qsoEditorWindow.once('ready-to-show', () => {
+    qsoEditorWindow.show();
   });
 }
 
@@ -282,12 +282,12 @@ ipcMain.on('close-settings', () => {
   }
 });
 
-ipcMain.on('open-edit-qso', createEditQsoWindow);
+ipcMain.on('open-qso-editor', createQsoEditorWindow);
 
-ipcMain.on('close-edit-qso', () => {
-  if (editQsoWindow) {
-    editQsoWindow.close();
-    editQsoWindow = null;
+ipcMain.on('close-qso-editor', () => {
+  if (qsoEditorWindow) {
+    qsoEditorWindow.close();
+    qsoEditorWindow = null;
   }
 });
 
@@ -314,9 +314,9 @@ app.on('ready', () => {
           click: createSettingsWindow
         },
         {
-          label: 'Edit QSO Data',
+          label: 'QSO Editor',
           accelerator: 'CmdOrCtrl+E',
-          click: createEditQsoWindow
+          click: createQsoEditorWindow
         },
         {
           label: 'Exit',
