@@ -165,37 +165,6 @@ body {
   font-size: 12px;
 }
 
-.info-panel {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-  margin-bottom: 20px;
-  padding: 20px;
-  background-color: var(--bg-secondary);
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.info-item label {
-  font-weight: 600;
-  color: var(--header-color);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.info-item span {
-  color: var(--text-secondary);
-  font-size: 14px;
-  word-break: break-all;
-}
-
 .status-panel {
   padding: 20px;
   background-color: var(--bg-secondary);
@@ -214,7 +183,7 @@ body {
 
 .qso-grid {
   display: grid;
-  grid-template-columns: repeat(7, 2fr);
+  grid-template-columns: repeat(8, 2fr);
   gap: 5px;
 }
 
@@ -237,7 +206,7 @@ body {
 
 .indicators-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr) 2fr 1fr 2fr;
   gap: 15px;
 }
 
@@ -264,6 +233,8 @@ body {
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   color: var(--text-primary);
   font-weight: 500;
+  max-height: 50px;
+  overflow-y: auto;
 }
 
 .indicator-value.indicator-on {
@@ -529,10 +500,6 @@ body {
   flex: 1;
 }
 
-#forwardsValue {
-    text-wrap: nowrap;
-}
-
 .form-actions {
   display: flex;
   gap: 10px;
@@ -728,8 +695,4 @@ body {
 
 .btn-delete:hover {
   background-color: var(--red-dark);
-}
-
-.settings-container {
-  max-width: 600px;
 }

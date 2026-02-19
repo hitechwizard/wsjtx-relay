@@ -498,6 +498,10 @@ function clearLog() {
   logContainer.innerHTML = '';
 }
 function clearQsoLog() {
+  if (!confirm('Are you sure you want to clear all QSO logs? This cannot be undone.')) {
+    return;
+  }
+
   qsoContainer.innerHTML = '';
   // Clear the header
   const header = document.createElement('div');
@@ -516,6 +520,7 @@ function clearQsoLog() {
   window.electron.clearQsos();
   qsoList = [];
   updateQsoCount();
+  updateQsoLastHourCount();
 }
 
 function updateQsoCount() {
