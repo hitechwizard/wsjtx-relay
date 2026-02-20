@@ -1,6 +1,43 @@
 # WSJT-X Relay
 
-WSJT-X Relay is a desktop app that sits between WSJT-X and the rest of your station software. It lets WSJT-X share UDP traffic with multiple applications at the same time, while also giving you tools to manage and log contacts in one place.
+WSJT-X Relay is a desktop app that sits between WSJT-X and the rest of your station software.
+
+It lets WSJT-X send UDP traffic to multiple apps at once (for example GridTracker, Hamclock, N1MM+, and N3FJP), and gives you built-in tools for manual QSO logging and ADIF management.
+
+## Quick Start
+
+### 1) Launch or Install the app
+
+#### From the `electron` folder:
+
+```bash
+npm install
+npm start
+```
+
+#### Pre-built Distribution packages can be downloaded from https://hitechwizard.net/wsjtx-relay
+
+
+### 2) Point WSJT-X to the relay
+
+- In WSJT-X, set UDP output to the WSJT-X Relay listen port.
+- Default listen port is `2237`.
+
+### 3) Add your forwarding targets
+
+- Open **Settings** in WSJT-X Relay.
+- Add one or more targets in `host:port` format.
+- For apps on the same computer, use `127.0.0.1` with unique ports (for example `127.0.0.1:2238`, `127.0.0.1:2239`).
+
+### 4) Start relaying
+
+- Click **Start** in the main window.
+- You should see live status updates and relay activity in the log.
+
+### 5) Log manual contacts (optional)
+
+- Use the **Manual QSO Entry** section for SSB/CW or other non-digital contacts.
+- Click **Log Contact** to store and forward the contact.
 
 ## End-User Features
 
@@ -16,14 +53,6 @@ WSJT-X Relay is a desktop app that sits between WSJT-X and the rest of your stat
 - **Resend QSOs to forwarders**: Re-send one or all saved QSOs as needed.
 - **Persistent settings**: Saved listen port, forward endpoints, theme, window size, and QSO data between sessions.
 - **Light and dark themes**: Choose your preferred display theme.
-
-## Typical Use
-
-1. Configure WSJT-X to send UDP messages to the WSJT-X Relay listen port (both default to 2237).
-2. Configure WSJT-X-aware applications (such as GridTracker or openHamclock) to listen on different ports (for example, 2238 and 2239).
-3. In WSJT-X Relay settings, add each application address and port to the forwards list. For apps running on the same computer, use `127.0.0.1` as the address.
-4. Start the relay.
-5. WSJT-X packets are now forwarded to all configured targets, and responses are routed back to WSJT-X.
 
 ## Using WSJT-X Relay as a Manual Logger
 
