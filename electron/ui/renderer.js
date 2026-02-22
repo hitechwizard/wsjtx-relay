@@ -180,6 +180,8 @@ function setupEventListeners() {
   });
 
   window.electron.onRelayQsoLogged(async (qso) => {
+    applyManualMyParkToLoggedQso(qso);
+    normalizeCalculatedFields(qso);
     addQsoEntry(qso, 'normal');
     // Save QSO from relay to persistent storage
     await window.electron.saveQso(qso);
@@ -318,6 +320,29 @@ function preprocessManualFieldValue(fieldName, value) {
   }
 
   return next;
+}
+
+function applyManualMyParkToLoggedQso(qso) {
+  if (!qso || qso.my_sig || qso.my_sig_info) {
+    return;
+  }
+
+  const myParkInput = document.getElementById('qso-mysiginfo');
+  if (!myParkInput) {
+    return;
+  }
+
+  const normalizedPark = preprocessManualFieldValue('my_sig_info', myParkInput.value);
+  if (!normalizedPark) {
+    return;
+  }
+
+  const validationError = validateManualFieldValue('my_sig_info', normalizedPark);
+  if (validationError) {
+    return;
+  }
+
+  qso.my_sig_info = normalizedPark;
 }
 
 function validateManualFieldValue(fieldName, value) {
@@ -471,6 +496,7 @@ async function handleQsoLogContact() {
   document.getElementById('qso-dxcall').value = '';
   document.getElementById('qso-rst').value = '';
   document.getElementById('qso-rcvd').value = '';
+  document.getElementById('qso-state').value = '';
   document.getElementById('qso-siginfo').value = '';
 }
 
@@ -725,6 +751,7 @@ async function refreshQsoLog() {
 function updateStatusIndicators(statusData) {
   deCall.textContent = statusData.deCall;
   deGrid.textContent = statusData.deGrid;
+  updateMyParkFromConfigurationName(statusData);
 
   if (statusData.frequency) {
     frequencyValue.textContent = `${statusData.frequency} MHz`;
@@ -763,6 +790,37 @@ function updateStatusIndicators(statusData) {
   if (statusData.txMessage !== undefined) {
     transmitMessage.textContent = statusData.txMessage;
   }
+}
+
+function updateMyParkFromConfigurationName(statusData) {
+  const configurationName = String(statusData.configurationName || '').trim();
+  if (!configurationName || !configurationName.includes('@')) {
+    return;
+  }
+
+  const [configCall, ...parkParts] = configurationName.split('@');
+  if (!configCall || parkParts.length !== 1) {
+    return;
+  }
+
+  const statusCall = String(statusData.deCall || '').trim().toUpperCase();
+  if (!statusCall || configCall.trim().toUpperCase() !== statusCall) {
+    return;
+  }
+
+  const mySigInfoInput = document.getElementById('qso-mysiginfo');
+  if (!mySigInfoInput) {
+    return;
+  }
+
+  const normalizedPark = preprocessManualFieldValue('my_sig_info', parkParts[0]);
+  const validationError = validateManualFieldValue('my_sig_info', normalizedPark);
+  if (validationError) {
+    return;
+  }
+
+  mySigInfoInput.value = normalizedPark;
+  mySigInfoInput.setCustomValidity('');
 }
 
 function clearLog() {

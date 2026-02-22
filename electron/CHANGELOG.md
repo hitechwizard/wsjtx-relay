@@ -11,6 +11,7 @@
 - Added a QSO counter for the current day.
 - Added show/hide capability for Manual QSO and Status sections
 - Added packet filter options for the activity log
+- Added setting My Park if the WSJT-X configuation name is in [callsign]@[park id] format
 
 ### Changed
 
