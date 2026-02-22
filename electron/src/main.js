@@ -18,6 +18,7 @@ const store = new Store({
     listenPort: 2237,
     forwards: [],
     forwardDelaySeconds: 0.5,
+    activityPacketFilters: ['Heartbeat', 'Status', 'Decode', 'QSO Logged', 'Logged ADIF', 'SYSTEM'],
     theme: 'light',
     windowBounds: { width: 1200, height: 800 },
     settingsWindowBounds: { width: 600, height: 500 },
@@ -171,16 +172,29 @@ ipcMain.handle('get-settings', () => {
     listenPort: store.get('listenPort'),
     forwards: store.get('forwards'),
     forwardDelaySeconds: store.get('forwardDelaySeconds', 0.5),
+    activityPacketFilters: store.get('activityPacketFilters', [
+      'Heartbeat',
+      'Status',
+      'Decode',
+      'QSO Logged',
+      'Logged ADIF',
+      'SYSTEM',
+    ]),
     theme: store.get('theme'),
     qsos: store.get('qsos'),
   };
 });
 
-ipcMain.handle('save-settings', (event, { listenPort, forwards, forwardDelaySeconds, theme }) => {
+ipcMain.handle(
+  'save-settings',
+  (event, { listenPort, forwards, forwardDelaySeconds, activityPacketFilters, theme }) => {
   store.set('listenPort', listenPort);
   store.set('forwards', forwards);
   if (typeof forwardDelaySeconds === 'number' && Number.isFinite(forwardDelaySeconds)) {
     store.set('forwardDelaySeconds', forwardDelaySeconds);
+  }
+  if (Array.isArray(activityPacketFilters)) {
+    store.set('activityPacketFilters', activityPacketFilters);
   }
   if (theme) {
     store.set('theme', theme);
@@ -199,7 +213,8 @@ ipcMain.handle('save-settings', (event, { listenPort, forwards, forwardDelaySeco
   }
 
   return { success: true };
-});
+  },
+);
 
 ipcMain.handle('start-relay', () => {
   if (!relay) {

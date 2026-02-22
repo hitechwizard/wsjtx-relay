@@ -389,6 +389,40 @@ body {
   font-size: 12px;
 }
 
+.activity-log-tools {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.activity-log-filter-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 22px;
+}
+
+.activity-log-options {
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  column-gap: 10px;
+  row-gap: 4px;
+  justify-content: end;
+}
+
+.activity-log-filter-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.activity-log-filter-item input {
+  accent-color: var(--blue);
+}
+
 .log-container {
   background-color: var(--bg-tertiary);
   border: 1px solid var(--border-light);

@@ -11,6 +11,7 @@ const qsoCount = document.getElementById('qsoCount');
 const qsoTodayUtc = document.getElementById('qsoTodayUtc');
 const qsoLastHour = document.getElementById('qsoLastHour');
 const qsoFilterCall = document.getElementById('qsoFilterCall');
+const activityPacketFilters = document.querySelectorAll('.activity-packet-filter');
 const listenPortValue = document.getElementById('listenPortValue');
 const forwardsValue = document.getElementById('forwardsValue');
 const themeToggle = document.getElementById('themeToggle');
@@ -37,6 +38,10 @@ const toggleStatusIndicatorsBtn = document.getElementById('toggleStatusIndicator
 let relayRunning = false;
 let qsoList = [];
 let currentQsoCallFilter = '';
+let selectedActivityPacketTypes = new Set();
+
+const LOG_PACKET_TYPES = ['Heartbeat', 'Status', 'Decode', 'QSO Logged', 'Logged ADIF'];
+const DEFAULT_ACTIVITY_PACKET_FILTERS = [...LOG_PACKET_TYPES, 'SYSTEM'];
 
 const qsoFields = window.wsjtxQsoFields || {};
 const freqToBand = window.wsjtxFreqToBand || (() => 'OOB');
@@ -97,6 +102,15 @@ function setupEventListeners() {
       applyQsoCallFilter();
     });
   }
+  if (activityPacketFilters.length > 0) {
+    selectedActivityPacketTypes = getSelectedActivityPacketTypes();
+    activityPacketFilters.forEach((checkbox) => {
+      checkbox.addEventListener('change', () => {
+        selectedActivityPacketTypes = getSelectedActivityPacketTypes();
+        saveActivityPacketFilterSettings();
+      });
+    });
+  }
   themeToggle.addEventListener('change', toggleTheme);
   if (themeToggleIcon) {
     themeToggleIcon.addEventListener('click', () => {
@@ -139,6 +153,9 @@ function setupEventListeners() {
 
   // Relay events
   window.electron.onRelayLog((msg) => {
+    if (!shouldLogPacketMessage(msg)) {
+      return;
+    }
     addLogEntry(msg, 'normal');
   });
 
@@ -169,6 +186,67 @@ function setupEventListeners() {
     updateQsoLastHourCount();
     updateQsoTodayUtcCount();
   }, 60000);
+}
+
+function detectPacketType(msg) {
+  if (typeof msg !== 'string') {
+    return null;
+  }
+
+  const arrowIndex = msg.indexOf('-> ');
+  if (arrowIndex < 0) {
+    return null;
+  }
+
+  const payload = msg.slice(arrowIndex + 3).trim();
+  return LOG_PACKET_TYPES.find((type) => payload.startsWith(type)) || null;
+}
+
+function shouldLogPacketMessage(msg) {
+  if (selectedActivityPacketTypes.size === 0) {
+    return false;
+  }
+
+  const packetType = detectPacketType(msg) || 'SYSTEM';
+  return selectedActivityPacketTypes.has(packetType);
+}
+
+function getSelectedActivityPacketTypes() {
+  return new Set(
+    Array.from(activityPacketFilters)
+      .filter((checkbox) => checkbox.checked)
+      .map((checkbox) => checkbox.value),
+  );
+}
+
+function applyActivityPacketFilterSettings(packetFilters) {
+  const selected = new Set(
+    Array.isArray(packetFilters) && packetFilters.length > 0
+      ? packetFilters
+      : DEFAULT_ACTIVITY_PACKET_FILTERS,
+  );
+
+  activityPacketFilters.forEach((checkbox) => {
+    checkbox.checked = selected.has(checkbox.value);
+  });
+
+  selectedActivityPacketTypes = getSelectedActivityPacketTypes();
+}
+
+function saveActivityPacketFilterSettings() {
+  const listenPort = parseInt(listenPortValue.textContent);
+  if (Number.isNaN(listenPort)) {
+    return;
+  }
+
+  window.electron
+    .saveSettings({
+      listenPort,
+      forwards: window.currentForwards || [],
+      forwardDelaySeconds: window.currentForwardDelaySeconds ?? 0.5,
+      activityPacketFilters: Array.from(selectedActivityPacketTypes),
+    })
+    .catch((err) => console.error('Error saving activity packet filters:', err));
 }
 
 function toggleSectionVisibility(section, toggleButton) {
@@ -246,6 +324,8 @@ async function loadSettings() {
   const settings = await window.electron.getSettings();
   listenPortValue.textContent = settings.listenPort;
   window.currentForwards = settings.forwards || [];
+  window.currentForwardDelaySeconds = settings.forwardDelaySeconds ?? 0.5;
+  applyActivityPacketFilterSettings(settings.activityPacketFilters);
   const enabledForwards = window.currentForwards.filter((f) => !f.disabled);
 
   if (enabledForwards.length > 0) {

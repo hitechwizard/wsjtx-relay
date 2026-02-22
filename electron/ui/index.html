@@ -133,7 +133,20 @@
 
       <div class="log-section">
         <div class="log-panel">
-          <h2>Activity Log</h2>
+          <h2 style="display: flex; justify-content: space-between; align-items: center">
+            <span>Activity Log</span>
+            <div class="activity-log-tools">
+              <span class="activity-log-filter-label">Packets:</span>
+              <div class="activity-log-options">
+                <label class="activity-log-filter-item"><input type="checkbox" class="activity-packet-filter" value="Heartbeat" checked />Heartbeat</label>
+                <label class="activity-log-filter-item"><input type="checkbox" class="activity-packet-filter" value="Status" checked />Status</label>
+                <label class="activity-log-filter-item"><input type="checkbox" class="activity-packet-filter" value="Decode" checked />Decode</label>
+                <label class="activity-log-filter-item"><input type="checkbox" class="activity-packet-filter" value="QSO Logged" checked />QSO Logged</label>
+                <label class="activity-log-filter-item"><input type="checkbox" class="activity-packet-filter" value="Logged ADIF" checked />Logged ADIF</label>
+                <label class="activity-log-filter-item"><input type="checkbox" class="activity-packet-filter" value="SYSTEM" checked />System/Other</label>
+              </div>
+            </div>
+          </h2>
           <div class="log-container" id="logContainer"></div>
           <div style="display: flex; gap: 10px; margin-top: 10px">
             <button
