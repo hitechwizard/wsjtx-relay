@@ -7,7 +7,7 @@
 - Added configurable per-endpoint enable/disable controls in Settings.
 - Added a configurable forward resend delay (`forwardDelaySeconds`) with default `0.5` seconds.
 - Added a call filter textbox in the QSO log header for live filtering as users type.
-- Added a utility screenshot contact-sheet script: `scripts/make-contact-sheet.js` (untracked).
+- Added a QSO counter for the current day.
 
 ### Changed
 - Refactored QSO Editor form rendering to be driven by shared field metadata (instead of hardcoded fields).

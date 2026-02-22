@@ -8,6 +8,7 @@ const statusBadge = document.getElementById('statusBadge');
 const logContainer = document.getElementById('logContainer');
 const qsoContainer = document.getElementById('qsoContainer');
 const qsoCount = document.getElementById('qsoCount');
+const qsoTodayUtc = document.getElementById('qsoTodayUtc');
 const qsoLastHour = document.getElementById('qsoLastHour');
 const qsoFilterCall = document.getElementById('qsoFilterCall');
 const listenPortValue = document.getElementById('listenPortValue');
@@ -149,8 +150,11 @@ function setupEventListeners() {
     await window.electron.saveQso(qso);
   });
 
-  // Update last hour count every minute
-  setInterval(updateQsoLastHourCount, 60000);
+  // Update time-based QSO counters every minute
+  setInterval(() => {
+    updateQsoLastHourCount();
+    updateQsoTodayUtcCount();
+  }, 60000);
 }
 
 function setupManualFieldValidation() {
@@ -536,6 +540,7 @@ function addQsoEntry(qso, type = 'normal') {
   // Apply row striping for readability
   applyQsoRowStripes();
   updateQsoCount();
+  updateQsoTodayUtcCount();
   updateQsoLastHourCount();
 }
 
@@ -582,6 +587,7 @@ async function refreshQsoLog() {
     addQsoEntry(qso, 'normal');
   });
   updateQsoCount();
+  updateQsoTodayUtcCount();
   updateQsoLastHourCount();
 }
 
@@ -663,6 +669,7 @@ function clearQsoLog() {
   window.electron.clearQsos();
   qsoList = [];
   updateQsoCount();
+  updateQsoTodayUtcCount();
   updateQsoLastHourCount();
 }
 
@@ -684,5 +691,24 @@ function updateQsoLastHourCount() {
 
   if (qsoLastHour) {
     qsoLastHour.textContent = `Last Hour: ${lastHourCount}`;
+  }
+}
+
+function updateQsoTodayUtcCount() {
+  const now = new Date();
+  const currentUtcDate = now.toISOString().slice(0, 10);
+
+  const utcTodayCount = qsoList.filter((qso) => {
+    const startTimeStr = qso.start || qso.end;
+    if (!startTimeStr) return false;
+
+    const qsoDate = new Date(startTimeStr);
+    if (Number.isNaN(qsoDate.getTime())) return false;
+
+    return qsoDate.toISOString().slice(0, 10) === currentUtcDate;
+  }).length;
+
+  if (qsoTodayUtc) {
+    qsoTodayUtc.textContent = `Today: ${utcTodayCount}`;
   }
 }
