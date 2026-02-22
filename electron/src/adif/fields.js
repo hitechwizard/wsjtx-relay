@@ -1,5 +1,6 @@
 var datetime = require('./datetime'),
-  dateformat = require('dateformat');
+  dateformatModule = require('dateformat'),
+  dateformat = dateformatModule.default || dateformatModule;
 
 var NumberField = {
   decode: function (value) {

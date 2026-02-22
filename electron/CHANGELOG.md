@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (not yet committed)
+## Unreleased (pending 1.0.1)
 
 ### Added
 - Introduced a shared QSO field schema and normalization module: `ui/qso-fields.js`.
@@ -34,6 +34,13 @@
 - Persisted and restored window bounds for Settings and QSO Editor dialogs.
 - Updated relay forwarding behavior to skip disabled endpoints for live forwarding and resend.
 - Applied delay pacing between QSOs when resending an entire log to forward endpoints.
+- Updated ADIF date formatting imports for compatibility with `dateformat` v5 CommonJS usage.
+- Cleared all production (`--omit=dev`) audit vulnerabilities.
 
 ### Updated
 - Bumped app version in `package.json` from `1.0.0` to `1.0.1`.
+- Upgraded dependencies:
+  - `electron` from `40.4.1` to `40.6.0`
+  - `electron-builder` from `26.7.0` to `26.8.1`
+  - `dateformat` from `1.0.12` to `5.0.3`
+- Refreshed lockfile after dependency updates and audit remediation.

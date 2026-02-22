@@ -1,4 +1,5 @@
-const dateformat = require('dateformat');
+const dateformatModule = require('dateformat');
+const dateformat = dateformatModule.default || dateformatModule;
 const fields = require('./fields');
 
 class AdiWriter {
