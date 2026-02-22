@@ -17,7 +17,6 @@ if (
   showSharedConfigWarning();
 }
 
-
 let qsos = [];
 let changedQsos = new Set();
 let hasUnsavedChanges = false;
@@ -380,11 +379,9 @@ async function handleImportQsos() {
 
 async function handleResendAllQsos() {
   try {
-    const shouldResend = confirm(
-        `Resend ${qsos.length} QSOs?`,
-    );
+    const shouldResend = confirm(`Resend ${qsos.length} QSOs?`);
     if (shouldResend) {
-    const result = await window.electron.resendAllQsos();
+      const result = await window.electron.resendAllQsos();
       if (result.success) {
         alert(`✓ ${result.count} QSOs resent to forwarders successfully`);
         addSuccessMessage(`${result.count} QSOs resent to forwarders`);

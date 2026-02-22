@@ -18,7 +18,14 @@ const store = new Store({
     listenPort: 2237,
     forwards: [],
     forwardDelaySeconds: 0.5,
-    activityPacketFilters: ['Heartbeat', 'Status', 'Decode', 'QSO Logged', 'Logged ADIF', 'SYSTEM'],
+    activityPacketFilters: [
+      'Heartbeat',
+      'Status',
+      'Decode',
+      'QSO Logged',
+      'Logged ADIF',
+      'SYSTEM',
+    ],
     theme: 'light',
     windowBounds: { width: 1200, height: 800 },
     settingsWindowBounds: { width: 600, height: 500 },
@@ -188,31 +195,31 @@ ipcMain.handle('get-settings', () => {
 ipcMain.handle(
   'save-settings',
   (event, { listenPort, forwards, forwardDelaySeconds, activityPacketFilters, theme }) => {
-  store.set('listenPort', listenPort);
-  store.set('forwards', forwards);
-  if (typeof forwardDelaySeconds === 'number' && Number.isFinite(forwardDelaySeconds)) {
-    store.set('forwardDelaySeconds', forwardDelaySeconds);
-  }
-  if (Array.isArray(activityPacketFilters)) {
-    store.set('activityPacketFilters', activityPacketFilters);
-  }
-  if (theme) {
-    store.set('theme', theme);
-  }
+    store.set('listenPort', listenPort);
+    store.set('forwards', forwards);
+    if (typeof forwardDelaySeconds === 'number' && Number.isFinite(forwardDelaySeconds)) {
+      store.set('forwardDelaySeconds', forwardDelaySeconds);
+    }
+    if (Array.isArray(activityPacketFilters)) {
+      store.set('activityPacketFilters', activityPacketFilters);
+    }
+    if (theme) {
+      store.set('theme', theme);
+    }
 
-  // Update relay if running
-  if (relay && relay.running) {
-    relay.updateSettings(listenPort, forwards, store.get('forwardDelaySeconds', 0.5));
-  }
+    // Update relay if running
+    if (relay && relay.running) {
+      relay.updateSettings(listenPort, forwards, store.get('forwardDelaySeconds', 0.5));
+    }
 
-  // Notify all windows about theme change
-  if (theme) {
-    BrowserWindow.getAllWindows().forEach((window) => {
-      window.webContents.send('theme-changed', theme);
-    });
-  }
+    // Notify all windows about theme change
+    if (theme) {
+      BrowserWindow.getAllWindows().forEach((window) => {
+        window.webContents.send('theme-changed', theme);
+      });
+    }
 
-  return { success: true };
+    return { success: true };
   },
 );
 

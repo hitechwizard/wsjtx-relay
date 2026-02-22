@@ -47,6 +47,9 @@ class WsjtxUdpParser {
       case 2:
         this.parseDecodeMessage();
         break;
+      case 4:
+        this.parseReplyMessage();
+        break;
       case 5:
         this.parseQSOLoggedMessage();
         break;
@@ -85,7 +88,7 @@ class WsjtxUdpParser {
     //5 -> WW DIGI
     //6 -> FOX
     //7 -> HOUND
-    this.frquencyToalrance = this.getUint32FromData(this.data, this.offset);
+    this.frquencyTolerance = this.getUint32FromData(this.data, this.offset);
     this.trPeriod = this.getUint32FromData(this.data, this.offset);
     this.configurationName = this.getStringUtf8FromData(this.data, this.offset);
     try {
@@ -106,6 +109,17 @@ class WsjtxUdpParser {
     this.message = this.getStringUtf8FromData(this.data, this.offset);
     this.lowconfidence = this.getInt8FromData(this.data, this.offset);
     this.offair = this.getInt8FromData(this.data, this.offset);
+  }
+
+  parseReplyMessage() {
+    this.time = this.getUint32FromData(this.data, this.offset);
+    this.snr = this.getUint32FromData(this.data, this.offset);
+    this.deltaTime = this.getDoubleFromData(this.data, this.offset);
+    this.deltaFreq = this.getUint32FromData(this.data, this.offset);
+    this.mode = this.getStringUtf8FromData(this.data, this.offset);
+    this.message = this.getStringUtf8FromData(this.data, this.offset);
+    this.lowconfidence = this.getBoolFromData(this.data, this.offset);
+    this.modifiers = this.getUint8FromData(this.data, this.offset);
   }
 
   parseQSOLoggedMessage() {

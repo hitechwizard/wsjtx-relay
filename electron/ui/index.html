@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="container">
+    <div class="container main-container">
       <div class="header">
         <h1>WSJT-X Relay</h1>
         <h3 id="deCall"></h3>
@@ -26,7 +26,9 @@
       <div class="status-panel">
         <h3 class="status-panel-title">
           <span>Manual QSO Entry</span>
-          <button id="toggleManualQsoBtn" class="btn btn-secondary btn-sm" type="button">Hide</button>
+          <button id="toggleManualQsoBtn" class="btn btn-secondary btn-sm" type="button">
+            Hide
+          </button>
         </h3>
         <div id="manualQsoSection" class="qso-grid">
           <div class="form-group qso-field">
@@ -98,7 +100,9 @@
       <div class="status-panel">
         <h3 class="status-panel-title">
           <span>Status Indicators</span>
-          <button id="toggleStatusIndicatorsBtn" class="btn btn-secondary btn-sm" type="button">Hide</button>
+          <button id="toggleStatusIndicatorsBtn" class="btn btn-secondary btn-sm" type="button">
+            Hide
+          </button>
         </h3>
         <div id="statusIndicatorsSection" class="indicators-grid">
           <div class="indicator">
@@ -138,12 +142,54 @@
             <div class="activity-log-tools">
               <span class="activity-log-filter-label">Packets:</span>
               <div class="activity-log-options">
-                <label class="activity-log-filter-item"><input type="checkbox" class="activity-packet-filter" value="Heartbeat" checked />Heartbeat</label>
-                <label class="activity-log-filter-item"><input type="checkbox" class="activity-packet-filter" value="Status" checked />Status</label>
-                <label class="activity-log-filter-item"><input type="checkbox" class="activity-packet-filter" value="Decode" checked />Decode</label>
-                <label class="activity-log-filter-item"><input type="checkbox" class="activity-packet-filter" value="QSO Logged" checked />QSO Logged</label>
-                <label class="activity-log-filter-item"><input type="checkbox" class="activity-packet-filter" value="Logged ADIF" checked />Logged ADIF</label>
-                <label class="activity-log-filter-item"><input type="checkbox" class="activity-packet-filter" value="SYSTEM" checked />System/Other</label>
+                <label class="activity-log-filter-item"
+                  ><input
+                    type="checkbox"
+                    class="activity-packet-filter"
+                    value="Heartbeat"
+                    checked
+                  />Heartbeat</label
+                >
+                <label class="activity-log-filter-item"
+                  ><input
+                    type="checkbox"
+                    class="activity-packet-filter"
+                    value="Status"
+                    checked
+                  />Status</label
+                >
+                <label class="activity-log-filter-item"
+                  ><input
+                    type="checkbox"
+                    class="activity-packet-filter"
+                    value="Decode"
+                    checked
+                  />Decode</label
+                >
+                <label class="activity-log-filter-item"
+                  ><input
+                    type="checkbox"
+                    class="activity-packet-filter"
+                    value="QSO Logged"
+                    checked
+                  />QSO Logged</label
+                >
+                <label class="activity-log-filter-item"
+                  ><input
+                    type="checkbox"
+                    class="activity-packet-filter"
+                    value="Logged ADIF"
+                    checked
+                  />Logged ADIF</label
+                >
+                <label class="activity-log-filter-item"
+                  ><input
+                    type="checkbox"
+                    class="activity-packet-filter"
+                    value="SYSTEM"
+                    checked
+                  />System/Other</label
+                >
               </div>
             </div>
           </h2>

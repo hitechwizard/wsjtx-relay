@@ -72,11 +72,14 @@ class WSJTXRelay extends EventEmitter {
   }
 
   updateSettings(listenPort, forwards, forwardDelaySeconds = 0.5) {
+    const nextForwards = Array.isArray(forwards) ? forwards : [];
+    const nextDelayMs = this.toDelayMs(forwardDelaySeconds);
+
     // Only restart the relay if the listen/forwards change
     if (
-      listenPort == this.listenPort &&
-      forwards == this.forwards &&
-      this.forwardDelayMs === this.toDelayMs(forwardDelaySeconds)
+      listenPort === this.listenPort &&
+      this.forwardDelayMs === nextDelayMs &&
+      this.areForwardsEqual(this.forwards, nextForwards)
     ) {
       return;
     }
@@ -86,8 +89,8 @@ class WSJTXRelay extends EventEmitter {
     }
 
     this.listenPort = listenPort;
-    this.forwards = forwards;
-    this.forwardDelayMs = this.toDelayMs(forwardDelaySeconds);
+    this.forwards = nextForwards;
+    this.forwardDelayMs = nextDelayMs;
 
     if (wasRunning) {
       this.start();
@@ -99,7 +102,9 @@ class WSJTXRelay extends EventEmitter {
     const srcKey = `${rinfo.address}|${rinfo.port}`;
 
     // Check if this is from a configured forward endpoint
-    const forwardConfig = this.forwards.find((f) => f.host === rinfo.address && f.port === rinfo.port);
+    const forwardConfig = this.forwards.find(
+      (f) => f.host === rinfo.address && f.port === rinfo.port,
+    );
     const fromForward = forwardConfig && !forwardConfig.disabled ? forwardConfig : null;
 
     if (forwardConfig && forwardConfig.disabled) {
@@ -167,6 +172,31 @@ class WSJTXRelay extends EventEmitter {
     return this.forwards.filter((fwd) => !fwd.disabled);
   }
 
+  areForwardsEqual(currentForwards, nextForwards) {
+    if (!Array.isArray(currentForwards) || !Array.isArray(nextForwards)) {
+      return false;
+    }
+
+    if (currentForwards.length !== nextForwards.length) {
+      return false;
+    }
+
+    for (let index = 0; index < currentForwards.length; index += 1) {
+      const current = currentForwards[index] || {};
+      const next = nextForwards[index] || {};
+
+      if (
+        current.host !== next.host ||
+        Number(current.port) !== Number(next.port) ||
+        Boolean(current.disabled) !== Boolean(next.disabled)
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   toDelayMs(forwardDelaySeconds) {
     const parsed = Number(forwardDelaySeconds);
     if (!Number.isFinite(parsed) || parsed < 0) {
@@ -222,9 +252,12 @@ class WSJTXRelay extends EventEmitter {
 
           // Emit status update for UI indicators
           this.emit('status-update', parsed);
+        } else if (parsed.type === 4) {
+          // Reply
+          message += ` ${parsed.mode}`;
         } else if (parsed.type === 5) {
           // QSO Logged
-          message += `${this.mode} ${this.dxCall} ${this.dialFrequency} ${this.dateTimeOff}`;
+          message += ` ${parsed.mode} ${parsed.dxCall} ${parsed.dialFrequency} ${parsed.timeOn} ${parsed.timeOff}`;
         } else if (parsed.type === 12) {
           message += ` ADIF: ${parsed.adif || ''}`;
           parsed.adifData.forEach((qso) => {
@@ -283,7 +316,10 @@ class WSJTXRelay extends EventEmitter {
             new Promise((resolve) => {
               this.socket.send(buffer, fwd.port, fwd.host, (err) => {
                 if (err) {
-                  this.emit('error', `Error sending QSO to ${fwd.host}:${fwd.port}: ${err.message}`);
+                  this.emit(
+                    'error',
+                    `Error sending QSO to ${fwd.host}:${fwd.port}: ${err.message}`,
+                  );
                 } else {
                   this.emit('log', `Sending -> ${fwd.host}:${fwd.port} ${qsoInfo}`);
                 }

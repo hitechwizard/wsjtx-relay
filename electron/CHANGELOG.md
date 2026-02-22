@@ -3,6 +3,7 @@
 ## Unreleased (pending 1.0.1)
 
 ### Added
+
 - Introduced a shared QSO field schema and normalization module: `ui/qso-fields.js`.
 - Added configurable per-endpoint enable/disable controls in Settings.
 - Added a configurable forward resend delay (`forwardDelaySeconds`) with default `0.5` seconds.
@@ -12,6 +13,7 @@
 - Added packet filter options for the activity log
 
 ### Changed
+
 - Refactored QSO Editor form rendering to be driven by shared field metadata (instead of hardcoded fields).
 - Unified calculated-field behavior via shared normalization:
   - `band` calculated from `freq` and shown as read-only.
@@ -25,8 +27,10 @@
   - Numeric-only values auto-prefixed as `US-####` or `US-#####`.
 - Updated main-window theme toggle to icon-based interaction with hidden checkbox state.
 - Updated status indicator forward list to show enabled forwards only.
+- Updated Reply log entry to include the mode and message.
 
 ### Fixed
+
 - Corrected band display mismatch by aligning calculated band values with configured enum values.
 - Ensured dark-theme QSO editor select controls render readable text in closed state.
 - Enforced pattern validation in QSO Editor at field-change/blur flow.
@@ -40,6 +44,7 @@
 - Cleared all production (`--omit=dev`) audit vulnerabilities.
 
 ### Updated
+
 - Bumped app version in `package.json` from `1.0.0` to `1.0.1`.
 - Upgraded dependencies:
   - `electron` from `40.4.1` to `40.6.0`

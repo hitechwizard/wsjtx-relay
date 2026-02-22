@@ -99,6 +99,15 @@ body {
   padding: 20px;
 }
 
+.main-container {
+  max-width: none;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* ============================================================================
    3. HEADER & LAYOUT
    ============================================================================ */
@@ -357,6 +366,12 @@ body {
   margin-bottom: 20px;
 }
 
+.main-container .log-section {
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) 600px;
+}
+
 .log-panel {
   padding: 20px;
   background-color: var(--bg-secondary);
@@ -364,6 +379,20 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+  max-width: 600px;
+}
+
+.main-container .log-panel {
+  min-height: 0;
+}
+
+.main-container .log-panel:first-child {
+  max-width: none;
+  min-width: 0;
+}
+
+.main-container .log-panel:last-child {
+  width: 600px;
   max-width: 600px;
 }
 
@@ -436,6 +465,12 @@ body {
   margin-bottom: 10px;
 }
 
+.main-container .log-container {
+  height: auto;
+  flex: 1;
+  min-height: 220px;
+}
+
 .log-entry {
   padding: 4px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
@@ -485,7 +520,7 @@ body {
 }
 
 .qso-row-odd {
-  background-color: transparent;
+  background-color: var(--bg-secondary);
 }
 
 /* Duplicate QSO Indicator */
@@ -527,6 +562,10 @@ body {
   display: block;
 }
 
+.qso-pota-wrap:hover .qso-dupe-tooltip {
+  display: block;
+}
+
 .qso-pota-wrap {
   grid-column: 7;
   justify-self: end;
@@ -538,6 +577,15 @@ body {
   font-size: 18px;
   cursor: help;
   margin-left: 8px;
+}
+
+body.dark-theme .qso-pota-icon {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 16px;
+  filter: saturate(1.2) brightness(1.5);
 }
 
 /* ============================================================================

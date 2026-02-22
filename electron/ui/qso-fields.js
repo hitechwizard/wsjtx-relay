@@ -24,7 +24,11 @@
         '23CM',
       ],
     },
-    gridsquare: { label: 'Gridsquare', type: 'string', pattern: '^[A-Z]{2}[0-9]{2}(?:[A-Z]{2})?$' },
+    gridsquare: {
+      label: 'Gridsquare',
+      type: 'string',
+      pattern: '^[A-Z]{2}[0-9]{2}(?:[A-Z]{2})?$',
+    },
     mode: { label: 'Mode', type: 'enum', values: ['CW', 'SSB', 'FT8', 'FT4'] },
     rst_sent: { label: 'RST Sent', type: 'string' },
     rst_rcvd: { label: 'RST Rcvd', type: 'string' },
@@ -75,10 +79,18 @@
   }
 
   function normalizeCalculatedFields(qso) {
-    qso.call = String(qso.call || '').toUpperCase().trim();
-    qso.station_callsign = String(qso.station_callsign || '').toUpperCase().trim();
-    qso.my_state = String(qso.my_state || '').toUpperCase().trim();
-    qso.state = String(qso.state || '').toUpperCase().trim();
+    qso.call = String(qso.call || '')
+      .toUpperCase()
+      .trim();
+    qso.station_callsign = String(qso.station_callsign || '')
+      .toUpperCase()
+      .trim();
+    qso.my_state = String(qso.my_state || '')
+      .toUpperCase()
+      .trim();
+    qso.state = String(qso.state || '')
+      .toUpperCase()
+      .trim();
     qso.my_sig_info = normalizeParkRef(qso.my_sig_info);
     qso.sig_info = normalizeParkRef(qso.sig_info);
 
@@ -92,7 +104,9 @@
   }
 
   function normalizeParkRef(value) {
-    const upper = String(value || '').trim().toUpperCase();
+    const upper = String(value || '')
+      .trim()
+      .toUpperCase();
     if (/^[0-9]{4,5}$/.test(upper)) {
       return `US-${upper}`;
     }

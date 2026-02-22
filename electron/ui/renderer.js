@@ -39,6 +39,8 @@ let relayRunning = false;
 let qsoList = [];
 let currentQsoCallFilter = '';
 let selectedActivityPacketTypes = new Set();
+let isBulkQsoRender = false;
+let activityPacketFilterSaveTimer = null;
 
 const LOG_PACKET_TYPES = ['Heartbeat', 'Status', 'Decode', 'QSO Logged', 'Logged ADIF'];
 const DEFAULT_ACTIVITY_PACKET_FILTERS = [...LOG_PACKET_TYPES, 'SYSTEM'];
@@ -98,7 +100,9 @@ function setupEventListeners() {
   }
   if (qsoFilterCall) {
     qsoFilterCall.addEventListener('input', (e) => {
-      currentQsoCallFilter = String(e.target.value || '').trim().toUpperCase();
+      currentQsoCallFilter = String(e.target.value || '')
+        .trim()
+        .toUpperCase();
       applyQsoCallFilter();
     });
   }
@@ -107,7 +111,7 @@ function setupEventListeners() {
     activityPacketFilters.forEach((checkbox) => {
       checkbox.addEventListener('change', () => {
         selectedActivityPacketTypes = getSelectedActivityPacketTypes();
-        saveActivityPacketFilterSettings();
+        scheduleSaveActivityPacketFilterSettings();
       });
     });
   }
@@ -249,6 +253,17 @@ function saveActivityPacketFilterSettings() {
     .catch((err) => console.error('Error saving activity packet filters:', err));
 }
 
+function scheduleSaveActivityPacketFilterSettings() {
+  if (activityPacketFilterSaveTimer) {
+    clearTimeout(activityPacketFilterSaveTimer);
+  }
+
+  activityPacketFilterSaveTimer = setTimeout(() => {
+    activityPacketFilterSaveTimer = null;
+    saveActivityPacketFilterSettings();
+  }, 250);
+}
+
 function toggleSectionVisibility(section, toggleButton) {
   section.hidden = !section.hidden;
   toggleButton.textContent = section.hidden ? 'Show' : 'Hide';
@@ -337,9 +352,14 @@ async function loadSettings() {
   // Load and display persisted QSOs
   qsoList = [];
   const qsos = settings.qsos || [];
+  isBulkQsoRender = true;
   qsos.forEach((qso) => {
     addQsoEntry(qso, 'normal');
   });
+  isBulkQsoRender = false;
+  applyQsoCallFilter();
+  updateQsoTodayUtcCount();
+  updateQsoLastHourCount();
   updateQsoCount();
 }
 
@@ -623,18 +643,27 @@ function addQsoEntry(qso, type = 'normal') {
 
     const pota = document.createElement('span');
     pota.className = 'qso-pota-icon';
-    pota.title = `POTA: ${qso.sig_info}`;
     pota.textContent = '🌲';
 
+    const tooltip = document.createElement('span');
+    tooltip.className = 'qso-dupe-tooltip';
+    tooltip.textContent = `POTA: ${qso.sig_info}`;
+
     wrap.appendChild(pota);
+    wrap.appendChild(tooltip);
     entry.appendChild(wrap);
   }
 
   qsoContainer.appendChild(entry);
-  qsoContainer.scrollTop = qsoContainer.scrollHeight;
+  if (!isBulkQsoRender) {
+    qsoContainer.scrollTop = qsoContainer.scrollHeight;
+  }
 
   // Maintain in-memory list for future duplicate detection
   qsoList.push(qso);
+  if (isBulkQsoRender) {
+    return;
+  }
   applyQsoCallFilter();
   // Apply row striping for readability
   applyQsoRowStripes();
@@ -682,12 +711,15 @@ async function refreshQsoLog() {
   // Reload QSOs from settings
   const settings = await window.electron.getSettings();
   const qsos = settings.qsos || [];
+  isBulkQsoRender = true;
   qsos.forEach((qso) => {
     addQsoEntry(qso, 'normal');
   });
-  updateQsoCount();
+  isBulkQsoRender = false;
+  applyQsoCallFilter();
   updateQsoTodayUtcCount();
   updateQsoLastHourCount();
+  updateQsoCount();
 }
 
 function updateStatusIndicators(statusData) {
