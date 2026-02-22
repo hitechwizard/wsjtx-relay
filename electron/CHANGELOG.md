@@ -8,6 +8,7 @@
 - Added a configurable forward resend delay (`forwardDelaySeconds`) with default `0.5` seconds.
 - Added a call filter textbox in the QSO log header for live filtering as users type.
 - Added a QSO counter for the current day.
+- Added show/hide capability for Manual QSO and Status sections
 
 ### Changed
 - Refactored QSO Editor form rendering to be driven by shared field metadata (instead of hardcoded fields).

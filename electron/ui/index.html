@@ -24,8 +24,11 @@
         </div>
       </div>
       <div class="status-panel">
-        <h3>Manual QSO Entry</h3>
-        <div class="qso-grid">
+        <h3 class="status-panel-title">
+          <span>Manual QSO Entry</span>
+          <button id="toggleManualQsoBtn" class="btn btn-secondary btn-sm" type="button">Hide</button>
+        </h3>
+        <div id="manualQsoSection" class="qso-grid">
           <div class="form-group qso-field">
             <label>Mode:</label>
             <span class="qso-value">
@@ -93,8 +96,11 @@
       </div>
 
       <div class="status-panel">
-        <h3>Status Indicators</h3>
-        <div class="indicators-grid">
+        <h3 class="status-panel-title">
+          <span>Status Indicators</span>
+          <button id="toggleStatusIndicatorsBtn" class="btn btn-secondary btn-sm" type="button">Hide</button>
+        </h3>
+        <div id="statusIndicatorsSection" class="indicators-grid">
           <div class="indicator">
             <label>Frequency:</label>
             <span id="frequencyValue" class="indicator-value">—</span>

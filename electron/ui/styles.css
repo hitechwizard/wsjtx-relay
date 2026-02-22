@@ -240,6 +240,17 @@ body {
   letter-spacing: 0.5px;
 }
 
+.status-panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#manualQsoSection[hidden],
+#statusIndicatorsSection[hidden] {
+  display: none !important;
+}
+
 /* ============================================================================
    6. QSO INPUT FORM
    ============================================================================ */

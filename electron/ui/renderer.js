@@ -29,6 +29,10 @@ const qsoDateOn = document.getElementById('qso-dateon');
 const qsoTimeOn = document.getElementById('qso-timeon');
 const deCall = document.getElementById('deCall');
 const deGrid = document.getElementById('deGrid');
+const manualQsoSection = document.getElementById('manualQsoSection');
+const statusIndicatorsSection = document.getElementById('statusIndicatorsSection');
+const toggleManualQsoBtn = document.getElementById('toggleManualQsoBtn');
+const toggleStatusIndicatorsBtn = document.getElementById('toggleStatusIndicatorsBtn');
 
 let relayRunning = false;
 let qsoList = [];
@@ -77,6 +81,16 @@ function setupEventListeners() {
   qsoEditorBtn.addEventListener('click', openQsoEditor);
   if (qsoLogContactBtn) qsoLogContactBtn.addEventListener('click', handleQsoLogContact);
   if (qsoTimeNowBtn) qsoTimeNowBtn.addEventListener('click', handleQsoTimeNow);
+  if (toggleManualQsoBtn && manualQsoSection) {
+    toggleManualQsoBtn.addEventListener('click', () => {
+      toggleSectionVisibility(manualQsoSection, toggleManualQsoBtn);
+    });
+  }
+  if (toggleStatusIndicatorsBtn && statusIndicatorsSection) {
+    toggleStatusIndicatorsBtn.addEventListener('click', () => {
+      toggleSectionVisibility(statusIndicatorsSection, toggleStatusIndicatorsBtn);
+    });
+  }
   if (qsoFilterCall) {
     qsoFilterCall.addEventListener('input', (e) => {
       currentQsoCallFilter = String(e.target.value || '').trim().toUpperCase();
@@ -155,6 +169,11 @@ function setupEventListeners() {
     updateQsoLastHourCount();
     updateQsoTodayUtcCount();
   }, 60000);
+}
+
+function toggleSectionVisibility(section, toggleButton) {
+  section.hidden = !section.hidden;
+  toggleButton.textContent = section.hidden ? 'Show' : 'Hide';
 }
 
 function setupManualFieldValidation() {
