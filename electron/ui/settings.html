@@ -49,6 +49,19 @@
           <small>One or more forward endpoints in IPv4:port format</small>
         </div>
 
+        <div class="form-group">
+          <label for="forwardDelaySeconds">Forward Delay (seconds):</label>
+          <input
+            type="number"
+            id="forwardDelaySeconds"
+            name="forwardDelaySeconds"
+            min="0"
+            step="0.1"
+            required
+          />
+          <small>Delay between each QSO when resending an entire log (default: 0.5)</small>
+        </div>
+
         <div class="form-actions">
           <button type="submit" class="btn btn-primary">Save</button>
           <button type="button" id="cancelBtn" class="btn btn-secondary">Cancel</button>

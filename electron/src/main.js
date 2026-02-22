@@ -17,8 +17,11 @@ const store = new Store({
   defaults: {
     listenPort: 2237,
     forwards: [],
+    forwardDelaySeconds: 0.5,
     theme: 'light',
     windowBounds: { width: 1200, height: 800 },
+    settingsWindowBounds: { width: 600, height: 500 },
+    qsoEditorWindowBounds: { width: 1000, height: 700 },
     qsos: [],
   },
 });
@@ -64,9 +67,11 @@ function createSettingsWindow() {
     return;
   }
 
-  settingsWindow = new BrowserWindow({
-    width: 600,
-    height: 500,
+  const bounds = store.get('settingsWindowBounds', { width: 600, height: 500 });
+
+  const windowOptions = {
+    width: bounds.width,
+    height: bounds.height,
     parent: mainWindow,
     modal: true,
     show: false,
@@ -77,7 +82,14 @@ function createSettingsWindow() {
       nodeIntegration: false,
       sandbox: true,
     },
-  });
+  };
+
+  if (typeof bounds.x === 'number' && typeof bounds.y === 'number') {
+    windowOptions.x = bounds.x;
+    windowOptions.y = bounds.y;
+  }
+
+  settingsWindow = new BrowserWindow(windowOptions);
 
   settingsWindow.loadFile(path.join(__dirname, '../ui/settings.html'));
 
@@ -91,6 +103,11 @@ function createSettingsWindow() {
     settingsWindow = null;
   });
 
+  settingsWindow.on('close', () => {
+    const currentBounds = settingsWindow.getBounds();
+    store.set('settingsWindowBounds', currentBounds);
+  });
+
   settingsWindow.once('ready-to-show', () => {
     settingsWindow.show();
   });
@@ -102,9 +119,11 @@ function createQsoEditorWindow() {
     return;
   }
 
-  qsoEditorWindow = new BrowserWindow({
-    width: 1000,
-    height: 700,
+  const bounds = store.get('qsoEditorWindowBounds', { width: 1000, height: 700 });
+
+  const windowOptions = {
+    width: bounds.width,
+    height: bounds.height,
     parent: mainWindow,
     modal: true,
     show: false,
@@ -115,7 +134,14 @@ function createQsoEditorWindow() {
       nodeIntegration: false,
       sandbox: true,
     },
-  });
+  };
+
+  if (typeof bounds.x === 'number' && typeof bounds.y === 'number') {
+    windowOptions.x = bounds.x;
+    windowOptions.y = bounds.y;
+  }
+
+  qsoEditorWindow = new BrowserWindow(windowOptions);
 
   qsoEditorWindow.loadFile(path.join(__dirname, '../ui/qso-editor.html'));
 
@@ -129,6 +155,11 @@ function createQsoEditorWindow() {
     qsoEditorWindow = null;
   });
 
+  qsoEditorWindow.on('close', () => {
+    const currentBounds = qsoEditorWindow.getBounds();
+    store.set('qsoEditorWindowBounds', currentBounds);
+  });
+
   qsoEditorWindow.once('ready-to-show', () => {
     qsoEditorWindow.show();
   });
@@ -139,21 +170,25 @@ ipcMain.handle('get-settings', () => {
   return {
     listenPort: store.get('listenPort'),
     forwards: store.get('forwards'),
+    forwardDelaySeconds: store.get('forwardDelaySeconds', 0.5),
     theme: store.get('theme'),
     qsos: store.get('qsos'),
   };
 });
 
-ipcMain.handle('save-settings', (event, { listenPort, forwards, theme }) => {
+ipcMain.handle('save-settings', (event, { listenPort, forwards, forwardDelaySeconds, theme }) => {
   store.set('listenPort', listenPort);
   store.set('forwards', forwards);
+  if (typeof forwardDelaySeconds === 'number' && Number.isFinite(forwardDelaySeconds)) {
+    store.set('forwardDelaySeconds', forwardDelaySeconds);
+  }
   if (theme) {
     store.set('theme', theme);
   }
 
   // Update relay if running
   if (relay && relay.running) {
-    relay.updateSettings(listenPort, forwards);
+    relay.updateSettings(listenPort, forwards, store.get('forwardDelaySeconds', 0.5));
   }
 
   // Notify all windows about theme change
@@ -170,7 +205,8 @@ ipcMain.handle('start-relay', () => {
   if (!relay) {
     const listenPort = store.get('listenPort');
     const forwards = store.get('forwards');
-    relay = new WSJTXRelay(listenPort, forwards);
+    const forwardDelaySeconds = store.get('forwardDelaySeconds', 0.5);
+    relay = new WSJTXRelay(listenPort, forwards, forwardDelaySeconds);
 
     relay.on('log', (msg) => {
       mainWindow && mainWindow.webContents.send('relay-log', msg);
@@ -263,14 +299,14 @@ ipcMain.handle('delete-qso', (event, index) => {
   return { success: false, error: 'Invalid index' };
 });
 
-ipcMain.handle('resend-qso', (event, qso) => {
+ipcMain.handle('resend-qso', async (event, qso) => {
   if (relay) {
     try {
       // Ensure relay is started so socket exists
       if (!relay.running) {
         relay.start();
       }
-      relay.resendQsos(qso);
+      await relay.resendQsos(qso);
       return { success: true };
     } catch (err) {
       return { success: false, error: err.message };
@@ -279,7 +315,7 @@ ipcMain.handle('resend-qso', (event, qso) => {
   return { success: false, error: 'Relay not available' };
 });
 
-ipcMain.handle('resend-all-qsos', () => {
+ipcMain.handle('resend-all-qsos', async () => {
   const qsos = store.get('qsos', []);
   if (relay) {
     try {
@@ -287,7 +323,7 @@ ipcMain.handle('resend-all-qsos', () => {
       if (!relay.running) {
         relay.start();
       }
-      relay.resendQsos(qsos);
+      await relay.resendQsos(qsos);
       return { success: true, count: qsos.length };
     } catch (err) {
       return { success: false, error: err.message };

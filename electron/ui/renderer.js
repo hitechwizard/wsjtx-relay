@@ -9,9 +9,11 @@ const logContainer = document.getElementById('logContainer');
 const qsoContainer = document.getElementById('qsoContainer');
 const qsoCount = document.getElementById('qsoCount');
 const qsoLastHour = document.getElementById('qsoLastHour');
+const qsoFilterCall = document.getElementById('qsoFilterCall');
 const listenPortValue = document.getElementById('listenPortValue');
 const forwardsValue = document.getElementById('forwardsValue');
 const themeToggle = document.getElementById('themeToggle');
+const themeToggleIcon = document.getElementById('themeToggleIcon');
 const frequencyValue = document.getElementById('frequencyValue');
 const modeValue = document.getElementById('modeValue');
 const txEnabledValue = document.getElementById('txEnabledValue');
@@ -29,6 +31,33 @@ const deGrid = document.getElementById('deGrid');
 
 let relayRunning = false;
 let qsoList = [];
+let currentQsoCallFilter = '';
+
+const qsoFields = window.wsjtxQsoFields || {};
+const freqToBand = window.wsjtxFreqToBand || (() => 'OOB');
+const normalizeCalculatedFields = window.wsjtxNormalizeCalculatedFields || (() => {});
+
+if (
+  !window.wsjtxQsoFields ||
+  typeof window.wsjtxFreqToBand !== 'function' ||
+  typeof window.wsjtxNormalizeCalculatedFields !== 'function'
+) {
+  showSharedConfigWarning();
+}
+
+const qsoInputExtractors = {
+  call: () => document.getElementById('qso-dxcall')?.value || '',
+  mode: () => document.getElementById('qso-mode')?.value || '',
+  rst_sent: () => document.getElementById('qso-rst')?.value || '',
+  rst_rcvd: () => document.getElementById('qso-rcvd')?.value || '',
+  band: () => qsoBand?.value || '',
+  freq: () => parseFloat(qsoFrequency?.value) || 0,
+  station_callsign: () => document.getElementById('deCall')?.textContent || '',
+  tx_pwr: () => document.getElementById('qso-txpwr')?.value || '',
+  my_sig_info: () => document.getElementById('qso-mysiginfo')?.value || '',
+  sig_info: () => document.getElementById('qso-siginfo')?.value || '',
+  comment: () => '',
+};
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -47,13 +76,31 @@ function setupEventListeners() {
   qsoEditorBtn.addEventListener('click', openQsoEditor);
   if (qsoLogContactBtn) qsoLogContactBtn.addEventListener('click', handleQsoLogContact);
   if (qsoTimeNowBtn) qsoTimeNowBtn.addEventListener('click', handleQsoTimeNow);
+  if (qsoFilterCall) {
+    qsoFilterCall.addEventListener('input', (e) => {
+      currentQsoCallFilter = String(e.target.value || '').trim().toUpperCase();
+      applyQsoCallFilter();
+    });
+  }
   themeToggle.addEventListener('change', toggleTheme);
+  if (themeToggleIcon) {
+    themeToggleIcon.addEventListener('click', () => {
+      themeToggle.checked = !themeToggle.checked;
+      toggleTheme();
+    });
+  }
 
   // Uppercase conversion for call and state inputs
   const qsoDxCall = document.getElementById('qso-dxcall');
+  const qsoMyState = document.getElementById('qso-mystate');
   const qsoState = document.getElementById('qso-state');
   if (qsoDxCall) {
     qsoDxCall.addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase();
+    });
+  }
+  if (qsoMyState) {
+    qsoMyState.addEventListener('input', (e) => {
       e.target.value = e.target.value.toUpperCase();
     });
   }
@@ -62,6 +109,8 @@ function setupEventListeners() {
       e.target.value = e.target.value.toUpperCase();
     });
   }
+
+  setupManualFieldValidation();
 
   // Theme change listener
   window.electron.onThemeChanged((theme) => {
@@ -104,15 +153,82 @@ function setupEventListeners() {
   setInterval(updateQsoLastHourCount, 60000);
 }
 
+function setupManualFieldValidation() {
+  const manualFieldMap = {
+    call: 'qso-dxcall',
+    sig_info: 'qso-siginfo',
+    my_sig_info: 'qso-mysiginfo',
+    state: 'qso-state',
+    my_state: 'qso-mystate',
+  };
+
+  Object.entries(manualFieldMap).forEach(([fieldName, elementId]) => {
+    const input = document.getElementById(elementId);
+    if (!input) {
+      return;
+    }
+
+    input.addEventListener('blur', () => {
+      const nextValue = preprocessManualFieldValue(fieldName, input.value);
+      input.value = nextValue;
+
+      const validationError = validateManualFieldValue(fieldName, nextValue);
+      if (validationError) {
+        input.setCustomValidity(validationError);
+        input.reportValidity();
+      } else {
+        input.setCustomValidity('');
+      }
+    });
+  });
+}
+
+function preprocessManualFieldValue(fieldName, value) {
+  let next = String(value || '');
+
+  if (
+    fieldName === 'call' ||
+    fieldName === 'station_callsign' ||
+    fieldName === 'state' ||
+    fieldName === 'my_state' ||
+    fieldName === 'sig_info' ||
+    fieldName === 'my_sig_info'
+  ) {
+    next = next.toUpperCase().trim();
+  }
+
+  if ((fieldName === 'sig_info' || fieldName === 'my_sig_info') && /^[0-9]{4,5}$/.test(next)) {
+    next = `US-${next}`;
+  }
+
+  return next;
+}
+
+function validateManualFieldValue(fieldName, value) {
+  const config = qsoFields[fieldName];
+  if (!config || !config.pattern) {
+    return null;
+  }
+
+  const pattern = new RegExp(config.pattern);
+  const normalizedValue = String(value || '').trim();
+  if (!normalizedValue || pattern.test(normalizedValue)) {
+    return null;
+  }
+
+  return `Invalid ${config.label || fieldName} format`;
+}
+
 async function loadSettings() {
   const settings = await window.electron.getSettings();
   listenPortValue.textContent = settings.listenPort;
   window.currentForwards = settings.forwards || [];
+  const enabledForwards = window.currentForwards.filter((f) => !f.disabled);
 
-  if (settings.forwards.length > 0) {
-    forwardsValue.textContent = settings.forwards.map((f) => `${f.host}:${f.port}`).join(', ');
+  if (enabledForwards.length > 0) {
+    forwardsValue.textContent = enabledForwards.map((f) => `${f.host}:${f.port}`).join(', ');
   } else {
-    forwardsValue.textContent = 'None configured';
+    forwardsValue.textContent = 'None enabled';
   }
 
   // Load and display persisted QSOs
@@ -133,9 +249,17 @@ function applyTheme(theme) {
   if (theme === 'dark') {
     document.body.classList.add('dark-theme');
     themeToggle.checked = true;
+    if (themeToggleIcon) {
+      themeToggleIcon.textContent = '☀️';
+      themeToggleIcon.title = 'Switch to light theme';
+    }
   } else {
     document.body.classList.remove('dark-theme');
     themeToggle.checked = false;
+    if (themeToggleIcon) {
+      themeToggleIcon.textContent = '🌙';
+      themeToggleIcon.title = 'Switch to dark theme';
+    }
   }
 }
 
@@ -171,43 +295,37 @@ async function handleQsoLogContact() {
   const timeon = qsoTimeOn?.value || '';
   const timestamp = `${dateon}T${timeon}Z`;
 
-  // Matching WSJT-X's ADIF
   const qso = {
-    call: document.getElementById('qso-dxcall')?.value || '',
-    mode: document.getElementById('qso-mode')?.value || '',
-    rst_sent: document.getElementById('qso-rst')?.value || '',
-    rst_rcvd: document.getElementById('qso-rcvd')?.value || '',
-    band: qsoBand?.value || '',
-    freq: parseFloat(qsoFrequency?.value) || 0,
-    station_callsign: document.getElementById('deCall').textContent,
-    my_gridsquare: document.getElementById('deGrid').textContent,
-    tx_pwr: document.getElementById('qso-txpwr')?.value || '',
-    comment: '',
     start: timestamp,
     end: timestamp,
+    my_gridsquare: document.getElementById('deGrid')?.textContent || '',
   };
 
-  // Add POTA fields
+  Object.entries(qsoFields).forEach(([fieldName, config]) => {
+    if (config.hidden) {
+      return;
+    }
+
+    const extractor = qsoInputExtractors[fieldName];
+    if (!extractor) {
+      return;
+    }
+
+    const value = extractor();
+    qso[fieldName] = value;
+  });
+
+  normalizeCalculatedFields(qso);
+
   const pota = {
     qso_date: dateon.replaceAll('-', ''),
     time_on: timeon.replaceAll(':', ''),
-    my_sig_info: document.getElementById('qso-mysiginfo')?.value || undefined,
-    my_state: document.getElementById('qso-mystate')?.value || undefined,
-    sig_info: document.getElementById('qso-siginfo')?.value || undefined,
-    state: document.getElementById('qso-state')?.value || undefined,
+    my_state: (document.getElementById('qso-mystate')?.value || '').toUpperCase(),
+    state: (document.getElementById('qso-state')?.value || '').toUpperCase(),
   };
 
-  if (pota.my_sig_info != undefined) {
-    pota.my_sig = 'POTA';
-  }
-
-  if (pota.sig_info != undefined) {
-    pota.sig = 'POTA';
-  }
-
-  // Add non-undefined POTA attributes to QSO
   Object.entries(pota).forEach(([key, value]) => {
-    if (value !== undefined && value !== '') {
+    if (value !== '') {
       qso[key] = value;
     }
   });
@@ -298,6 +416,7 @@ function addLogEntry(msg, type = 'normal') {
 function addQsoEntry(qso, type = 'normal') {
   const entry = document.createElement('div');
   entry.className = `log-entry ${type} qso-log-entry`;
+  entry.dataset.call = String(qso.call || '').toUpperCase();
 
   // Field Formatting should happen here.
   const isoStart = qso.start ? qso.start : qso.end ? qso.end : '0000-00-00T00:00:00Z';
@@ -413,6 +532,7 @@ function addQsoEntry(qso, type = 'normal') {
 
   // Maintain in-memory list for future duplicate detection
   qsoList.push(qso);
+  applyQsoCallFilter();
   // Apply row striping for readability
   applyQsoRowStripes();
   updateQsoCount();
@@ -420,7 +540,9 @@ function addQsoEntry(qso, type = 'normal') {
 }
 
 function applyQsoRowStripes() {
-  const rows = Array.from(qsoContainer.querySelectorAll('.qso-log-entry:not(.qso-log-header)'));
+  const rows = Array.from(
+    qsoContainer.querySelectorAll('.qso-log-entry:not(.qso-log-header):not([hidden])'),
+  );
   rows.forEach((row, idx) => {
     row.classList.remove('qso-row-odd', 'qso-row-even');
     if (idx % 2 === 0) {
@@ -429,6 +551,17 @@ function applyQsoRowStripes() {
       row.classList.add('qso-row-odd');
     }
   });
+}
+
+function applyQsoCallFilter() {
+  const rows = Array.from(qsoContainer.querySelectorAll('.qso-log-entry:not(.qso-log-header)'));
+  rows.forEach((row) => {
+    const call = row.dataset.call || '';
+    row.hidden = currentQsoCallFilter !== '' && !call.includes(currentQsoCallFilter);
+  });
+
+  applyQsoRowStripes();
+  updateQsoCount();
 }
 
 async function refreshQsoLog() {
@@ -495,51 +628,18 @@ function updateStatusIndicators(statusData) {
   }
 }
 
-function freqToBand(freq) {
-  let band;
-  switch (true) {
-    case freq >= 50.0 && freq <= 54.0:
-      band = '6m';
-      break;
-    case freq >= 28.0 && freq <= 29.7:
-      band = '10m';
-      break;
-    case freq >= 24.89 && freq <= 24.99:
-      band = '12m';
-      break;
-    case freq >= 21.0 && freq <= 21.45:
-      band = '15m';
-      break;
-    case freq >= 18.068 && freq <= 18.168:
-      band = '17m';
-      break;
-    case freq >= 14.0 && freq <= 14.35:
-      band = '20m';
-      break;
-    case freq >= 10.1 && freq <= 10.15:
-      band = '30m';
-      break;
-    case freq >= 7.0 && freq <= 7.3:
-      band = '40m';
-      break;
-    case freq >= 5.3 && freq <= 5.5:
-      band = '60m';
-      break;
-    case freq >= 3.5 && freq <= 4.0:
-      band = '80m';
-      break;
-    case freq >= 1.8 && freq <= 2.0:
-      band = '160m';
-      break;
-    default:
-      band = 'OOB';
-  }
-  return band;
-}
-
 function clearLog() {
   logContainer.innerHTML = '';
 }
+
+function showSharedConfigWarning() {
+  const banner = document.createElement('div');
+  banner.textContent = 'Warning: shared QSO field config failed to load (qso-fields.js).';
+  banner.style.cssText =
+    'background: var(--danger-color); color: white; padding: 8px 12px; text-align: center; font-size: 12px;';
+  document.body.insertBefore(banner, document.body.firstChild);
+}
+
 function clearQsoLog() {
   if (!confirm('Are you sure you want to clear all QSO logs? This cannot be undone.')) {
     return;

@@ -5,43 +5,18 @@ const importQsosBtn = document.getElementById('importQsosBtn');
 const exportQsosBtn = document.getElementById('exportQsosBtn');
 const resendAllQsosBtn = document.getElementById('resendAllQsosBtn');
 
-/* Will use this in the future for data validation
-const wsjtxFields = [
-  {
-    band: {
-      label: 'Band',
-      type: 'enum',
-      values: [
-        '160M',
-        '80M',
-        '40M',
-        '30M',
-        '20M',
-        '17M',
-        '15M',
-        '12M',
-        '10M',
-        '6M',
-        '2M',
-        '70CM',
-        '23CM',
-      ],
-    },
-    call: { label: 'DX Call', type: 'string' },
-    comment: { label: 'Comment', type: 'string' },
-    freq: { label: 'Frequency (Mhz)', type: 'number' },
-    gridsquare: { label: 'Gridsquare', type: 'string', regexp: '^[A-Z]{2}[0-9]{2}(?:[A-Z]{2})?$' },
-    mode: { label: 'Mode', type: 'enum', values: ['CW', 'SSB', 'FT8', 'FT4'] },
-    operator: { label: 'Operator', type: 'string' },
-    rst_sent: { label: 'RST Sent', type: 'string' },
-    rst_recvd: { label: 'RST Rcvd', type: 'string' },
-    station_callsign: { label: 'DE Call', type: 'string' },
-    tx_pwr: { label: 'TX Pwr', type: 'number' },
-    start: { label: 'Start', type: 'string' },
-    end: { label: 'End', type: 'string' },
-  },
-];
-*/
+const qsoFields = window.wsjtxQsoFields || {};
+const normalizeCalculatedFields = window.wsjtxNormalizeCalculatedFields || (() => {});
+const visibleQsoFields = Object.entries(qsoFields).filter(([, config]) => !config.hidden);
+
+if (
+  !window.wsjtxQsoFields ||
+  typeof window.wsjtxFreqToBand !== 'function' ||
+  typeof window.wsjtxNormalizeCalculatedFields !== 'function'
+) {
+  showSharedConfigWarning();
+}
+
 
 let qsos = [];
 let changedQsos = new Set();
@@ -82,6 +57,7 @@ function applyTheme(theme) {
 async function loadQsos() {
   try {
     qsos = await window.electron.getQsos();
+    qsos.forEach(normalizeCalculatedFields);
     renderQsoList();
     // Scroll to bottom of QSO list after rendering
     setTimeout(() => {
@@ -125,60 +101,7 @@ function renderQsoList() {
 
     const formDiv = document.createElement('div');
     formDiv.className = 'qso-editor-fields';
-    formDiv.innerHTML = `
-      <div class="editor-field">
-        <label>Call</label>
-        <input type="text" class="qso-field" data-field="call" data-index="${index}" value="${qso.call || ''}" />
-      </div>
-      <div class="editor-field">
-        <label>Band</label>
-        <input type="text" class="qso-field" data-field="band" data-index="${index}" value="${qso.band || ''}" />
-      </div>
-      <div class="editor-field">
-        <label>Mode</label>
-        <input type="text" class="qso-field" data-field="mode" data-index="${index}" value="${qso.mode || ''}" />
-      </div>
-      <div class="editor-field">
-        <label>Frequency (Hz)</label>
-        <input type="number" class="qso-field" data-field="freq" data-index="${index}" value="${qso.freq || ''}" />
-      </div>
-      <div class="editor-field">
-        <label>Start Time</label>
-        <input type="text" class="qso-field" data-field="start" data-index="${index}" value="${qso.start || ''}" />
-      </div>
-      <div class="editor-field">
-        <label>End Time</label>
-        <input type="text" class="qso-field" data-field="end" data-index="${index}" value="${qso.end || ''}" />
-      </div>
-      <div class="editor-field">
-        <label>RST Rcvd</label>
-        <input type="text" class="qso-field" data-field="rst_rcvd" data-index="${index}" value="${qso.rst_rcvd || ''}" />
-      </div>
-      <div class="editor-field">
-        <label>RST Sent</label>
-        <input type="text" class="qso-field" data-field="rst_sent data-index="${index}" value="${qso.rst_sent || ''}" />
-      </div>
-      <div class="editor-field">
-        <label>TX Power (W)</label>
-        <input type="number" class="qso-field" data-field="tx_pwr" data-index="${index}" value="${qso.tx_pwr || ''}" />
-      </div>
-      <div class="editor-field">
-        <label>My Sig</label>
-        <input type="text" class="qso-field" data-field="my_sig" data-index="${index}" value="${qso.my_sig || ''}" />
-      </div>
-      <div class="editor-field">
-        <label>My Sig Info</label>
-        <input type="text" class="qso-field" data-field="my_sig_info" data-index="${index}" value="${qso.my_sig_info || ''}" />
-      </div>
-      <div class="editor-field">
-        <label>Sig Info</label>
-        <input type="text" class="qso-field" data-field="sig_info" data-index="${index}" value="${qso.sig_info || ''}" />
-      </div>
-      <div class="editor-field">
-        <label>Comment</label>
-        <input type="text" class="qso-field" data-field="comment" data-index="${index}" value="${qso.comment || ''}" />
-      </div>
-    `;
+    formDiv.innerHTML = buildQsoFieldsHtml(qso, index);
 
     itemDiv.appendChild(headerDiv);
     itemDiv.appendChild(formDiv);
@@ -202,7 +125,21 @@ function renderQsoList() {
 function handleFieldChange(e) {
   const index = parseInt(e.target.dataset.index);
   const field = e.target.dataset.field;
-  qsos[index][field] = e.target.value;
+  let nextValue = preprocessFieldValue(field, e.target.value);
+  e.target.value = nextValue;
+
+  const validationError = validateFieldValue(field, nextValue);
+  if (validationError) {
+    e.target.setCustomValidity(validationError);
+    e.target.reportValidity();
+    e.target.value = qsos[index][field] || '';
+    return;
+  }
+
+  e.target.setCustomValidity('');
+  qsos[index][field] = nextValue;
+  normalizeCalculatedFields(qsos[index]);
+  syncCalculatedFieldValues(index, e.target.closest('.qso-editor-card'));
   changedQsos.add(index);
   hasUnsavedChanges = true;
 
@@ -257,6 +194,7 @@ async function handleResendQso(e) {
 
 async function handleSaveChanges() {
   try {
+    qsos.forEach(normalizeCalculatedFields);
     await window.electron.updateQsos(qsos);
     // Notify the main window to refresh the QSO log
     window.electron.notifyQsoDataChanged();
@@ -290,6 +228,101 @@ function formatDateTime(isoString) {
   }
 }
 
+function buildQsoFieldsHtml(qso, index) {
+  return visibleQsoFields
+    .map(([fieldName, config]) => {
+      const value = qso[fieldName] ?? '';
+      const label = escapeHtml(config.label || fieldName);
+
+      if (config.type === 'enum' && Array.isArray(config.values)) {
+        const optionsHtml = config.values
+          .map((option) => {
+            const optionValue = String(option ?? '');
+            const selected = String(value) === optionValue ? ' selected' : '';
+            return `<option value="${escapeHtml(optionValue)}"${selected}>${escapeHtml(optionValue)}</option>`;
+          })
+          .join('');
+
+        const disabledAttr = config.readOnly ? ' disabled' : '';
+
+        return `
+      <div class="editor-field">
+        <label>${label}</label>
+        <select class="qso-field" data-field="${fieldName}" data-index="${index}"${disabledAttr}>
+          ${optionsHtml}
+        </select>
+      </div>`;
+      }
+
+      const inputType = config.type === 'number' ? 'number' : 'text';
+      const patternAttr = config.pattern ? ` pattern="${escapeHtml(config.pattern)}"` : '';
+      const readonlyAttr = config.readOnly ? ' readonly disabled' : '';
+
+      return `
+      <div class="editor-field">
+        <label>${label}</label>
+        <input type="${inputType}" class="qso-field" data-field="${fieldName}" data-index="${index}" value="${escapeHtml(String(value))}"${patternAttr}${readonlyAttr} />
+      </div>`;
+    })
+    .join('');
+}
+
+function syncCalculatedFieldValues(index, card) {
+  if (!card) {
+    return;
+  }
+
+  const qso = qsos[index];
+  const bandControl = card.querySelector('.qso-field[data-field="band"]');
+  if (bandControl) {
+    bandControl.value = qso.band || '';
+  }
+}
+
+function validateFieldValue(fieldName, value) {
+  const config = qsoFields[fieldName];
+  if (!config || !config.pattern) {
+    return null;
+  }
+
+  const pattern = new RegExp(config.pattern);
+  const normalizedValue = String(value || '').trim();
+  if (!normalizedValue || pattern.test(normalizedValue)) {
+    return null;
+  }
+
+  return `Invalid ${config.label || fieldName} format`;
+}
+
+function preprocessFieldValue(fieldName, value) {
+  let next = String(value || '');
+
+  if (
+    fieldName === 'gridsquare' ||
+    fieldName === 'call' ||
+    fieldName === 'station_callsign' ||
+    fieldName === 'sig_info' ||
+    fieldName === 'my_sig_info'
+  ) {
+    next = next.toUpperCase();
+  }
+
+  if ((fieldName === 'sig_info' || fieldName === 'my_sig_info') && /^[0-9]{4,5}$/.test(next)) {
+    next = `US-${next}`;
+  }
+
+  return next;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function addSuccessMessage(msg) {
   // Simple success notification
   console.log('Success:', msg);
@@ -298,6 +331,14 @@ function addSuccessMessage(msg) {
 function addErrorMessage(msg) {
   // Simple error notification
   console.error('Error:', msg);
+}
+
+function showSharedConfigWarning() {
+  const banner = document.createElement('div');
+  banner.textContent = 'Warning: shared QSO field config failed to load (qso-fields.js).';
+  banner.style.cssText =
+    'background: var(--danger-color); color: white; padding: 8px 12px; text-align: center; font-size: 12px;';
+  document.body.insertBefore(banner, document.body.firstChild);
 }
 
 async function handleExportQsos() {
@@ -339,13 +380,18 @@ async function handleImportQsos() {
 
 async function handleResendAllQsos() {
   try {
+    const shouldResend = confirm(
+        `Resend ${qsos.length} QSOs?`,
+    );
+    if (shouldResend) {
     const result = await window.electron.resendAllQsos();
-    if (result.success) {
-      alert(`✓ ${result.count} QSOs resent to forwarders successfully`);
-      addSuccessMessage(`${result.count} QSOs resent to forwarders`);
-    } else {
-      alert(`✗ Failed to resend QSOs: ${result.error || 'Unknown error'}`);
-      addErrorMessage(result.error || 'Failed to resend QSOs');
+      if (result.success) {
+        alert(`✓ ${result.count} QSOs resent to forwarders successfully`);
+        addSuccessMessage(`${result.count} QSOs resent to forwarders`);
+      } else {
+        alert(`✗ Failed to resend QSOs: ${result.error || 'Unknown error'}`);
+        addErrorMessage(result.error || 'Failed to resend QSOs');
+      }
     }
   } catch (err) {
     alert(`✗ Resend error: ${err.message}`);

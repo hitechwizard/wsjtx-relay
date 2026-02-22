@@ -6,11 +6,12 @@ const { AdiWriter } = require('./adif/AdiWriter');
 const CLIENT_TIMEOUT = 60000; // milliseconds
 
 class WSJTXRelay extends EventEmitter {
-  constructor(listenPort = 2237, forwards = []) {
+  constructor(listenPort = 2237, forwards = [], forwardDelaySeconds = 0.5) {
     super();
     this.listenAddress = '0.0.0.0';
     this.listenPort = listenPort;
     this.forwards = forwards; // Array of {host, port}
+    this.forwardDelayMs = this.toDelayMs(forwardDelaySeconds);
     this.socket = null;
     this.running = false;
     this.mapping = new Map(); // forward addr -> Map of client addr -> timestamp
@@ -34,9 +35,10 @@ class WSJTXRelay extends EventEmitter {
     });
 
     this.socket.bind(this.listenPort, this.listenAddress, () => {
+      const activeForwards = this.getActiveForwards();
       this.emit(
         'log',
-        `Listening on ${this.listenAddress}:${this.listenPort}, forwarding to: ${this.forwards.map((f) => `${f.host}:${f.port}`).join(', ')}`,
+        `Listening on ${this.listenAddress}:${this.listenPort}, forwarding to: ${activeForwards.map((f) => `${f.host}:${f.port}`).join(', ') || '<none-enabled>'}`,
       );
       this.emit('status', 'running');
     });
@@ -69,9 +71,13 @@ class WSJTXRelay extends EventEmitter {
     this.emit('status', 'stopped');
   }
 
-  updateSettings(listenPort, forwards) {
+  updateSettings(listenPort, forwards, forwardDelaySeconds = 0.5) {
     // Only restart the relay if the listen/forwards change
-    if (listenPort == this.listenPort && forwards == this.forwards) {
+    if (
+      listenPort == this.listenPort &&
+      forwards == this.forwards &&
+      this.forwardDelayMs === this.toDelayMs(forwardDelaySeconds)
+    ) {
       return;
     }
     const wasRunning = this.running;
@@ -81,6 +87,7 @@ class WSJTXRelay extends EventEmitter {
 
     this.listenPort = listenPort;
     this.forwards = forwards;
+    this.forwardDelayMs = this.toDelayMs(forwardDelaySeconds);
 
     if (wasRunning) {
       this.start();
@@ -91,10 +98,16 @@ class WSJTXRelay extends EventEmitter {
     const srcAddr = `${rinfo.address}:${rinfo.port}`;
     const srcKey = `${rinfo.address}|${rinfo.port}`;
 
-    // Check if this is from a forward endpoint
-    const fromForward = this.forwards.find(
-      (f) => f.host === rinfo.address && f.port === rinfo.port,
-    );
+    // Check if this is from a configured forward endpoint
+    const forwardConfig = this.forwards.find((f) => f.host === rinfo.address && f.port === rinfo.port);
+    const fromForward = forwardConfig && !forwardConfig.disabled ? forwardConfig : null;
+
+    if (forwardConfig && forwardConfig.disabled) {
+      this.emit('log', `${srcAddr} -> <disabled-forward> (dropped) (${data.length} bytes)`);
+      return;
+    }
+
+    const activeForwards = this.getActiveForwards();
 
     if (fromForward) {
       // Packet from forward -> send back to mapped clients
@@ -125,7 +138,7 @@ class WSJTXRelay extends EventEmitter {
         logMsg += `${srcAddr} -> `;
       }
 
-      this.forwards.forEach((fwd) => {
+      activeForwards.forEach((fwd) => {
         this.socket.send(data, fwd.port, fwd.host, (err) => {
           if (err) {
             this.emit('error', `Error sending to forward ${fwd.host}:${fwd.port}: ${err.message}`);
@@ -141,9 +154,29 @@ class WSJTXRelay extends EventEmitter {
           this.mapping.get(fwdKey).set(srcKey, Date.now());
         }
       });
+      if (activeForwards.length === 0) {
+        this.emit('log', `${srcAddr} -> <no-enabled-forwards> (dropped) (${data.length} bytes)`);
+        return;
+      }
       logMsg += this.decodePayload(data);
       this.emit('log', logMsg);
     }
+  }
+
+  getActiveForwards() {
+    return this.forwards.filter((fwd) => !fwd.disabled);
+  }
+
+  toDelayMs(forwardDelaySeconds) {
+    const parsed = Number(forwardDelaySeconds);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return 500;
+    }
+    return Math.round(parsed * 1000);
+  }
+
+  sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   cleanup() {
@@ -225,32 +258,45 @@ class WSJTXRelay extends EventEmitter {
     return packet;
   }
 
-  resendQsos(qsos) {
+  async resendQsos(qsos) {
     if (!Array.isArray(qsos)) {
       qsos = [qsos];
     }
 
-    if (this.forwards.length === 0) {
-      this.emit('log', 'No forwarders configured - QSOs not forwarded');
+    const activeForwards = this.getActiveForwards();
+
+    if (activeForwards.length === 0) {
+      this.emit('log', 'No enabled forwarders configured - QSOs not forwarded');
       return;
     }
 
-    qsos.forEach((qso) => {
+    for (let index = 0; index < qsos.length; index += 1) {
+      const qso = qsos[index];
       const qsoInfo = `${qso.call || 'UNKNOWN'} ${qso.band || '?'} ${qso.mode || '?'} ${qso.start || 'N/A'}`;
 
       // Convert QSO to JSON and send as UDP packet to each forwarder
       const buffer = this.createAdifPacket(qso);
 
-      this.forwards.forEach((fwd) => {
-        this.socket.send(buffer, fwd.port, fwd.host, (err) => {
-          if (err) {
-            this.emit('error', `Error sending QSO to ${fwd.host}:${fwd.port}: ${err.message}`);
-          } else {
-            this.emit('log', `Sending -> ${fwd.host}:${fwd.port} ${qsoInfo}`);
-          }
-        });
-      });
-    });
+      await Promise.all(
+        activeForwards.map(
+          (fwd) =>
+            new Promise((resolve) => {
+              this.socket.send(buffer, fwd.port, fwd.host, (err) => {
+                if (err) {
+                  this.emit('error', `Error sending QSO to ${fwd.host}:${fwd.port}: ${err.message}`);
+                } else {
+                  this.emit('log', `Sending -> ${fwd.host}:${fwd.port} ${qsoInfo}`);
+                }
+                resolve();
+              });
+            }),
+        ),
+      );
+
+      if (this.forwardDelayMs > 0 && index < qsos.length - 1) {
+        await this.sleep(this.forwardDelayMs);
+      }
+    }
   }
 }
 

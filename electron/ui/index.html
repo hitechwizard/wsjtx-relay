@@ -17,10 +17,8 @@
           <button id="stopBtn" class="btn btn-danger" disabled>Stop</button>
           <button id="settingsBtn" class="btn btn-secondary">Settings</button>
           <div class="theme-toggle-group">
-            <label for="themeToggle" style="margin: 0; cursor: pointer; color: var(--text-primary)"
-              >🌙</label
-            >
-            <input type="checkbox" id="themeToggle" style="cursor: pointer" />
+            <span id="themeToggleIcon" class="theme-toggle-icon" title="Toggle theme">🌙</span>
+            <input type="checkbox" id="themeToggle" class="theme-toggle-checkbox" />
           </div>
           <div class="status-badge" id="statusBadge">Stopped</div>
         </div>
@@ -144,9 +142,17 @@
         <div class="log-panel">
           <h2 style="display: flex; justify-content: space-between; align-items: center">
             <span>QSO Log <span id="qsoCount">(0)</span></span>
-            <span id="qsoLastHour" style="font-size: 0.85em; color: var(--text-secondary)"
-              >Last Hour: 0</span
-            >
+            <div class="qso-log-tools">
+              <input
+                type="text"
+                id="qsoFilterCall"
+                placeholder="Filter by call"
+                aria-label="Filter QSOs by call"
+              />
+              <span id="qsoLastHour" style="font-size: 0.85em; color: var(--text-secondary)"
+                >Last Hour: 0</span
+              >
+            </div>
           </h2>
           <div class="log-container" id="qsoContainer">
             <div class="qso-log-entry qso-log-header">
@@ -178,6 +184,7 @@
       </div>
     </div>
 
+    <script src="qso-fields.js"></script>
     <script src="renderer.js"></script>
   </body>
 </html>

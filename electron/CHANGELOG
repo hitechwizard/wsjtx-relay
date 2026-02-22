@@ -1,0 +1,39 @@
+# Changelog
+
+## Unreleased (not yet committed)
+
+### Added
+- Introduced a shared QSO field schema and normalization module: `ui/qso-fields.js`.
+- Added configurable per-endpoint enable/disable controls in Settings.
+- Added a configurable forward resend delay (`forwardDelaySeconds`) with default `0.5` seconds.
+- Added a call filter textbox in the QSO log header for live filtering as users type.
+- Added a utility screenshot contact-sheet script: `scripts/make-contact-sheet.js` (untracked).
+
+### Changed
+- Refactored QSO Editor form rendering to be driven by shared field metadata (instead of hardcoded fields).
+- Unified calculated-field behavior via shared normalization:
+  - `band` calculated from `freq` and shown as read-only.
+  - `sig`/`my_sig` derived from `sig_info`/`my_sig_info`.
+- Enforced uppercase normalization for:
+  - `call`, `station_callsign`
+  - `state`, `my_state`
+  - `gridsquare`, `sig_info`, `my_sig_info` where applicable.
+- Added park reference normalization for `sig_info`/`my_sig_info`:
+  - Pattern: `^[A-Z]{2}-[0-9]{4}[0-9]?$`
+  - Numeric-only values auto-prefixed as `US-####` or `US-#####`.
+- Updated main-window theme toggle to icon-based interaction with hidden checkbox state.
+- Updated status indicator forward list to show enabled forwards only.
+
+### Fixed
+- Corrected band display mismatch by aligning calculated band values with configured enum values.
+- Ensured dark-theme QSO editor select controls render readable text in closed state.
+- Enforced pattern validation in QSO Editor at field-change/blur flow.
+- Extended equivalent blur-time preprocessing/validation to manual QSO entry inputs.
+- Made QSO log filtering actually hide rows by adding explicit CSS for hidden rows.
+- Kept QSO total count independent of active call filter.
+- Persisted and restored window bounds for Settings and QSO Editor dialogs.
+- Updated relay forwarding behavior to skip disabled endpoints for live forwarding and resend.
+- Applied delay pacing between QSOs when resending an entire log to forward endpoints.
+
+### Updated
+- Bumped app version in `package.json` from `1.0.0` to `1.0.1`.

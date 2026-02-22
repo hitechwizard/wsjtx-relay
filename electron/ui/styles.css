@@ -362,6 +362,22 @@ body {
   color: var(--header-color);
 }
 
+.qso-log-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.qso-log-tools input {
+  width: 160px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
 .log-container {
   background-color: var(--bg-tertiary);
   border: 1px solid var(--border-light);
@@ -406,6 +422,9 @@ body {
   grid-template-areas:
     'header header header header header header header'
     'main main main main main main main';
+}
+.qso-log-entry[hidden] {
+  display: none !important;
 }
 
 .qso-log-header {
@@ -570,6 +589,25 @@ body {
   color: var(--text-secondary);
 }
 
+.forward-item-disabled .forward-item-addr {
+  opacity: 0.6;
+}
+
+.forward-item-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.forward-enabled-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: inherit;
+}
+
 .forward-item button {
   background-color: var(--red);
   color: white;
@@ -627,6 +665,26 @@ body {
   gap: 10px;
   align-items: center;
   justify-content: center;
+}
+
+.theme-toggle-icon {
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-primary);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.theme-toggle-checkbox {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .theme-selector {
@@ -764,7 +822,28 @@ body {
   transition: border-color 0.2s;
 }
 
+.editor-field select {
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  transition: border-color 0.2s;
+}
+
+.editor-field select:disabled {
+  opacity: 1;
+}
+
 .editor-field input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px var(--blue-light);
+}
+
+.editor-field select:focus {
   outline: none;
   border-color: var(--blue);
   box-shadow: 0 0 0 2px var(--blue-light);

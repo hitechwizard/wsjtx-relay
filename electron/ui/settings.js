@@ -1,5 +1,6 @@
 const settingsForm = document.getElementById('settingsForm');
 const listenPortInput = document.getElementById('listenPort');
+const forwardDelaySecondsInput = document.getElementById('forwardDelaySeconds');
 const forwardsList = document.getElementById('forwardsList');
 const newForwardInput = document.getElementById('newForward');
 const addForwardBtn = document.getElementById('addForwardBtn');
@@ -30,8 +31,13 @@ function setupEventListeners() {
 async function loadSettings() {
   const settings = await window.electron.getSettings();
   listenPortInput.value = settings.listenPort;
+  forwardDelaySecondsInput.value = settings.forwardDelaySeconds ?? 0.5;
   currentTheme = settings.theme || 'light';
-  forwardsData = settings.forwards || [];
+  forwardsData = (settings.forwards || []).map((forward) => ({
+    host: forward.host,
+    port: forward.port,
+    disabled: Boolean(forward.disabled),
+  }));
 
   // Set theme selection
   if (currentTheme === 'dark') {
@@ -49,18 +55,43 @@ function renderForwardsList() {
   forwardsData.forEach((forward, index) => {
     const item = document.createElement('div');
     item.className = 'forward-item';
+    if (forward.disabled) {
+      item.classList.add('forward-item-disabled');
+    }
 
     const addr = document.createElement('span');
     addr.className = 'forward-item-addr';
     addr.textContent = `${forward.host}:${forward.port}`;
+
+    const controls = document.createElement('div');
+    controls.className = 'forward-item-controls';
+
+    const enabledLabel = document.createElement('label');
+    enabledLabel.className = 'forward-enabled-label';
+
+    const enabledCheckbox = document.createElement('input');
+    enabledCheckbox.type = 'checkbox';
+    enabledCheckbox.checked = !forward.disabled;
+    enabledCheckbox.addEventListener('change', (e) => {
+      toggleForwardDisabled(index, !e.target.checked);
+    });
+
+    const enabledText = document.createElement('span');
+    enabledText.textContent = 'Enabled';
+
+    enabledLabel.appendChild(enabledCheckbox);
+    enabledLabel.appendChild(enabledText);
 
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.textContent = 'Remove';
     removeBtn.addEventListener('click', () => removeForward(index));
 
+    controls.appendChild(enabledLabel);
+    controls.appendChild(removeBtn);
+
     item.appendChild(addr);
-    item.appendChild(removeBtn);
+    item.appendChild(controls);
     forwardsList.appendChild(item);
   });
 }
@@ -117,8 +148,17 @@ function addForward() {
     return;
   }
 
-  forwardsData.push({ host, port });
+  forwardsData.push({ host, port, disabled: false });
   newForwardInput.value = '';
+  renderForwardsList();
+}
+
+function toggleForwardDisabled(index, disabled) {
+  if (!forwardsData[index]) {
+    return;
+  }
+
+  forwardsData[index].disabled = disabled;
   renderForwardsList();
 }
 
@@ -131,10 +171,16 @@ async function saveSettings(e) {
   e.preventDefault();
 
   const listenPort = parseInt(listenPortInput.value);
+  const forwardDelaySeconds = parseFloat(forwardDelaySecondsInput.value);
   const theme = themeDarkInput.checked ? 'dark' : 'light';
 
   if (isNaN(listenPort) || listenPort < 1 || listenPort > 65535) {
     alert('Invalid listen port (1-65535)');
+    return;
+  }
+
+  if (isNaN(forwardDelaySeconds) || forwardDelaySeconds < 0) {
+    alert('Invalid forward delay (must be 0 or greater)');
     return;
   }
 
@@ -147,6 +193,7 @@ async function saveSettings(e) {
     await window.electron.saveSettings({
       listenPort,
       forwards: forwardsData,
+      forwardDelaySeconds,
       theme,
     });
     closeWindow();
