@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld('electron', {
   openQsoEditor: () => ipcRenderer.send('open-qso-editor'),
   closeSettings: () => ipcRenderer.send('close-settings'),
   closeQsoEditor: () => ipcRenderer.send('close-qso-editor'),
+  performUpdateAction: () => ipcRenderer.invoke('perform-update-action'),
 
   // Events from relay
   onRelayLog: (callback) => ipcRenderer.on('relay-log', (event, msg) => callback(msg)),
@@ -44,6 +45,8 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.on('relay-status-update', (event, statusData) => callback(statusData)),
   onRelayQsoLogged: (callback) =>
     ipcRenderer.on('relay-qso-logged', (event, qsoData) => callback(qsoData)),
+  onUpdateBadgeState: (callback) =>
+    ipcRenderer.on('update-badge-state', (event, state) => callback(state)),
   onQsoDataRefresh: (callback) => ipcRenderer.on('qso-data-refresh', () => callback()),
   notifyQsoDataChanged: () => ipcRenderer.send('qso-data-changed'),
 });

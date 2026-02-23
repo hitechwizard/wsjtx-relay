@@ -9,13 +9,26 @@
   <body>
     <div class="container main-container">
       <div class="header">
-        <h1>WSJT-X Relay</h1>
-        <h3 id="deCall"></h3>
-        <h3 id="deGrid"></h3>
-        <div style="display: flex; gap: 15px; align-items: center">
+        <div class="brand" aria-label="Application logo">
+          <div id="appLogo" class="app-logo" role="img" aria-label="WSJT-X Relay logo"></div>
+          <div class="brand-tagline">by W1BBT</div>
+          <span class="visually-hidden">WSJT-X Relay</span>
+        </div>
+        <div class="station-values" aria-label="Station values">
+          <div class="station-field">
+            <span class="station-label">My Call</span>
+            <h3 id="deCall" class="station-badge-value"></h3>
+          </div>
+          <div class="station-field">
+            <span class="station-label">My Grid</span>
+            <h3 id="deGrid" class="station-badge-value"></h3>
+          </div>
+        </div>
+        <div class="header-controls" style="display: flex; gap: 15px; align-items: center">
           <button id="startBtn" class="btn btn-primary">Start</button>
           <button id="stopBtn" class="btn btn-danger" disabled>Stop</button>
           <button id="settingsBtn" class="btn btn-secondary">Settings</button>
+          <button id="updateBadgeBtn" class="status-badge update-badge" hidden>Update Available</button>
           <div class="theme-toggle-group">
             <span id="themeToggleIcon" class="theme-toggle-icon" title="Toggle theme">🌙</span>
             <input type="checkbox" id="themeToggle" class="theme-toggle-checkbox" />

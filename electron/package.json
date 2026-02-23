@@ -8,6 +8,10 @@
   "preload": "src/preload.js",
   "scripts": {
     "start": "electron .",
+    "start:debug": "electron --inspect=9229 .",
+    "start:debug-brk": "electron --inspect-brk=9229 .",
+    "start:devtools": "electron --auto-open-devtools-for-tabs .",
+    "start:trace": "electron --enable-logging .",
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
     "dev": "electron --no-sandbox .",
@@ -18,11 +22,14 @@
     "build:linux": "electron-builder --linux",
     "build:arm": "electron-builder --armv7l --arm64",
     "build:arm64": "electron-builder --arm64",
-    "build:all": "electron-builder --win --mac --linux"
+    "build:all": "electron-builder --win --mac --linux",
+    "publish": "electron-builder --publish always",
+    "publish:all": "electron-builder --win --mac --linux --publish always"
   },
   "dependencies": {
     "dateformat": "^5.0.3",
-    "electron-store": "^8.1.0"
+    "electron-store": "^8.1.0",
+    "electron-updater": "^6.8.3"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config": "^2.1.0",
@@ -34,6 +41,13 @@
     "appId": "net.hitechwizard.wsjtxrelay",
     "productName": "WSJT-X Relay",
     "icon": "assets/icon.png",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "hitechwizard",
+        "repo": "wsjtx-relay"
+      }
+    ],
     "files": [
       "src/**",
       "ui/**",

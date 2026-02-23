@@ -1,7 +1,9 @@
 const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const dns = require('dns');
 const Store = require('electron-store');
+const { autoUpdater } = require('electron-updater');
 const WSJTXRelay = require('./relay');
 const { AdiWriter } = require('./adif/AdiWriter');
 const AdiReader = require('./adif/AdiReader');
@@ -12,6 +14,15 @@ let mainWindow;
 let settingsWindow;
 let qsoEditorWindow;
 let relay;
+let updateCheckTimer;
+let isUpdateCheckInProgress = false;
+let isInteractiveUpdateCheck = false;
+let isUpdateDownloadInProgress = false;
+let availableUpdateInfo = null;
+let updateReadyToInstall = false;
+
+const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const INTERNET_CHECK_TIMEOUT_MS = 3000;
 
 const store = new Store({
   defaults: {
@@ -33,6 +44,280 @@ const store = new Store({
     qsos: [],
   },
 });
+
+async function hasInternetConnectivity() {
+  const connectivityCheck = dns.promises
+    .lookup('github.com')
+    .then(() => true)
+    .catch(() => false);
+
+  const timeoutCheck = new Promise((resolve) => {
+    setTimeout(() => resolve(false), INTERNET_CHECK_TIMEOUT_MS);
+  });
+
+  return Promise.race([connectivityCheck, timeoutCheck]);
+}
+
+function getUpdateBadgeState() {
+  if (updateReadyToInstall) {
+    return {
+      visible: true,
+      kind: 'ready',
+      label: 'Install Update',
+    };
+  }
+
+  if (availableUpdateInfo) {
+    const version = availableUpdateInfo.version ? ` ${availableUpdateInfo.version}` : '';
+    return {
+      visible: true,
+      kind: 'available',
+      label: `Update Available${version}`,
+    };
+  }
+
+  return { visible: false };
+}
+
+function sendUpdateBadgeState() {
+  if (!mainWindow || !mainWindow.webContents) {
+    return;
+  }
+
+  mainWindow.webContents.send('update-badge-state', getUpdateBadgeState());
+}
+
+async function promptToInstallDownloadedUpdate() {
+  if (!mainWindow || !updateReadyToInstall) {
+    return;
+  }
+
+  const result = await dialog.showMessageBox(mainWindow, {
+    type: 'question',
+    title: 'Install Update',
+    message: 'An update has been downloaded and is ready to install.',
+    detail: 'Do you want to restart now and install the update?',
+    buttons: ['Install & Restart', 'Later'],
+    defaultId: 0,
+    cancelId: 1,
+  });
+
+  if (result.response === 0) {
+    autoUpdater.quitAndInstall();
+  }
+}
+
+async function promptToDownloadAvailableUpdate(updateInfo) {
+  if (!mainWindow || !updateInfo) {
+    return;
+  }
+
+  const result = await dialog.showMessageBox(mainWindow, {
+    type: 'question',
+    title: 'Update Available',
+    message: `Version ${updateInfo.version} is available.`,
+    detail: 'Do you want to download and install it?',
+    buttons: ['Download & Install', 'Later'],
+    defaultId: 0,
+    cancelId: 1,
+  });
+
+  if (result.response !== 0 || isUpdateDownloadInProgress) {
+    return;
+  }
+
+  const hasInternet = await hasInternetConnectivity();
+  if (!hasInternet) {
+    await dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Update Download',
+      message: 'No internet connection detected. Download skipped.',
+      buttons: ['OK'],
+    });
+    return;
+  }
+
+  isUpdateDownloadInProgress = true;
+  try {
+    await autoUpdater.downloadUpdate();
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    await dialog.showMessageBox(mainWindow, {
+      type: 'error',
+      title: 'Update Download Failed',
+      message,
+      buttons: ['OK'],
+    });
+  } finally {
+    isUpdateDownloadInProgress = false;
+  }
+}
+
+async function performUpdateAction() {
+  if (updateReadyToInstall) {
+    await promptToInstallDownloadedUpdate();
+    return;
+  }
+
+  if (availableUpdateInfo) {
+    await promptToDownloadAvailableUpdate(availableUpdateInfo);
+    return;
+  }
+
+  await checkForAppUpdates({ interactive: true });
+}
+
+function setupAutoUpdaterEventHandlers() {
+  autoUpdater.on('update-not-available', () => {
+    if (!updateReadyToInstall) {
+      availableUpdateInfo = null;
+      sendUpdateBadgeState();
+    }
+
+    if (!isInteractiveUpdateCheck || !mainWindow) {
+      isInteractiveUpdateCheck = false;
+      return;
+    }
+
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Check for Updates',
+      message: `You are on the current version (${app.getVersion()}).`,
+      buttons: ['OK'],
+    });
+
+    isInteractiveUpdateCheck = false;
+  });
+
+  autoUpdater.on('update-available', async (updateInfo) => {
+    availableUpdateInfo = updateInfo;
+    sendUpdateBadgeState();
+
+    if (!isInteractiveUpdateCheck || !mainWindow) {
+      isInteractiveUpdateCheck = false;
+      return;
+    }
+
+    await promptToDownloadAvailableUpdate(updateInfo);
+
+    isInteractiveUpdateCheck = false;
+  });
+
+  autoUpdater.on('update-downloaded', async () => {
+    updateReadyToInstall = true;
+    sendUpdateBadgeState();
+    await promptToInstallDownloadedUpdate();
+  });
+
+  autoUpdater.on('error', async (err) => {
+    const message = err && err.message ? err.message : String(err);
+    console.warn(`Update check failed: ${message}`);
+
+    if (isInteractiveUpdateCheck && mainWindow) {
+      await dialog.showMessageBox(mainWindow, {
+        type: 'error',
+        title: 'Update Check Failed',
+        message,
+        buttons: ['OK'],
+      });
+    }
+
+    isInteractiveUpdateCheck = false;
+    isUpdateDownloadInProgress = false;
+  });
+}
+
+async function checkForAppUpdates(options = {}) {
+  const { interactive = false } = options;
+
+  if (!app.isPackaged) {
+    if (interactive && mainWindow) {
+      await dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Check for Updates',
+        message: 'Update checks are only available in packaged builds.',
+        buttons: ['OK'],
+      });
+    }
+    return;
+  }
+
+  if (isUpdateCheckInProgress) {
+    if (interactive && mainWindow) {
+      await dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Check for Updates',
+        message: 'An update check is already in progress.',
+        buttons: ['OK'],
+      });
+    }
+    return;
+  }
+
+  isInteractiveUpdateCheck = interactive;
+
+  const hasInternet = await hasInternetConnectivity();
+  if (!hasInternet) {
+    if (interactive && mainWindow) {
+      await dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Check for Updates',
+        message: 'No internet connection detected. Skipping this check.',
+        buttons: ['OK'],
+      });
+    }
+    isInteractiveUpdateCheck = false;
+    return;
+  }
+
+  isUpdateCheckInProgress = true;
+  try {
+    await autoUpdater.checkForUpdates();
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    console.warn(`Update check failed: ${message}`);
+    if (interactive && mainWindow) {
+      await dialog.showMessageBox(mainWindow, {
+        type: 'error',
+        title: 'Update Check Failed',
+        message,
+        buttons: ['OK'],
+      });
+    }
+    isInteractiveUpdateCheck = false;
+  } finally {
+    isUpdateCheckInProgress = false;
+  }
+}
+
+function configureUpdateChecks() {
+  if (!app.isPackaged) {
+    return;
+  }
+
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+  setupAutoUpdaterEventHandlers();
+
+  checkForAppUpdates();
+  updateCheckTimer = setInterval(() => {
+    checkForAppUpdates();
+  }, UPDATE_CHECK_INTERVAL_MS);
+}
+
+function showExamplesHelpStub() {
+  if (!mainWindow) {
+    return;
+  }
+
+  dialog.showMessageBox(mainWindow, {
+    type: 'info',
+    title: 'Examples',
+    message: 'Examples help content is not implemented yet.',
+    detail: 'This menu item is a placeholder for future documentation.',
+    buttons: ['OK'],
+  });
+}
 
 function createWindow() {
   const bounds = store.get('windowBounds');
@@ -56,6 +341,7 @@ function createWindow() {
   mainWindow.webContents.on('did-finish-load', () => {
     const theme = store.get('theme', 'light');
     mainWindow.webContents.send('theme-changed', theme);
+    sendUpdateBadgeState();
   });
 
   // Save window bounds on close
@@ -432,8 +718,14 @@ ipcMain.on('qso-data-changed', () => {
   }
 });
 
+ipcMain.handle('perform-update-action', async () => {
+  await performUpdateAction();
+  return { success: true };
+});
+
 app.on('ready', () => {
   createWindow();
+  configureUpdateChecks();
 
   const template = [
     {
@@ -484,14 +776,22 @@ app.on('ready', () => {
         ]
       : []),
 
-    ...(!isMac
-      ? [
-          {
-            label: 'Help',
-            submenu: [{ role: 'about' }],
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'Check for Updates',
+          click: () => {
+            performUpdateAction();
           },
-        ]
-      : []),
+        },
+        {
+          label: 'Examples',
+          click: showExamplesHelpStub,
+        },
+        ...(!isMac ? [{ type: 'separator' }, { role: 'about' }] : []),
+      ],
+    },
   ];
 
   if (isMac) {
@@ -505,6 +805,11 @@ app.on('ready', () => {
 });
 
 app.on('window-all-closed', () => {
+  if (updateCheckTimer) {
+    clearInterval(updateCheckTimer);
+    updateCheckTimer = null;
+  }
+
   if (relay && relay.running) {
     relay.stop();
   }

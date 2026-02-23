@@ -1,78 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <defs>
     <style>
-      .globe { fill: none; stroke: #3498db; stroke-width: 2.5; }
-      .globefill { fill: #3498db; opacity: 0.15; }
-      .gridline { stroke: #3498db; stroke-width: 1.2; opacity: 0.7; }
-      .arrow { fill: #27ae60; stroke: none; }
-      .arrowline { stroke: #27ae60; stroke-width: 2.8; fill: none; }
-      .bg { fill: #ffffff; opacity: 0; }
+      .bg { fill: #000000; }
+      .tree { fill: #1a8f45; fill-opacity: 0.32; stroke: #ffffff; stroke-opacity: 0.55; stroke-width: 2; }
+      .brand { fill: #ffffff; stroke: #ffffff; stroke-width: 0.9; paint-order: stroke fill; }
+      .accent { stroke: #24ff63; stroke-width: 5.2; fill: none; }
+      .box { stroke: #24ff63; stroke-width: 3.2; fill: none; }
+      .head { fill: #24ff63; }
     </style>
   </defs>
-  
-  <!-- Background -->
+
   <rect width="256" height="256" class="bg"/>
-  
-  <!-- Globe 1 (Left - Client) -->
-  <g id="globe1">
-    <circle cx="60" cy="128" r="36" class="globefill"/>
-    <circle cx="60" cy="128" r="36" class="globe"/>
-    <!-- Longitude lines -->
-    <path d="M 60 92 Q 68 128 60 164 Q 52 128 60 92" class="gridline"/>
-    <path d="M 24 128 Q 60 118 96 128" class="gridline"/>
-    <path d="M 28 148 Q 60 140 92 148" class="gridline"/>
-    <!-- Continents suggestion -->
-    <ellipse cx="48" cy="120" rx="6" ry="10" class="gridline" opacity="0.9"/>
-    <ellipse cx="75" cy="130" rx="5" ry="8" class="gridline" opacity="0.9"/>
+
+  <g aria-hidden="true">
+    <polygon points="128,82 168,142 88,142" class="tree"/>
+    <polygon points="128,104 176,178 80,178" class="tree"/>
+    <rect x="122" y="178" width="12" height="20" rx="2" class="tree"/>
   </g>
-  
-  <!-- Globe 2 (Top Right - Forward) -->
-  <g id="globe2">
-    <circle cx="196" cy="80" r="36" class="globefill"/>
-    <circle cx="196" cy="80" r="36" class="globe"/>
-    <!-- Longitude lines -->
-    <path d="M 196 44 Q 204 80 196 116 Q 188 80 196 44" class="gridline"/>
-    <path d="M 160 80 Q 196 70 232 80" class="gridline"/>
-    <path d="M 164 100 Q 196 92 228 100" class="gridline"/>
-    <!-- Continents suggestion -->
-    <ellipse cx="184" cy="72" rx="6" ry="10" class="gridline" opacity="0.9"/>
-    <ellipse cx="211" cy="82" rx="5" ry="8" class="gridline" opacity="0.9"/>
+
+  <text x="128" y="62" text-anchor="middle" class="brand" font-size="42" font-family="Segoe UI, Arial, sans-serif" font-weight="900">WSJT-X</text>
+
+  <g>
+    <line x1="48" y1="106" x2="186" y2="106" class="accent"/>
+    <line x1="48" y1="130" x2="186" y2="130" class="accent"/>
+    <line x1="48" y1="154" x2="186" y2="154" class="accent" stroke-dasharray="8 7"/>
+
+    <polygon points="38,106 49,101 49,111" class="head"/>
+    <polygon points="38,130 49,125 49,135" class="head"/>
+    <polygon points="38,154 49,149 49,159" class="head"/>
+
+    <polygon points="196,106 185,101 185,111" class="head"/>
+    <polygon points="196,130 185,125 185,135" class="head"/>
+    <polygon points="196,154 185,149 185,159" class="head"/>
+
+    <rect x="196" y="94" width="24" height="24" rx="4" class="box"/>
+    <rect x="196" y="118" width="24" height="24" rx="4" class="box"/>
+    <rect x="196" y="142" width="24" height="24" rx="4" class="box"/>
   </g>
-  
-  <!-- Globe 3 (Bottom Right - Forward) -->
-  <g id="globe3">
-    <circle cx="196" cy="176" r="36" class="globefill"/>
-    <circle cx="196" cy="176" r="36" class="globe"/>
-    <!-- Longitude lines -->
-    <path d="M 196 140 Q 204 176 196 212 Q 188 176 196 140" class="gridline"/>
-    <path d="M 160 176 Q 196 166 232 176" class="gridline"/>
-    <path d="M 164 196 Q 196 188 228 196" class="gridline"/>
-    <!-- Continents suggestion -->
-    <ellipse cx="184" cy="168" rx="6" ry="10" class="gridline" opacity="0.9"/>
-    <ellipse cx="211" cy="178" rx="5" ry="8" class="gridline" opacity="0.9"/>
-  </g>
-  
-  <!-- Arrow 1a: Left to Top Right (forward) -->
-  <g id="arrow1a">
-    <path d="M 96 105 Q 140 90 160 75" class="arrowline"/>
-    <polygon points="160,75 146,76 157,62" class="arrow"/>
-  </g>
-  
-  <!-- Arrow 1b: Top Right to Left (return) -->
-  <g id="arrow1b">
-    <path d="M 160 85 Q 140 95 96 111" class="arrowline"/>
-    <polygon points="96,111 110,106 99,120" class="arrow"/>
-  </g>
-  
-  <!-- Arrow 2a: Left to Bottom Right (forward) -->
-  <g id="arrow2a">
-    <path d="M 96 151 Q 140 166 160 181" class="arrowline"/>
-    <polygon points="160,181 146,180 157,194" class="arrow"/>
-  </g>
-  
-  <!-- Arrow 2b: Bottom Right to Left (return) -->
-  <g id="arrow2b">
-    <path d="M 160 167 Q 140 153 96 135" class="arrowline"/>
-    <polygon points="96,135 110,130 99,144" class="arrow"/>
-  </g>
+
+  <text x="128" y="234" text-anchor="middle" class="brand" font-size="52" font-family="Segoe UI, Arial, sans-serif" font-weight="900">Relay</text>
 </svg>

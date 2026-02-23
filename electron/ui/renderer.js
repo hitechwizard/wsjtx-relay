@@ -1,6 +1,7 @@
 const startBtn = document.getElementById('startBtn');
 const stopBtn = document.getElementById('stopBtn');
 const settingsBtn = document.getElementById('settingsBtn');
+const updateBadgeBtn = document.getElementById('updateBadgeBtn');
 const clearLogBtn = document.getElementById('clearLogBtn');
 const clearQsoBtn = document.getElementById('clearQsoBtn');
 const qsoEditorBtn = document.getElementById('qsoEditorBtn');
@@ -16,6 +17,7 @@ const listenPortValue = document.getElementById('listenPortValue');
 const forwardsValue = document.getElementById('forwardsValue');
 const themeToggle = document.getElementById('themeToggle');
 const themeToggleIcon = document.getElementById('themeToggleIcon');
+const appLogo = document.getElementById('appLogo');
 const frequencyValue = document.getElementById('frequencyValue');
 const modeValue = document.getElementById('modeValue');
 const txEnabledValue = document.getElementById('txEnabledValue');
@@ -44,6 +46,28 @@ let activityPacketFilterSaveTimer = null;
 
 const LOG_PACKET_TYPES = ['Heartbeat', 'Status', 'Decode', 'QSO Logged', 'Logged ADIF'];
 const DEFAULT_ACTIVITY_PACKET_FILTERS = [...LOG_PACKET_TYPES, 'SYSTEM'];
+
+const APP_LOGO_SVG = `
+  <svg viewBox="0 0 460 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto-start-reverse">
+          <path d="M0,0 L6,3 L0,6" fill="currentColor" />
+        </marker>
+      </defs>
+
+      <text x="0" y="31" fill="currentColor" font-size="23" font-family="Segoe UI, sans-serif" font-weight="900">WSJT-X</text>
+      <line x1="92" y1="24" x2="154" y2="24" stroke="currentColor" stroke-width="2.3" marker-start="url(#arrowhead)" marker-end="url(#arrowhead)"/>
+      <text x="166" y="31" fill="currentColor" font-size="24" font-family="Segoe UI, sans-serif" font-weight="900">Relay</text>
+
+      <line class="logo-accent" x1="246" y1="8" x2="328" y2="8" stroke="currentColor" stroke-width="2.2" marker-start="url(#arrowhead)" marker-end="url(#arrowhead)"/>
+      <line class="logo-accent" x1="246" y1="24" x2="328" y2="24" stroke="currentColor" stroke-width="2.2" marker-start="url(#arrowhead)" marker-end="url(#arrowhead)"/>
+      <line class="logo-accent" x1="246" y1="40" x2="328" y2="40" stroke="currentColor" stroke-width="2.2" stroke-dasharray="4 3" marker-start="url(#arrowhead)" marker-end="url(#arrowhead)"/>
+
+      <rect x="334" y="0" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <rect x="334" y="16" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <rect x="334" y="32" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
+    </svg>
+`;
 
 const qsoFields = window.wsjtxQsoFields || {};
 const freqToBand = window.wsjtxFreqToBand || (() => 'OOB');
@@ -83,6 +107,15 @@ function setupEventListeners() {
   startBtn.addEventListener('click', startRelay);
   stopBtn.addEventListener('click', stopRelay);
   settingsBtn.addEventListener('click', openSettings);
+  if (updateBadgeBtn) {
+    updateBadgeBtn.addEventListener('click', async () => {
+      try {
+        await window.electron.performUpdateAction();
+      } catch (err) {
+        console.error('Failed to perform update action:', err);
+      }
+    });
+  }
   clearLogBtn.addEventListener('click', clearLog);
   clearQsoBtn.addEventListener('click', clearQsoLog);
   qsoEditorBtn.addEventListener('click', openQsoEditor);
@@ -150,6 +183,10 @@ function setupEventListeners() {
     applyTheme(theme);
   });
 
+  window.electron.onUpdateBadgeState((state) => {
+    applyUpdateBadgeState(state);
+  });
+
   // QSO data refresh listener
   window.electron.onQsoDataRefresh(() => {
     refreshQsoLog();
@@ -192,6 +229,29 @@ function setupEventListeners() {
     updateQsoLastHourCount();
     updateQsoTodayUtcCount();
   }, 60000);
+}
+
+function applyUpdateBadgeState(state) {
+  if (!updateBadgeBtn) {
+    return;
+  }
+
+  const visible = Boolean(state && state.visible);
+  updateBadgeBtn.hidden = !visible;
+  updateBadgeBtn.classList.remove('update-available', 'update-ready');
+
+  if (!visible) {
+    return;
+  }
+
+  const label = typeof state.label === 'string' && state.label.trim() ? state.label : 'Update Available';
+  updateBadgeBtn.textContent = label;
+
+  if (state.kind === 'ready') {
+    updateBadgeBtn.classList.add('update-ready');
+  } else {
+    updateBadgeBtn.classList.add('update-available');
+  }
 }
 
 function detectPacketType(msg) {
@@ -264,6 +324,12 @@ function scheduleSaveActivityPacketFilterSettings() {
     activityPacketFilterSaveTimer = null;
     saveActivityPacketFilterSettings();
   }, 250);
+}
+
+function renderAppLogo() {
+  if (appLogo) {
+    appLogo.innerHTML = APP_LOGO_SVG;
+  }
 }
 
 function toggleSectionVisibility(section, toggleButton) {
@@ -366,6 +432,7 @@ async function loadSettings() {
   window.currentForwards = settings.forwards || [];
   window.currentForwardDelaySeconds = settings.forwardDelaySeconds ?? 0.5;
   applyActivityPacketFilterSettings(settings.activityPacketFilters);
+  renderAppLogo();
   const enabledForwards = window.currentForwards.filter((f) => !f.disabled);
 
   if (enabledForwards.length > 0) {
