@@ -23,8 +23,8 @@
     "build:arm": "electron-builder --armv7l --arm64",
     "build:arm64": "electron-builder --arm64",
     "build:all": "electron-builder --win --mac --linux",
-    "publish": "electron-builder --publish always",
-    "publish:all": "electron-builder --win --mac --linux --publish always"
+    "publish": "node scripts/publish.js",
+    "publish:all": "node scripts/publish.js --all"
   },
   "dependencies": {
     "dateformat": "^5.0.3",
@@ -41,6 +41,12 @@
     "appId": "net.hitechwizard.wsjtxrelay",
     "productName": "WSJT-X Relay",
     "icon": "assets/icon.png",
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
     "publish": [
       {
         "provider": "github",

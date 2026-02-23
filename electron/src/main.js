@@ -24,6 +24,47 @@ let updateReadyToInstall = false;
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const INTERNET_CHECK_TIMEOUT_MS = 3000;
 
+function parseVersionSegments(version) {
+  return String(version || '')
+    .trim()
+    .replace(/^v/i, '')
+    .split('.')
+    .map((segment) => {
+      const [numericPart] = String(segment).split('-');
+      const parsed = Number.parseInt(numericPart, 10);
+      return Number.isFinite(parsed) ? parsed : 0;
+    });
+}
+
+function isVersionNewer(candidateVersion, currentVersion) {
+  const candidate = parseVersionSegments(candidateVersion);
+  const current = parseVersionSegments(currentVersion);
+  const maxLength = Math.max(candidate.length, current.length);
+
+  for (let index = 0; index < maxLength; index += 1) {
+    const candidateSegment = candidate[index] || 0;
+    const currentSegment = current[index] || 0;
+
+    if (candidateSegment > currentSegment) {
+      return true;
+    }
+
+    if (candidateSegment < currentSegment) {
+      return false;
+    }
+  }
+
+  return false;
+}
+
+function hasNewerUpdateAvailable() {
+  if (!availableUpdateInfo || !availableUpdateInfo.version) {
+    return false;
+  }
+
+  return isVersionNewer(availableUpdateInfo.version, app.getVersion());
+}
+
 const store = new Store({
   defaults: {
     listenPort: 2237,
@@ -67,7 +108,7 @@ function getUpdateBadgeState() {
     };
   }
 
-  if (availableUpdateInfo) {
+  if (hasNewerUpdateAvailable()) {
     const version = availableUpdateInfo.version ? ` ${availableUpdateInfo.version}` : '';
     return {
       visible: true,
@@ -190,6 +231,13 @@ function setupAutoUpdaterEventHandlers() {
   });
 
   autoUpdater.on('update-available', async (updateInfo) => {
+    if (!isVersionNewer(updateInfo?.version, app.getVersion())) {
+      availableUpdateInfo = null;
+      sendUpdateBadgeState();
+      isInteractiveUpdateCheck = false;
+      return;
+    }
+
     availableUpdateInfo = updateInfo;
     sendUpdateBadgeState();
 
@@ -213,11 +261,19 @@ function setupAutoUpdaterEventHandlers() {
     const message = err && err.message ? err.message : String(err);
     console.warn(`Update check failed: ${message}`);
 
+    if (message.includes('latest-mac.yml')) {
+      availableUpdateInfo = null;
+      sendUpdateBadgeState();
+    }
+
     if (isInteractiveUpdateCheck && mainWindow) {
+      const detailMessage = message.includes('latest-mac.yml')
+        ? 'This release is missing macOS auto-update metadata (latest-mac.yml). Publish a new release that includes macOS ZIP + DMG artifacts, then try again.'
+        : message;
       await dialog.showMessageBox(mainWindow, {
         type: 'error',
         title: 'Update Check Failed',
-        message,
+        message: detailMessage,
         buttons: ['OK'],
       });
     }
