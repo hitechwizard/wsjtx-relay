@@ -558,6 +558,25 @@ ipcMain.handle(
       relay.updateSettings(listenPort, forwards, store.get('forwardDelaySeconds', 0.5));
     }
 
+    const updatedSettings = {
+      listenPort: store.get('listenPort'),
+      forwards: store.get('forwards'),
+      forwardDelaySeconds: store.get('forwardDelaySeconds', 0.5),
+      activityPacketFilters: store.get('activityPacketFilters', [
+        'Heartbeat',
+        'Status',
+        'Decode',
+        'QSO Logged',
+        'Logged ADIF',
+        'SYSTEM',
+      ]),
+      theme: store.get('theme', 'light'),
+    };
+
+    BrowserWindow.getAllWindows().forEach((window) => {
+      window.webContents.send('settings-changed', updatedSettings);
+    });
+
     // Notify all windows about theme change
     if (theme) {
       BrowserWindow.getAllWindows().forEach((window) => {

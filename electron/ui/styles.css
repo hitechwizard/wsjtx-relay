@@ -389,6 +389,23 @@ body {
   border-radius: 6px;
 }
 
+.qso-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.qso-field-header label {
+  margin-bottom: 0;
+}
+
+.qso-time-now-btn {
+  margin: 0;
+  padding: 4px 10px;
+  line-height: 1.2;
+}
+
 .qso-value {
   font-size: 14px;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;

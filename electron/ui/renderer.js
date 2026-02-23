@@ -187,6 +187,13 @@ function setupEventListeners() {
     applyUpdateBadgeState(state);
   });
 
+  window.electron.onSettingsChanged((settings) => {
+    applySettingsToStatusIndicators(settings);
+    if (settings && settings.theme) {
+      applyTheme(settings.theme);
+    }
+  });
+
   // QSO data refresh listener
   window.electron.onQsoDataRefresh(() => {
     refreshQsoLog();
@@ -426,20 +433,41 @@ function validateManualFieldValue(fieldName, value) {
   return `Invalid ${config.label || fieldName} format`;
 }
 
-async function loadSettings() {
-  const settings = await window.electron.getSettings();
-  listenPortValue.textContent = settings.listenPort;
-  window.currentForwards = settings.forwards || [];
-  window.currentForwardDelaySeconds = settings.forwardDelaySeconds ?? 0.5;
-  applyActivityPacketFilterSettings(settings.activityPacketFilters);
-  renderAppLogo();
-  const enabledForwards = window.currentForwards.filter((f) => !f.disabled);
+function applySettingsToStatusIndicators(settings) {
+  if (!settings) {
+    return;
+  }
 
+  if (typeof settings.listenPort !== 'undefined') {
+    listenPortValue.textContent = settings.listenPort;
+  }
+
+  if (Array.isArray(settings.forwards)) {
+    window.currentForwards = settings.forwards;
+  } else {
+    window.currentForwards = [];
+  }
+
+  if (typeof settings.forwardDelaySeconds === 'number' && Number.isFinite(settings.forwardDelaySeconds)) {
+    window.currentForwardDelaySeconds = settings.forwardDelaySeconds;
+  }
+
+  if (Array.isArray(settings.activityPacketFilters)) {
+    applyActivityPacketFilterSettings(settings.activityPacketFilters);
+  }
+
+  const enabledForwards = window.currentForwards.filter((forward) => !forward.disabled);
   if (enabledForwards.length > 0) {
-    forwardsValue.textContent = enabledForwards.map((f) => `${f.host}:${f.port}`).join(', ');
+    forwardsValue.textContent = enabledForwards.map((forward) => `${forward.host}:${forward.port}`).join(', ');
   } else {
     forwardsValue.textContent = 'None enabled';
   }
+}
+
+async function loadSettings() {
+  const settings = await window.electron.getSettings();
+  applySettingsToStatusIndicators(settings);
+  renderAppLogo();
 
   // Load and display persisted QSOs
   qsoList = [];
