@@ -23,6 +23,10 @@ let updateReadyToInstall = false;
 
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const INTERNET_CHECK_TIMEOUT_MS = 3000;
+const APP_ICON_PATH = path.join(
+  __dirname,
+  process.platform === 'win32' ? '../assets/icon.ico' : '../assets/icon.png',
+);
 
 function parseVersionSegments(version) {
   return String(version || '')
@@ -382,7 +386,7 @@ function createWindow() {
     height: bounds.height,
     x: bounds.x,
     y: bounds.y,
-    icon: path.join(__dirname, '../assets/icon.png'),
+    icon: APP_ICON_PATH,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -425,7 +429,7 @@ function createSettingsWindow() {
     parent: mainWindow,
     modal: true,
     show: false,
-    icon: path.join(__dirname, '../assets/icon.png'),
+    icon: APP_ICON_PATH,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -477,7 +481,7 @@ function createQsoEditorWindow() {
     parent: mainWindow,
     modal: true,
     show: false,
-    icon: path.join(__dirname, '../assets/icon.png'),
+    icon: APP_ICON_PATH,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

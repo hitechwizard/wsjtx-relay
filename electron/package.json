@@ -41,6 +41,9 @@
     "appId": "net.hitechwizard.wsjtxrelay",
     "productName": "WSJT-X Relay",
     "icon": "assets/icon.png",
+    "win": {
+      "icon": "assets/icon.ico"
+    },
     "mac": {
       "target": [
         "dmg",
