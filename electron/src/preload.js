@@ -47,6 +47,8 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.on('relay-qso-logged', (event, qsoData) => callback(qsoData)),
   onUpdateBadgeState: (callback) =>
     ipcRenderer.on('update-badge-state', (event, state) => callback(state)),
+  onSettingsChanged: (callback) =>
+    ipcRenderer.on('settings-changed', (event, settings) => callback(settings)),
   onQsoDataRefresh: (callback) => ipcRenderer.on('qso-data-refresh', () => callback()),
   notifyQsoDataChanged: () => ipcRenderer.send('qso-data-changed'),
 });

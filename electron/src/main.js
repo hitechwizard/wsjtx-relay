@@ -23,6 +23,51 @@ let updateReadyToInstall = false;
 
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const INTERNET_CHECK_TIMEOUT_MS = 3000;
+const APP_ICON_PATH = path.join(
+  __dirname,
+  process.platform === 'win32' ? '../assets/icon.ico' : '../assets/icon.png',
+);
+
+function parseVersionSegments(version) {
+  return String(version || '')
+    .trim()
+    .replace(/^v/i, '')
+    .split('.')
+    .map((segment) => {
+      const [numericPart] = String(segment).split('-');
+      const parsed = Number.parseInt(numericPart, 10);
+      return Number.isFinite(parsed) ? parsed : 0;
+    });
+}
+
+function isVersionNewer(candidateVersion, currentVersion) {
+  const candidate = parseVersionSegments(candidateVersion);
+  const current = parseVersionSegments(currentVersion);
+  const maxLength = Math.max(candidate.length, current.length);
+
+  for (let index = 0; index < maxLength; index += 1) {
+    const candidateSegment = candidate[index] || 0;
+    const currentSegment = current[index] || 0;
+
+    if (candidateSegment > currentSegment) {
+      return true;
+    }
+
+    if (candidateSegment < currentSegment) {
+      return false;
+    }
+  }
+
+  return false;
+}
+
+function hasNewerUpdateAvailable() {
+  if (!availableUpdateInfo || !availableUpdateInfo.version) {
+    return false;
+  }
+
+  return isVersionNewer(availableUpdateInfo.version, app.getVersion());
+}
 
 const store = new Store({
   defaults: {
@@ -67,7 +112,7 @@ function getUpdateBadgeState() {
     };
   }
 
-  if (availableUpdateInfo) {
+  if (hasNewerUpdateAvailable()) {
     const version = availableUpdateInfo.version ? ` ${availableUpdateInfo.version}` : '';
     return {
       visible: true,
@@ -190,6 +235,13 @@ function setupAutoUpdaterEventHandlers() {
   });
 
   autoUpdater.on('update-available', async (updateInfo) => {
+    if (!isVersionNewer(updateInfo?.version, app.getVersion())) {
+      availableUpdateInfo = null;
+      sendUpdateBadgeState();
+      isInteractiveUpdateCheck = false;
+      return;
+    }
+
     availableUpdateInfo = updateInfo;
     sendUpdateBadgeState();
 
@@ -213,11 +265,19 @@ function setupAutoUpdaterEventHandlers() {
     const message = err && err.message ? err.message : String(err);
     console.warn(`Update check failed: ${message}`);
 
+    if (message.includes('latest-mac.yml')) {
+      availableUpdateInfo = null;
+      sendUpdateBadgeState();
+    }
+
     if (isInteractiveUpdateCheck && mainWindow) {
+      const detailMessage = message.includes('latest-mac.yml')
+        ? 'This release is missing macOS auto-update metadata (latest-mac.yml). Publish a new release that includes macOS ZIP + DMG artifacts, then try again.'
+        : message;
       await dialog.showMessageBox(mainWindow, {
         type: 'error',
         title: 'Update Check Failed',
-        message,
+        message: detailMessage,
         buttons: ['OK'],
       });
     }
@@ -326,7 +386,7 @@ function createWindow() {
     height: bounds.height,
     x: bounds.x,
     y: bounds.y,
-    icon: path.join(__dirname, '../assets/icon.png'),
+    icon: APP_ICON_PATH,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -369,7 +429,7 @@ function createSettingsWindow() {
     parent: mainWindow,
     modal: true,
     show: false,
-    icon: path.join(__dirname, '../assets/icon.png'),
+    icon: APP_ICON_PATH,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -421,7 +481,7 @@ function createQsoEditorWindow() {
     parent: mainWindow,
     modal: true,
     show: false,
-    icon: path.join(__dirname, '../assets/icon.png'),
+    icon: APP_ICON_PATH,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -497,6 +557,25 @@ ipcMain.handle(
     if (relay && relay.running) {
       relay.updateSettings(listenPort, forwards, store.get('forwardDelaySeconds', 0.5));
     }
+
+    const updatedSettings = {
+      listenPort: store.get('listenPort'),
+      forwards: store.get('forwards'),
+      forwardDelaySeconds: store.get('forwardDelaySeconds', 0.5),
+      activityPacketFilters: store.get('activityPacketFilters', [
+        'Heartbeat',
+        'Status',
+        'Decode',
+        'QSO Logged',
+        'Logged ADIF',
+        'SYSTEM',
+      ]),
+      theme: store.get('theme', 'light'),
+    };
+
+    BrowserWindow.getAllWindows().forEach((window) => {
+      window.webContents.send('settings-changed', updatedSettings);
+    });
 
     // Notify all windows about theme change
     if (theme) {

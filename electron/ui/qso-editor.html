@@ -29,6 +29,17 @@
       </div>
     </div>
 
+    <div id="rawDataModal" class="qso-raw-modal" hidden>
+      <div class="qso-raw-modal-backdrop" data-action="close-raw-modal"></div>
+      <div class="qso-raw-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="rawDataModalTitle">
+        <div class="qso-raw-modal-header">
+          <h2 id="rawDataModalTitle">Raw QSO Data</h2>
+          <button id="closeRawDataModalBtn" class="btn btn-secondary btn-sm" type="button">Close</button>
+        </div>
+        <div id="rawDataModalContent" class="qso-raw-modal-content"></div>
+      </div>
+    </div>
+
     <script src="qso-fields.js"></script>
     <script src="qso-editor.js"></script>
   </body>

@@ -1,6 +1,46 @@
 # Changelog
 
-## Unreleased (pending 1.0.1)
+## 1.0.2 - 02/24/2026
+
+### Added
+
+- Added dedicated run scripts for common Electron launch modes:
+  - `start:debug` (`--inspect=9229`)
+  - `start:debug-brk` (`--inspect-brk=9229`)
+  - `start:devtools` (`--auto-open-devtools-for-tabs`)
+  - `start:trace` (`--enable-logging`)
+- Added a per-QSO `Raw Data` action in QSO Editor that opens a modal showing raw field names and values.
+- Added a publish helper script (`scripts/publish.js`) that resolves GitHub token from:
+  - `GH_TOKEN`
+  - `GITHUB_TOKEN`
+  - `gh auth token`
+- Added a dedicated Windows icon asset (`assets/icon.ico`) and explicit `build.win.icon` configuration.
+
+### Changed
+
+- Reworked app branding icon assets:
+  - Updated `assets/icon-source.svg` with new WSJT-X Relay design treatment.
+  - Regenerated `assets/icon.png` from source.
+- Updated macOS build targets to include both `dmg` and `zip` so `latest-mac.yml` update metadata is generated.
+- Updated publish npm scripts to use the token-aware publish helper.
+- Relocated Manual QSO `Now` button into the `Time On` field header and right-aligned it.
+
+### Fixed
+
+- Fixed updater badge behavior so `Update Available` is only shown when the release version is newer than the running app version.
+- Improved updater error handling when release metadata is missing (`latest-mac.yml`):
+  - clears stale update badge state
+  - shows a clearer actionable error message
+- Fixed main-window status synchronization after saving Settings:
+  - forwards indicator now refreshes immediately
+  - listen port/status settings refresh via `settings-changed` IPC event
+- Fixed repository ignore behavior for macOS metadata by changing root `.gitignore` to ignore `.DS_Store` files at any depth.
+
+### Notes
+
+- Local build artifacts now generate `latest.yml`, `latest-mac.yml`, and `latest-linux.yml` for release asset upload workflows.
+
+## 1.0.1 - 02/22/2026
 
 ### Added
 
@@ -52,3 +92,9 @@
   - `electron-builder` from `26.7.0` to `26.8.1`
   - `dateformat` from `1.0.12` to `5.0.3`
 - Refreshed lockfile after dependency updates and audit remediation.
+
+## 1.0.0 - 02/19/2026
+
+### Added
+
+- Initial public release of WSJT-X Relay.

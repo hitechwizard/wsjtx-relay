@@ -227,6 +227,10 @@ body {
   text-align: center;
 }
 
+.status-badge[hidden] {
+  display: none !important;
+}
+
 .status-badge.running {
   background-color: var(--green);
   color: white;
@@ -387,6 +391,23 @@ body {
   background-color: var(--bg-tertiary);
   border: 1px solid var(--border-light);
   border-radius: 6px;
+}
+
+.qso-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.qso-field-header label {
+  margin-bottom: 0;
+}
+
+.qso-time-now-btn {
+  margin: 0;
+  padding: 4px 10px;
+  line-height: 1.2;
 }
 
 .qso-value {
@@ -1060,4 +1081,92 @@ body.dark-theme .qso-pota-icon {
   border-top: 1px solid var(--border-color);
   flex-shrink: 0;
   background-color: var(--bg-primary);
+}
+
+.qso-raw-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qso-raw-modal[hidden] {
+  display: none !important;
+}
+
+.qso-raw-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.qso-raw-modal-dialog {
+  position: relative;
+  width: min(920px, calc(100vw - 40px));
+  max-height: calc(100vh - 60px);
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.qso-raw-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.qso-raw-modal-header h2 {
+  margin: 0;
+  color: var(--header-color);
+  font-size: 18px;
+}
+
+.qso-raw-modal-content {
+  overflow: auto;
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.qso-raw-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) 1fr;
+  gap: 12px;
+  align-items: start;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+}
+
+.qso-raw-key {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  word-break: break-word;
+}
+
+.qso-raw-value {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.qso-raw-empty {
+  margin: 0;
+  color: var(--text-secondary);
 }
