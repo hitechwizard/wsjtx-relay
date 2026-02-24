@@ -9,6 +9,7 @@
   - `start:debug-brk` (`--inspect-brk=9229`)
   - `start:devtools` (`--auto-open-devtools-for-tabs`)
   - `start:trace` (`--enable-logging`)
+- Added a per-QSO `Raw Data` action in QSO Editor that opens a modal showing raw field names and values.
 - Added a publish helper script (`scripts/publish.js`) that resolves GitHub token from:
   - `GH_TOKEN`
   - `GITHUB_TOKEN`
