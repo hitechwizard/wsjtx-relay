@@ -4,6 +4,9 @@ const cancelQsoChanges = document.getElementById('cancelQsoChanges');
 const importQsosBtn = document.getElementById('importQsosBtn');
 const exportQsosBtn = document.getElementById('exportQsosBtn');
 const resendAllQsosBtn = document.getElementById('resendAllQsosBtn');
+const rawDataModal = document.getElementById('rawDataModal');
+const rawDataModalContent = document.getElementById('rawDataModalContent');
+const closeRawDataModalBtn = document.getElementById('closeRawDataModalBtn');
 
 const qsoFields = window.wsjtxQsoFields || {};
 const normalizeCalculatedFields = window.wsjtxNormalizeCalculatedFields || (() => {});
@@ -33,6 +36,21 @@ function setupEventListeners() {
   importQsosBtn.addEventListener('click', handleImportQsos);
   exportQsosBtn.addEventListener('click', handleExportQsos);
   resendAllQsosBtn.addEventListener('click', handleResendAllQsos);
+  if (closeRawDataModalBtn) {
+    closeRawDataModalBtn.addEventListener('click', closeRawDataModal);
+  }
+  if (rawDataModal) {
+    rawDataModal.addEventListener('click', (e) => {
+      if (e.target?.dataset?.action === 'close-raw-modal') {
+        closeRawDataModal();
+      }
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && rawDataModal && !rawDataModal.hidden) {
+      closeRawDataModal();
+    }
+  });
 
   // Theme change listener
   window.electron.onThemeChanged((theme) => {
@@ -93,6 +111,7 @@ function renderQsoList() {
         <div style="font-size: 12px; color: var(--text-secondary);">${formatDateTime(qso.start || qso.end)}</div>
       </div>
       <div class="qso-card-actions">
+        <button class="btn btn-secondary btn-sm btn-raw-data" data-index="${index}">Raw Data</button>
         <button class="btn btn-secondary btn-sm btn-resend" data-index="${index}">Resend</button>
         <button class="btn btn-danger btn-sm btn-delete" data-index="${index}">Delete</button>
       </div>
@@ -119,6 +138,70 @@ function renderQsoList() {
   qsoListContainer.querySelectorAll('.btn-resend').forEach((btn) => {
     btn.addEventListener('click', handleResendQso);
   });
+
+  qsoListContainer.querySelectorAll('.btn-raw-data').forEach((btn) => {
+    btn.addEventListener('click', handleRawDataView);
+  });
+}
+
+function handleRawDataView(e) {
+  const index = parseInt(e.target.dataset.index, 10);
+  const qso = qsos[index];
+  if (!qso) {
+    return;
+  }
+
+  openRawDataModal(qso);
+}
+
+function formatRawValue(value) {
+  if (value === null || typeof value === 'undefined') {
+    return '';
+  }
+
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+
+  return String(value);
+}
+
+function openRawDataModal(qso) {
+  if (!rawDataModal || !rawDataModalContent) {
+    return;
+  }
+
+  const entries = Object.entries(qso || {});
+
+  if (entries.length === 0) {
+    rawDataModalContent.innerHTML = '<p class="qso-raw-empty">No raw fields available for this QSO.</p>';
+  } else {
+    const rows = entries
+      .map(
+        ([fieldName, value]) => `
+          <div class="qso-raw-row">
+            <div class="qso-raw-key">${escapeHtml(fieldName)}</div>
+            <div class="qso-raw-value">${escapeHtml(formatRawValue(value))}</div>
+          </div>`,
+      )
+      .join('');
+    rawDataModalContent.innerHTML = rows;
+  }
+
+  rawDataModal.hidden = false;
+}
+
+function closeRawDataModal() {
+  if (!rawDataModal || !rawDataModalContent) {
+    return;
+  }
+
+  rawDataModal.hidden = true;
+  rawDataModalContent.innerHTML = '';
 }
 
 function handleFieldChange(e) {

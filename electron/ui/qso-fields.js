@@ -29,7 +29,7 @@
       type: 'string',
       pattern: '^[A-Z]{2}[0-9]{2}(?:[A-Z]{2})?$',
     },
-    mode: { label: 'Mode', type: 'enum', values: ['CW', 'SSB', 'FT8', 'FT4'] },
+    mode: { label: 'Mode', type: 'enum', values: ['CW', 'SSB', 'FT8', 'MFSK'] },
     rst_sent: { label: 'RST Sent', type: 'string' },
     rst_rcvd: { label: 'RST Rcvd', type: 'string' },
     station_callsign: { label: 'DE Call', type: 'string' },
