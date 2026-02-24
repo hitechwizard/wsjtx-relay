@@ -1,6 +1,6 @@
 {
   "name": "wsjtx-relay",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "WSJT-X Relay runs as a middle-man between WSJT-X and applications that consume WSJT-X UDP packets. It also has a fairly extensive QSO Editor allowing the user to import/export ADIF files. This simplifies operating during a POTA Activation and creating logs for upload.",
   "main": "src/main.js",
   "author": "Jesse Jarrell - W1BBT",

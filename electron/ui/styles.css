@@ -227,6 +227,10 @@ body {
   text-align: center;
 }
 
+.status-badge[hidden] {
+  display: none !important;
+}
+
 .status-badge.running {
   background-color: var(--green);
   color: white;
