@@ -39,6 +39,48 @@ npm start
 - Use the **Manual QSO Entry** section for SSB/CW or other non-digital contacts.
 - Click **Log Contact** to store and forward the contact.
 
+## Configuration Examples
+
+The app includes a built-in **Help → Examples** page. The same example setup is documented here for quick reference.
+
+### Example Topology
+
+- WSJT-X send/receive on port **2237**.
+- WSJT-X Relay listens on **2237** and relays to **2238**, **2239**, and **2240**.
+- WRL CAT Control listens on **2238**.
+- GridTracker listens on **2239**.
+- openHamclock listens on **2240**.
+
+**Important:** communication is bidirectional. Reply packets from downstream apps (for example GridTracker) are forwarded back through WSJT-X Relay to WSJT-X.
+
+### Quick Flow (ASCII)
+
+```text
+WSJT-X (2237)
+	⇄
+WSJT-X Relay (listen 2237; relay 2238/2239/2240)
+	⇄ WRL CAT Control (2238)
+	⇄ GridTracker (2239)
+	⇄ openHamclock (2240)
+```
+
+### Example Screenshots
+
+1. **WSJT-X (UDP 2237)**  
+	![WSJT-X Settings](electron/assets/examples/WSJT-X%20Settings.png)
+
+2. **WSJT-X Relay (listen 2237, relay 2238/2239/2240)**  
+	![WSJT-X Relay Settings](electron/assets/examples/WSJTX-Relay.png)
+
+3. **WRL CAT Control (2238)**  
+	![WRL CAT Control](electron/assets/examples/WRL%20CAT%20Control.png)
+
+4. **GridTracker (2239)**  
+	![GridTracker](electron/assets/examples/GridTracker.png)
+
+5. **openHamclock (2240)**  
+	![Open Hamclock](electron/assets/examples/Open%20Hamclock.png)
+
 ## End-User Features
 
 - **One-to-many UDP forwarding**: Receive WSJT-X UDP packets on one listen port and forward them to multiple endpoints (GridTracker, Hamclock, N1MM+, N3FJP, and others).
