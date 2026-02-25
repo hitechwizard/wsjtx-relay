@@ -339,11 +339,12 @@ function buildQsoFieldsHtml(qso, index) {
       const inputType = config.type === 'number' ? 'number' : 'text';
       const patternAttr = config.pattern ? ` pattern="${escapeHtml(config.pattern)}"` : '';
       const readonlyAttr = config.readOnly ? ' readonly disabled' : '';
+      const stepAttr = inputType === 'number' ? ' step="any"' : '';
 
       return `
       <div class="editor-field">
         <label>${label}</label>
-        <input type="${inputType}" class="qso-field" data-field="${fieldName}" data-index="${index}" value="${escapeHtml(String(value))}"${patternAttr}${readonlyAttr} />
+        <input type="${inputType}" class="qso-field" data-field="${fieldName}" data-index="${index}" value="${escapeHtml(String(value))}"${stepAttr}${patternAttr}${readonlyAttr} />
       </div>`;
     })
     .join('');

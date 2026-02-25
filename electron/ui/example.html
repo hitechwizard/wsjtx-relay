@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WSJT-X Relay Examples</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="examples-wrapper">
+      <div class="examples-header">
+        <h1>Examples: WSJT-X Relay as the Middle Man</h1>
+        <p>
+          Configure WSJT-X Relay to listen on <strong>2237</strong>, then relay to multiple WSJT-X-aware
+          applications running on different local ports.
+        </p>
+      </div>
+
+      <section class="examples-flow">
+        <h2>Traffic Flow</h2>
+        <div class="examples-flow-diagram" aria-label="WSJT-X Relay traffic flow">
+          <svg viewBox="0 0 980 180" role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="ex-arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse">
+                <path d="M0,0 L8,4 L0,8" fill="currentColor" />
+              </marker>
+            </defs>
+
+            <rect x="10" y="56" width="200" height="68" rx="8" class="examples-node" />
+            <text x="110" y="96" text-anchor="middle" class="examples-node-text">WSJT-X</text>
+            <text x="110" y="116" text-anchor="middle" class="examples-node-subtext">Send/Receive: 2237</text>
+
+            <rect x="370" y="56" width="240" height="68" rx="8" class="examples-node examples-node-relay" />
+            <text x="490" y="96" text-anchor="middle" class="examples-node-text">WSJT-X Relay</text>
+            <text x="490" y="116" text-anchor="middle" class="examples-node-subtext">Listen 2237 → Relay 2238/2239/2240</text>
+
+            <rect x="760" y="12" width="210" height="46" rx="8" class="examples-node" />
+            <text x="865" y="40" text-anchor="middle" class="examples-node-text">WRL CAT Control</text>
+            <text x="865" y="54" text-anchor="middle" class="examples-node-subtext">2238</text>
+
+            <rect x="760" y="67" width="210" height="46" rx="8" class="examples-node" />
+            <text x="865" y="95" text-anchor="middle" class="examples-node-text">GridTracker</text>
+            <text x="865" y="109" text-anchor="middle" class="examples-node-subtext">2239</text>
+
+            <rect x="760" y="122" width="210" height="46" rx="8" class="examples-node" />
+            <text x="865" y="150" text-anchor="middle" class="examples-node-text">openHamclock</text>
+            <text x="865" y="164" text-anchor="middle" class="examples-node-subtext">2240</text>
+
+            <line x1="220" y1="90" x2="360" y2="90" class="examples-flow-line" marker-start="url(#ex-arrowhead)" marker-end="url(#ex-arrowhead)" />
+
+            <line x1="620" y1="35" x2="748" y2="35" class="examples-flow-line" marker-start="url(#ex-arrowhead)" marker-end="url(#ex-arrowhead)" />
+            <line x1="620" y1="90" x2="748" y2="90" class="examples-flow-line" marker-start="url(#ex-arrowhead)" marker-end="url(#ex-arrowhead)" />
+            <line x1="620" y1="145" x2="748" y2="145" class="examples-flow-line" marker-start="url(#ex-arrowhead)" marker-end="url(#ex-arrowhead)" />
+          </svg>
+        </div>
+        <p class="examples-note">
+          Communication is <strong>bidirectional</strong>: packets from WSJT-X flow through Relay to downstream
+          apps, and reply packets (for example from GridTracker) are forwarded back to WSJT-X.
+        </p>
+      </section>
+
+      <section class="examples-grid">
+        <p class="examples-click-note">
+          Click any screenshot to open a larger view with its setup instructions.
+        </p>
+
+        <article class="example-card">
+          <h3>1) WSJT-X settings (port 2237)</h3>
+          <p>Set WSJT-X to send on UDP port <strong>2237</strong>.</p>
+          <img src="../assets/examples/WSJT-X%20Settings.png" alt="WSJT-X settings highlighting UDP configuration on port 2237" />
+        </article>
+
+        <article class="example-card">
+          <h3>2) WSJT-X Relay settings</h3>
+          <p>
+            WSJT-X Relay listens on <strong>2237</strong> and relays to:
+            <strong>2238</strong> (WRL CAT Control), <strong>2239</strong> (GridTracker), and
+            <strong>2240</strong> (openHamclock).
+          </p>
+          <img src="../assets/examples/WSJTX-Relay.png" alt="WSJT-X Relay settings showing listen and forward ports" />
+        </article>
+
+        <article class="example-card">
+          <h3>3) WRL CAT Control</h3>
+          <p>Configure WRL CAT Control to listen for WSJT-X packets on <strong>2238</strong>.</p>
+          <img src="../assets/examples/WRL%20CAT%20Control.png" alt="WRL CAT Control configuration highlighting WSJT-X UDP port" />
+        </article>
+
+        <article class="example-card">
+          <h3>4) GridTracker</h3>
+          <p>
+            Configure GridTracker to listen on <strong>2239</strong>. Reply packets from GridTracker are sent
+            back through Relay to WSJT-X.
+          </p>
+          <img src="../assets/examples/GridTracker.png" alt="GridTracker UDP settings highlighting relay port" />
+        </article>
+
+        <article class="example-card">
+          <h3>5) openHamclock</h3>
+          <p>Configure openHamclock to listen on <strong>2240</strong> by updating the following settings in the .env file.</p>
+          <img src="../assets/examples/Open%20Hamclock.png" alt="openHamclock settings showing relay listening port" />
+        </article>
+      </section>
+    </div>
+
+    <div id="exampleImageModal" class="examples-image-modal" hidden>
+      <div class="examples-image-modal-backdrop" data-action="close-example-modal"></div>
+      <div
+        class="examples-image-modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="exampleImageModalTitle"
+      >
+        <div class="examples-image-modal-header">
+          <h2 id="exampleImageModalTitle">Example Detail</h2>
+          <button id="closeExampleImageModal" class="btn btn-secondary btn-sm" type="button">Close</button>
+        </div>
+        <p id="exampleImageModalInstructions" class="examples-image-modal-instructions"></p>
+        <div class="examples-image-modal-body">
+          <img id="exampleImageModalImg" src="" alt="" />
+        </div>
+      </div>
+    </div>
+
+    <script src="example.js"></script>
+  </body>
+</html>

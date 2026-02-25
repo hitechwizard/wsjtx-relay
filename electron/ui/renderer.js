@@ -30,6 +30,9 @@ const qsoLogContactBtn = document.getElementById('qsoLogContact');
 const qsoTimeNowBtn = document.getElementById('qsoTimeNow');
 const qsoDateOn = document.getElementById('qso-dateon');
 const qsoTimeOn = document.getElementById('qso-timeon');
+const qsoDxCallInput = document.getElementById('qso-dxcall');
+const qsoRstSentInput = document.getElementById('qso-rst');
+const qsoRstRcvdInput = document.getElementById('qso-rcvd');
 const deCall = document.getElementById('deCall');
 const deGrid = document.getElementById('deGrid');
 const manualQsoSection = document.getElementById('manualQsoSection');
@@ -121,6 +124,12 @@ function setupEventListeners() {
   qsoEditorBtn.addEventListener('click', openQsoEditor);
   if (qsoLogContactBtn) qsoLogContactBtn.addEventListener('click', handleQsoLogContact);
   if (qsoTimeNowBtn) qsoTimeNowBtn.addEventListener('click', handleQsoTimeNow);
+  [qsoTimeOn, qsoDxCallInput, qsoRstSentInput, qsoRstRcvdInput].forEach((input) => {
+    if (input) {
+      input.addEventListener('input', updateLogContactButtonState);
+      input.addEventListener('change', updateLogContactButtonState);
+    }
+  });
   if (toggleManualQsoBtn && manualQsoSection) {
     toggleManualQsoBtn.addEventListener('click', () => {
       toggleSectionVisibility(manualQsoSection, toggleManualQsoBtn);
@@ -236,6 +245,36 @@ function setupEventListeners() {
     updateQsoLastHourCount();
     updateQsoTodayUtcCount();
   }, 60000);
+
+  updateLogContactButtonState();
+}
+
+function updateLogContactButtonState() {
+  if (!qsoLogContactBtn) {
+    return;
+  }
+
+  const hasTimeOn = Boolean((qsoTimeOn?.value || '').trim());
+  const hasDxCall = Boolean((qsoDxCallInput?.value || '').trim());
+  const hasRstSent = Boolean((qsoRstSentInput?.value || '').trim());
+  const hasRstRcvd = Boolean((qsoRstRcvdInput?.value || '').trim());
+  const hasDeCall = Boolean((deCall?.textContent || '').trim());
+  const hasDeGrid = Boolean((deGrid?.textContent || '').trim());
+  const hasFrequency = Boolean((qsoFrequency?.value || '').trim());
+  const hasBand = Boolean((qsoBand?.value || '').trim());
+  const hasMode = Boolean((document.getElementById('qso-mode')?.value || '').trim());
+
+  qsoLogContactBtn.disabled = !(
+    hasTimeOn &&
+    hasDxCall &&
+    hasRstSent &&
+    hasRstRcvd &&
+    hasDeCall &&
+    hasDeGrid &&
+    hasFrequency &&
+    hasBand &&
+    hasMode
+  );
 }
 
 function applyUpdateBadgeState(state) {
@@ -458,7 +497,7 @@ function applySettingsToStatusIndicators(settings) {
 
   const enabledForwards = window.currentForwards.filter((forward) => !forward.disabled);
   if (enabledForwards.length > 0) {
-    forwardsValue.textContent = enabledForwards.map((forward) => `${forward.host}:${forward.port}`).join(', ');
+    forwardsValue.textContent = enabledForwards.map((forward) => `${forward.host == '127.0.0.1' || forward.host == 'localhost' ? '' : forward.host + ':'}${forward.port}`).join(', ');
   } else {
     forwardsValue.textContent = 'None enabled';
   }
@@ -531,6 +570,7 @@ function handleQsoTimeNow() {
   const time = now.toISOString().slice(11, 19); // HH:MM:SS
   if (qsoDateOn) qsoDateOn.value = date;
   if (qsoTimeOn) qsoTimeOn.value = time;
+  updateLogContactButtonState();
 }
 
 async function handleQsoLogContact() {
@@ -593,6 +633,7 @@ async function handleQsoLogContact() {
   document.getElementById('qso-rcvd').value = '';
   document.getElementById('qso-state').value = '';
   document.getElementById('qso-siginfo').value = '';
+  updateLogContactButtonState();
 }
 
 async function startRelay() {
@@ -846,6 +887,7 @@ async function refreshQsoLog() {
 function updateStatusIndicators(statusData) {
   deCall.textContent = statusData.deCall;
   deGrid.textContent = statusData.deGrid;
+  updateLogContactButtonState();
   updateMyParkFromConfigurationName(statusData);
 
   if (statusData.frequency) {
