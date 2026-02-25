@@ -56,12 +56,10 @@ The app includes a built-in **Help → Examples** page. The same example setup i
 ### Quick Flow (ASCII)
 
 ```text
-WSJT-X (2237)
-	⇄
-WSJT-X Relay (listen 2237; relay 2238/2239/2240)
-	⇄ WRL CAT Control (2238)
-	⇄ GridTracker (2239)
-	⇄ openHamclock (2240)
+[WSJT-X : 2237]  ⇄  [WSJT-X Relay : listen 2237]
+						  ⇄ [WRL CAT Control : 2238]
+						  ⇄ [GridTracker      : 2239]
+						  ⇄ [openHamclock     : 2240]
 ```
 
 ### Example Screenshots
