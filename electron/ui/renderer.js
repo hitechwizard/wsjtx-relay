@@ -11,6 +11,7 @@ const qsoContainer = document.getElementById('qsoContainer');
 const qsoCount = document.getElementById('qsoCount');
 const qsoTodayUtc = document.getElementById('qsoTodayUtc');
 const qsoLastHour = document.getElementById('qsoLastHour');
+const activityRxIndicator = document.getElementById('activityRxIndicator');
 const qsoFilterCall = document.getElementById('qsoFilterCall');
 const activityPacketFilters = document.querySelectorAll('.activity-packet-filter');
 const listenPortValue = document.getElementById('listenPortValue');
@@ -46,6 +47,7 @@ let currentQsoCallFilter = '';
 let selectedActivityPacketTypes = new Set();
 let isBulkQsoRender = false;
 let activityPacketFilterSaveTimer = null;
+let activityRxBlinkTimer = null;
 
 const LOG_PACKET_TYPES = ['Heartbeat', 'Status', 'Decode', 'QSO Logged', 'Logged ADIF'];
 const DEFAULT_ACTIVITY_PACKET_FILTERS = [...LOG_PACKET_TYPES, 'SYSTEM'];
@@ -210,6 +212,7 @@ function setupEventListeners() {
 
   // Relay events
   window.electron.onRelayLog((msg) => {
+    blinkActivityRxIndicator();
     if (!shouldLogPacketMessage(msg)) {
       return;
     }
@@ -247,6 +250,23 @@ function setupEventListeners() {
   }, 60000);
 
   updateLogContactButtonState();
+}
+
+function blinkActivityRxIndicator() {
+  if (!activityRxIndicator) {
+    return;
+  }
+
+  activityRxIndicator.classList.add('is-active');
+
+  if (activityRxBlinkTimer) {
+    clearTimeout(activityRxBlinkTimer);
+  }
+
+  activityRxBlinkTimer = setTimeout(() => {
+    activityRxIndicator.classList.remove('is-active');
+    activityRxBlinkTimer = null;
+  }, 180);
 }
 
 function updateLogContactButtonState() {
@@ -381,6 +401,11 @@ function renderAppLogo() {
 function toggleSectionVisibility(section, toggleButton) {
   section.hidden = !section.hidden;
   toggleButton.textContent = section.hidden ? 'Show' : 'Hide';
+
+  const parentPanel = section.closest('.status-panel');
+  if (parentPanel) {
+    parentPanel.classList.toggle('section-collapsed', section.hidden);
+  }
 }
 
 function setupManualFieldValidation() {
@@ -520,6 +545,7 @@ async function loadSettings() {
   updateQsoTodayUtcCount();
   updateQsoLastHourCount();
   updateQsoCount();
+  scrollQsoLogToBottom();
 }
 
 async function loadTheme() {
@@ -698,6 +724,16 @@ function addLogEntry(msg, type = 'normal') {
   }
 }
 
+function scrollQsoLogToBottom() {
+  if (!qsoContainer) {
+    return;
+  }
+
+  requestAnimationFrame(() => {
+    qsoContainer.scrollTop = qsoContainer.scrollHeight;
+  });
+}
+
 function addQsoEntry(qso, type = 'normal') {
   const entry = document.createElement('div');
   entry.className = `log-entry ${type} qso-log-entry`;
@@ -817,9 +853,6 @@ function addQsoEntry(qso, type = 'normal') {
   }
 
   qsoContainer.appendChild(entry);
-  if (!isBulkQsoRender) {
-    qsoContainer.scrollTop = qsoContainer.scrollHeight;
-  }
 
   // Maintain in-memory list for future duplicate detection
   qsoList.push(qso);
@@ -832,6 +865,7 @@ function addQsoEntry(qso, type = 'normal') {
   updateQsoCount();
   updateQsoTodayUtcCount();
   updateQsoLastHourCount();
+  scrollQsoLogToBottom();
 }
 
 function applyQsoRowStripes() {
@@ -882,6 +916,7 @@ async function refreshQsoLog() {
   updateQsoTodayUtcCount();
   updateQsoLastHourCount();
   updateQsoCount();
+  scrollQsoLogToBottom();
 }
 
 function updateStatusIndicators(statusData) {
