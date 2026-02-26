@@ -10,6 +10,7 @@
   - Explicit bidirectional relay behavior notes for reply packet routing back to WSJT-X
   - A left-to-right flow diagram mirroring the WSJT-X Relay logo layout (WSJT-X → Relay → applications)
 - Added click-to-expand image viewing on the Examples page, including per-image setup instructions in a modal.
+- Added an Activity Log `RX` packet indicator that blinks when packets are received, even when packet filters hide log lines.
 
 ### Changed
 
