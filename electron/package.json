@@ -41,16 +41,20 @@
   "build": {
     "appId": "net.hitechwizard.wsjtxrelay",
     "productName": "WSJT-X Relay",
-    "artifactName": "wsjtx-relay-${version}-${os}-${arch}.${ext}",
     "icon": "assets/icon.png",
     "win": {
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "artifactName": "wsjtx-relay-${version}-${os}-${arch}.${ext}"
     },
     "mac": {
+      "artifactName": "wsjtx-relay-${version}-${os}-${arch}.${ext}",
       "target": [
         "dmg",
         "zip"
       ]
+    },
+    "linux": {
+      "artifactName": "wsjtx-relay-${version}-${os}-${arch}.${ext}"
     },
     "publish": [
       {
