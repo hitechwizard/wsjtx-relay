@@ -41,6 +41,7 @@
   "build": {
     "appId": "net.hitechwizard.wsjtxrelay",
     "productName": "WSJT-X Relay",
+    "artifactName": "wsjtx-relay-${version}-${os}-${arch}.${ext}",
     "icon": "assets/icon.png",
     "win": {
       "icon": "assets/icon.ico"
