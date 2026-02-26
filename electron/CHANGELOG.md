@@ -1,5 +1,38 @@
 # Changelog
 
+## 1.0.3 - TBD
+
+### Added
+
+- Implemented a full Help → Examples page (`ui/example.html`) with:
+  - Application configuration walkthrough images sourced from `assets/examples`
+  - Port mapping examples (`2237` listen, relays to `2238`, `2239`, `2240`)
+  - Explicit bidirectional relay behavior notes for reply packet routing back to WSJT-X
+  - A left-to-right flow diagram mirroring the WSJT-X Relay logo layout (WSJT-X → Relay → applications)
+- Added click-to-expand image viewing on the Examples page, including per-image setup instructions in a modal.
+- Added an Activity Log `RX` packet indicator that blinks when packets are received, even when packet filters hide log lines.
+
+### Changed
+
+- Normalized QSO Log row height so rows stay visually consistent when POTA icon indicators are present.
+- Set QSO Log rows to fixed height for uniform rendering across icon/no-icon entries.
+- Replaced the Help menu Examples placeholder popup with a dedicated Examples window.
+
+### Fixed
+
+- Updated Manual QSO Entry validation so `Log Contact` is disabled until required fields have values:
+  - `Mode`
+  - `Frequency`
+  - `Band`
+  - `Time On`
+  - `DX Call`
+  - `RST Sent`
+  - `RST Rcvd`
+  - `DE Call`
+  - `DE Gridsquare`
+- Added live enable/disable refresh for `Log Contact` on input/change and after `Now`/reset flows.
+- Updated Frequency numeric inputs to accept floating-point values (`step="any"`) so browser validation no longer enforces integer-only values.
+
 ## 1.0.2 - 02/24/2026
 
 ### Added

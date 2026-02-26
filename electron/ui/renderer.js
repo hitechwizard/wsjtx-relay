@@ -11,6 +11,7 @@ const qsoContainer = document.getElementById('qsoContainer');
 const qsoCount = document.getElementById('qsoCount');
 const qsoTodayUtc = document.getElementById('qsoTodayUtc');
 const qsoLastHour = document.getElementById('qsoLastHour');
+const activityRxIndicator = document.getElementById('activityRxIndicator');
 const qsoFilterCall = document.getElementById('qsoFilterCall');
 const activityPacketFilters = document.querySelectorAll('.activity-packet-filter');
 const listenPortValue = document.getElementById('listenPortValue');
@@ -30,6 +31,9 @@ const qsoLogContactBtn = document.getElementById('qsoLogContact');
 const qsoTimeNowBtn = document.getElementById('qsoTimeNow');
 const qsoDateOn = document.getElementById('qso-dateon');
 const qsoTimeOn = document.getElementById('qso-timeon');
+const qsoDxCallInput = document.getElementById('qso-dxcall');
+const qsoRstSentInput = document.getElementById('qso-rst');
+const qsoRstRcvdInput = document.getElementById('qso-rcvd');
 const deCall = document.getElementById('deCall');
 const deGrid = document.getElementById('deGrid');
 const manualQsoSection = document.getElementById('manualQsoSection');
@@ -43,6 +47,7 @@ let currentQsoCallFilter = '';
 let selectedActivityPacketTypes = new Set();
 let isBulkQsoRender = false;
 let activityPacketFilterSaveTimer = null;
+let activityRxBlinkTimer = null;
 
 const LOG_PACKET_TYPES = ['Heartbeat', 'Status', 'Decode', 'QSO Logged', 'Logged ADIF'];
 const DEFAULT_ACTIVITY_PACKET_FILTERS = [...LOG_PACKET_TYPES, 'SYSTEM'];
@@ -121,6 +126,12 @@ function setupEventListeners() {
   qsoEditorBtn.addEventListener('click', openQsoEditor);
   if (qsoLogContactBtn) qsoLogContactBtn.addEventListener('click', handleQsoLogContact);
   if (qsoTimeNowBtn) qsoTimeNowBtn.addEventListener('click', handleQsoTimeNow);
+  [qsoTimeOn, qsoDxCallInput, qsoRstSentInput, qsoRstRcvdInput].forEach((input) => {
+    if (input) {
+      input.addEventListener('input', updateLogContactButtonState);
+      input.addEventListener('change', updateLogContactButtonState);
+    }
+  });
   if (toggleManualQsoBtn && manualQsoSection) {
     toggleManualQsoBtn.addEventListener('click', () => {
       toggleSectionVisibility(manualQsoSection, toggleManualQsoBtn);
@@ -201,6 +212,7 @@ function setupEventListeners() {
 
   // Relay events
   window.electron.onRelayLog((msg) => {
+    blinkActivityRxIndicator();
     if (!shouldLogPacketMessage(msg)) {
       return;
     }
@@ -236,6 +248,53 @@ function setupEventListeners() {
     updateQsoLastHourCount();
     updateQsoTodayUtcCount();
   }, 60000);
+
+  updateLogContactButtonState();
+}
+
+function blinkActivityRxIndicator() {
+  if (!activityRxIndicator) {
+    return;
+  }
+
+  activityRxIndicator.classList.add('is-active');
+
+  if (activityRxBlinkTimer) {
+    clearTimeout(activityRxBlinkTimer);
+  }
+
+  activityRxBlinkTimer = setTimeout(() => {
+    activityRxIndicator.classList.remove('is-active');
+    activityRxBlinkTimer = null;
+  }, 180);
+}
+
+function updateLogContactButtonState() {
+  if (!qsoLogContactBtn) {
+    return;
+  }
+
+  const hasTimeOn = Boolean((qsoTimeOn?.value || '').trim());
+  const hasDxCall = Boolean((qsoDxCallInput?.value || '').trim());
+  const hasRstSent = Boolean((qsoRstSentInput?.value || '').trim());
+  const hasRstRcvd = Boolean((qsoRstRcvdInput?.value || '').trim());
+  const hasDeCall = Boolean((deCall?.textContent || '').trim());
+  const hasDeGrid = Boolean((deGrid?.textContent || '').trim());
+  const hasFrequency = Boolean((qsoFrequency?.value || '').trim());
+  const hasBand = Boolean((qsoBand?.value || '').trim());
+  const hasMode = Boolean((document.getElementById('qso-mode')?.value || '').trim());
+
+  qsoLogContactBtn.disabled = !(
+    hasTimeOn &&
+    hasDxCall &&
+    hasRstSent &&
+    hasRstRcvd &&
+    hasDeCall &&
+    hasDeGrid &&
+    hasFrequency &&
+    hasBand &&
+    hasMode
+  );
 }
 
 function applyUpdateBadgeState(state) {
@@ -342,6 +401,11 @@ function renderAppLogo() {
 function toggleSectionVisibility(section, toggleButton) {
   section.hidden = !section.hidden;
   toggleButton.textContent = section.hidden ? 'Show' : 'Hide';
+
+  const parentPanel = section.closest('.status-panel');
+  if (parentPanel) {
+    parentPanel.classList.toggle('section-collapsed', section.hidden);
+  }
 }
 
 function setupManualFieldValidation() {
@@ -458,7 +522,7 @@ function applySettingsToStatusIndicators(settings) {
 
   const enabledForwards = window.currentForwards.filter((forward) => !forward.disabled);
   if (enabledForwards.length > 0) {
-    forwardsValue.textContent = enabledForwards.map((forward) => `${forward.host}:${forward.port}`).join(', ');
+    forwardsValue.textContent = enabledForwards.map((forward) => `${forward.host == '127.0.0.1' || forward.host == 'localhost' ? '' : forward.host + ':'}${forward.port}`).join(', ');
   } else {
     forwardsValue.textContent = 'None enabled';
   }
@@ -481,6 +545,7 @@ async function loadSettings() {
   updateQsoTodayUtcCount();
   updateQsoLastHourCount();
   updateQsoCount();
+  scrollQsoLogToBottom();
 }
 
 async function loadTheme() {
@@ -531,6 +596,7 @@ function handleQsoTimeNow() {
   const time = now.toISOString().slice(11, 19); // HH:MM:SS
   if (qsoDateOn) qsoDateOn.value = date;
   if (qsoTimeOn) qsoTimeOn.value = time;
+  updateLogContactButtonState();
 }
 
 async function handleQsoLogContact() {
@@ -593,6 +659,7 @@ async function handleQsoLogContact() {
   document.getElementById('qso-rcvd').value = '';
   document.getElementById('qso-state').value = '';
   document.getElementById('qso-siginfo').value = '';
+  updateLogContactButtonState();
 }
 
 async function startRelay() {
@@ -655,6 +722,16 @@ function addLogEntry(msg, type = 'normal') {
   if (entries.length > 1000) {
     entries[0].remove();
   }
+}
+
+function scrollQsoLogToBottom() {
+  if (!qsoContainer) {
+    return;
+  }
+
+  requestAnimationFrame(() => {
+    qsoContainer.scrollTop = qsoContainer.scrollHeight;
+  });
 }
 
 function addQsoEntry(qso, type = 'normal') {
@@ -776,9 +853,6 @@ function addQsoEntry(qso, type = 'normal') {
   }
 
   qsoContainer.appendChild(entry);
-  if (!isBulkQsoRender) {
-    qsoContainer.scrollTop = qsoContainer.scrollHeight;
-  }
 
   // Maintain in-memory list for future duplicate detection
   qsoList.push(qso);
@@ -791,6 +865,7 @@ function addQsoEntry(qso, type = 'normal') {
   updateQsoCount();
   updateQsoTodayUtcCount();
   updateQsoLastHourCount();
+  scrollQsoLogToBottom();
 }
 
 function applyQsoRowStripes() {
@@ -841,11 +916,13 @@ async function refreshQsoLog() {
   updateQsoTodayUtcCount();
   updateQsoLastHourCount();
   updateQsoCount();
+  scrollQsoLogToBottom();
 }
 
 function updateStatusIndicators(statusData) {
   deCall.textContent = statusData.deCall;
   deGrid.textContent = statusData.deGrid;
+  updateLogContactButtonState();
   updateMyParkFromConfigurationName(statusData);
 
   if (statusData.frequency) {

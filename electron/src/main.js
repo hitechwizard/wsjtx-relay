@@ -13,6 +13,7 @@ const isMac = process.platform === 'darwin';
 let mainWindow;
 let settingsWindow;
 let qsoEditorWindow;
+let examplesWindow;
 let relay;
 let updateCheckTimer;
 let isUpdateCheckInProgress = false;
@@ -365,17 +366,39 @@ function configureUpdateChecks() {
   }, UPDATE_CHECK_INTERVAL_MS);
 }
 
-function showExamplesHelpStub() {
-  if (!mainWindow) {
+function createExamplesWindow() {
+  if (examplesWindow) {
+    examplesWindow.focus();
     return;
   }
 
-  dialog.showMessageBox(mainWindow, {
-    type: 'info',
-    title: 'Examples',
-    message: 'Examples help content is not implemented yet.',
-    detail: 'This menu item is a placeholder for future documentation.',
-    buttons: ['OK'],
+  examplesWindow = new BrowserWindow({
+    width: 1200,
+    height: 860,
+    parent: mainWindow,
+    show: false,
+    icon: APP_ICON_PATH,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  examplesWindow.loadFile(path.join(__dirname, '../ui/example.html'));
+
+  examplesWindow.webContents.on('did-finish-load', () => {
+    const theme = store.get('theme', 'light');
+    examplesWindow.webContents.send('theme-changed', theme);
+  });
+
+  examplesWindow.on('closed', () => {
+    examplesWindow = null;
+  });
+
+  examplesWindow.once('ready-to-show', () => {
+    examplesWindow.show();
   });
 }
 
@@ -866,7 +889,7 @@ app.on('ready', () => {
         },
         {
           label: 'Examples',
-          click: showExamplesHelpStub,
+          click: createExamplesWindow,
         },
         ...(!isMac ? [{ type: 'separator' }, { role: 'about' }] : []),
       ],
