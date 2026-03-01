@@ -2,7 +2,9 @@ const dgram = require('dgram');
 const EventEmitter = require('events');
 const { WsjtxUdpParser } = require('./WsjtxUdpParser');
 const { AdiWriter } = require('./adif/AdiWriter');
+const { app } = require('electron');
 
+const version = app.getVersion();
 const CLIENT_TIMEOUT = 60000; // milliseconds
 
 class WSJTXRelay extends EventEmitter {
@@ -276,17 +278,17 @@ class WSJTXRelay extends EventEmitter {
 
   createAdifPacket(qso) {
     // This is where we create a WSJT-X Type 12 Packet and send it to all the forwards
-    const adiWriter = new AdiWriter('WSJT-X Relay', '1.0.0');
+    const adiWriter = new AdiWriter('WSJT-X Relay', version);
     adiWriter.writeContact(qso);
     const adif = adiWriter.getData();
     const magicBytes = Buffer.from([0xad, 0xbc, 0xcb, 0xda]);
-    const version = Buffer.from([0x00, 0x00, 0x00, 0x02]);
+    const protoVersion = Buffer.from([0x00, 0x00, 0x00, 0x02]);
     const type = Buffer.from([0x00, 0x00, 0x00, 0x0c]); // 12 -> ADIF
     const id = Buffer.concat([Buffer.from([0x00, 0x00, 0x00, 0x06]), Buffer.from('WSJT-X')]);
     const adif_length = Buffer.alloc(4);
     adif_length.writeUint32BE(adif.length);
     const adif_buffer = Buffer.from(adif);
-    const packet = Buffer.concat([magicBytes, version, type, id, adif_length, adif_buffer]);
+    const packet = Buffer.concat([magicBytes, protoVersion, type, id, adif_length, adif_buffer]);
     // packet is ready to go.... SEND IT!
     return packet;
   }
@@ -329,10 +331,157 @@ class WSJTXRelay extends EventEmitter {
         ),
       );
 
+      // Send QSO Logged packet after ADIF packet
+      const qsoLoggedBuffer = this.createQsoLoggedPacket(qso);
+      await Promise.all(
+        activeForwards.map(
+          (fwd) =>
+            new Promise((resolve) => {
+              this.socket.send(qsoLoggedBuffer, fwd.port, fwd.host, (err) => {
+                if (err) {
+                  this.emit(
+                    'error',
+                    `Error sending QSO Logged to ${fwd.host}:${fwd.port}: ${err.message}`,
+                  );
+                } else {
+                  this.emit('log', `QSO Logged -> ${fwd.host}:${fwd.port} ${qsoInfo}`);
+                }
+                resolve();
+              });
+            }),
+        ),
+      );
       if (this.forwardDelayMs > 0 && index < qsos.length - 1) {
         await this.sleep(this.forwardDelayMs);
       }
     }
+  }
+
+  createQsoLoggedPacket(qso) {
+    // Construct WSJT-X Type 5 (QSO Logged) packet
+    // Reference: WsjtxUdpParser.parseQSOLoggedMessage
+    const magicBytes = Buffer.from([0xad, 0xbc, 0xcb, 0xda]);
+    const version = Buffer.from([0x00, 0x00, 0x00, 0x02]);
+    const type = Buffer.from([0x00, 0x00, 0x00, 0x05]); // 5 -> QSO Logged
+    const id = Buffer.concat([Buffer.from([0x00, 0x00, 0x00, 0x06]), Buffer.from('WSJT-X')]);
+
+    // Helper to encode string as WSJT-X packet field
+    function encodeString(str) {
+      if (!str) str = '';
+      const buf = Buffer.from(str, 'utf8');
+      const len = Buffer.alloc(4);
+      len.writeUInt32BE(buf.length);
+      return Buffer.concat([len, buf]);
+    }
+
+    // Helper to encode 64-bit integer (date/time)
+    function encodeUint64(val) {
+      const buf = Buffer.alloc(8);
+      if (typeof val === 'bigint') {
+        buf.writeBigUInt64BE(val);
+      } else {
+        buf.writeBigUInt64BE(BigInt(val || 0));
+      }
+      return buf;
+    }
+
+    // Helper to encode 32-bit integer
+    function encodeUint32(val) {
+      const buf = Buffer.alloc(4);
+      buf.writeUInt32BE(val || 0);
+      return buf;
+    }
+
+    // Helper to encode 8-bit integer
+    function encodeUint8(val) {
+      const buf = Buffer.alloc(1);
+      buf.writeUInt8(val || 0);
+      return buf;
+    }
+
+    // Map QSO fields to QSO Logged packet fields
+    // These should match the order in parseQSOLoggedMessage
+    // Date/time off
+    const dateOff = qso.dateOff || 0;
+    const timeOff = qso.timeOff || 0;
+    const timespecOff = qso.timespecOff || 0;
+    const offsetOff = qso.offsetOff || 0;
+    // QSO details
+    const dxCall = qso.dxCall || qso.call || '';
+    const dxGrid = qso.dxGrid || qso.grid || qso.gridsquare || '';
+    // Frequency: try all possible field names and normalize to integer Hz
+    let dialFrequency = qso.dialFrequency || qso.freq || qso.frequency || 0;
+    if (typeof dialFrequency === 'string') dialFrequency = parseFloat(dialFrequency);
+    if (typeof dialFrequency === 'number' && dialFrequency < 1000 && dialFrequency > 0) {
+      // Assume MHz, convert to Hz
+      dialFrequency = Math.round(dialFrequency * 1e6);
+    } else {
+      dialFrequency = Math.round(dialFrequency);
+    }
+    // Band: try all possible field names
+    const band = qso.band || qso.band_rx || '';
+    // Mode
+    const mode = qso.mode || qso.submode || '';
+    // RST Sent
+    const rstSent = qso.rstSent || qso.rst_sent || qso.rst || '';
+    // RST Received
+    const rptRcvd = qso.rptRcvd || qso.rst_rcvd || qso.rcvd || '';
+    // Power: try all possible field names
+    const txPwr = qso.txPwr || qso.tx_pwr || qso.power || qso.rx_pwr || '';
+    // Comments
+    const comments = qso.comments || qso.comment || '';
+    // Name
+    const name = qso.name || '';
+    // Date/time on
+    const dateOn = qso.dateOn || qso.date_on || 0;
+    const timeOn = qso.timeOn || qso.time_on || 0;
+    const timespecOn = qso.timespecOn || 0;
+    const offsetOn = qso.offsetOn || 0;
+    // Operator and station
+    const operator = qso.operator || '';
+    const deCall = qso.deCall || qso.my_call || qso.station_callsign || '';
+    const deGrid = qso.deGrid || qso.my_gridsquare || '';
+    const exchangeSent = qso.exchangeSent || '';
+    const exchangeRcvd = qso.exchangeRcvd || '';
+
+    // Build packet
+    let fields = [
+      encodeUint64(dateOff),
+      encodeUint32(timeOff),
+      encodeUint8(timespecOff),
+    ];
+    if (timespecOff == 2) fields.push(encodeUint32(offsetOff));
+    fields = fields.concat([
+      encodeString(dxCall),
+      encodeString(dxGrid),
+      encodeUint64(dialFrequency),
+      encodeString(mode),
+      encodeString(rstSent),
+      encodeString(rptRcvd),
+      encodeString(txPwr),
+      encodeString(comments),
+      encodeString(name),
+      encodeUint64(dateOn),
+      encodeUint32(timeOn),
+      encodeUint8(timespecOn),
+    ]);
+    if (timespecOn == 2) fields.push(encodeUint32(offsetOn));
+    fields = fields.concat([
+      encodeString(operator),
+      encodeString(deCall),
+      encodeString(deGrid),
+      encodeString(exchangeSent),
+      encodeString(exchangeRcvd),
+    ]);
+
+    const packet = Buffer.concat([
+      magicBytes,
+      version,
+      type,
+      id,
+      ...fields,
+    ]);
+    return packet;
   }
 }
 
