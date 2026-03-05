@@ -15,6 +15,7 @@
     "start:trace": "electron --enable-logging .",
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
+    "generate-icon": "node scripts/generate-icon.js",
     "dev": "electron --no-sandbox .",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "electron-builder --dir",
@@ -30,12 +31,16 @@
   "dependencies": {
     "dateformat": "^5.0.3",
     "electron-store": "^8.1.0",
-    "electron-updater": "^6.8.3"
+    "electron-updater": "^6.8.3",
+    "icojs": "^0.20.1",
+    "image-to-ico": "^1.0.1",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config": "^2.1.0",
     "electron": "^40.6.0",
     "electron-builder": "^26.8.1",
+    "ico": "^0.3.3",
     "jimp": "^1.6.0"
   },
   "build": {

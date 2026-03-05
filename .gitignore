@@ -2,3 +2,4 @@
 /.vscode
 wsjtx-relay.code-workspace
 __pycache__
+.venv
