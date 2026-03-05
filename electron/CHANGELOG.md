@@ -1,6 +1,17 @@
 # Changelog
 
-## 1.0.3 - TBD
+## 1.0.4 - 03/05/2026
+
+### Changed
+
+- Update plist on Mac to allow application to perform upgrades
+- Emit QSO Logged packet in addition to the Logged ADIF packet for Manual QSO Entries
+
+### Fixed
+
+- Fixes for Windows icon
+
+## 1.0.3 - 02/26/2026
 
 ### Added
 
