@@ -169,6 +169,13 @@ body {
   align-self: flex-end;
 }
 
+.floating-station-values {
+  float: left;
+  margin-right: 24px;
+  margin-top: 4px;
+  z-index: 2;
+}
+
 .station-field {
   display: flex;
   flex-direction: column;
