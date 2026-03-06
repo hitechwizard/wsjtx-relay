@@ -55,6 +55,8 @@ class AdiWriter {
       this.writeField('qso_date_off', dateformat(date, 'UTC:yyyymmdd'));
       this.writeField('time_off', dateformat(date, 'UTC:HHMMss'));
       return;
+    } else if (typeof value === 'number') {
+      value = value.toString();
     }
 
     if (!(outKey in fields)) {
