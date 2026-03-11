@@ -79,9 +79,6 @@ npx electron-builder
 
 Settings are automatically saved to:
 
-- **macOS**: `~/Library/Application Support/wsjtx-relay/config.json`
-- **Windows**: `%APPDATA%\wsjtx-relay\config.json`
-- **Linux**: `~/.config/wsjtx-relay/config.json`
 
 ## Command Line Options (Python Version)
 

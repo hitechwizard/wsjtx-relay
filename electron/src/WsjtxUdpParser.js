@@ -77,7 +77,7 @@ class WsjtxUdpParser {
     this.deGrid = this.getStringUtf8FromData(this.data, this.offset);
     this.dxGrid = this.getStringUtf8FromData(this.data, this.offset);
     this.txWatchdog = this.getBoolFromData(this.data, this.offset);
-    this.subMode = this.getStringUtf8FromData(this.data, this.offset);
+    this.submode = this.getStringUtf8FromData(this.data, this.offset);
     this.fastMode = this.getBoolFromData(this.data, this.offset);
     this.specialOperationMode = this.getUint8FromData(this.data, this.offset);
     //0 -> NONE

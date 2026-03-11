@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('electron', {
   // Settings API
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
+  validateForwardHost: (host) => ipcRenderer.invoke('validate-forward-host', host),
 
   // Theme API
   getTheme: () => ipcRenderer.invoke('get-theme'),

@@ -739,12 +739,16 @@ function addQsoEntry(qso, type = 'normal') {
   entry.className = `log-entry ${type} qso-log-entry`;
   entry.dataset.call = String(qso.call || '').toUpperCase();
 
+  const qsoMode = String(qso.mode || '').trim();
+  const qsoSubmode = String(qso.submode || '').trim();
+  const displayMode = qsoMode.toUpperCase() === 'MFSK' && qsoSubmode ? qsoSubmode : qsoMode;
+
   // Field Formatting should happen here.
   const isoStart = qso.start ? qso.start : qso.end ? qso.end : '0000-00-00T00:00:00Z';
   const display = {
     start: isoStart,
     call: qso.call || 'UNKNOWN',
-    mode: qso.mode || '',
+    mode: displayMode,
     freq: typeof qso.freq === 'number' ? qso.freq.toFixed(4) : qso.freq || '',
     band: qso.band || '',
     tx_pwr: qso.tx_pwr || '',
@@ -775,17 +779,23 @@ function addQsoEntry(qso, type = 'normal') {
   });
 
   // Duplicate detection: match on call, band, and start date (YYYY-MM-DD)
+  const modeMatchKey = (item) => {
+    const mode = String(item.mode || '').trim().toUpperCase();
+    const submode = String(item.submode || '').trim().toUpperCase();
+    return mode === 'MFSK' && submode ? submode : mode;
+  };
+
   const incomingCall = (qso.call || '').toUpperCase();
   const incomingBand = qso.band || '';
   const incomingDate = isoStart.split('T')[0] || '';
-  const incomingMode = (qso.mode || '').toUpperCase();
+  const incomingMode = modeMatchKey(qso);
 
   const isDupe = qsoList.some((existing) => {
     const exCall = (existing.call || '').toUpperCase();
     const exBand = existing.band || '';
     const exIso = existing.start || existing.end || '';
     const exDate = exIso.split('T')[0] || '';
-    const exMode = (existing.mode || '').toUpperCase();
+    const exMode = modeMatchKey(existing);
     return (
       exCall === incomingCall &&
       exBand === incomingBand &&
@@ -802,7 +812,7 @@ function addQsoEntry(qso, type = 'normal') {
       const exBand = existing.band || '';
       const exIso = existing.start || existing.end || '';
       const exDate = exIso.split('T')[0] || '';
-      const exMode = (existing.mode || '').toUpperCase();
+      const exMode = modeMatchKey(existing);
       return (
         exCall === incomingCall &&
         exBand === incomingBand &&
@@ -822,7 +832,10 @@ function addQsoEntry(qso, type = 'normal') {
       const exIso = dupeMatch.start || dupeMatch.end || '';
       const exDate = exIso.split('T')[0] || '';
       const exTime = (exIso.split('T')[1] || '').substr(0, 8) || '';
-      const exMode = dupeMatch.mode || '';
+      const exMode =
+        String(dupeMatch.mode || '').toUpperCase() === 'MFSK' && String(dupeMatch.submode || '').trim()
+          ? String(dupeMatch.submode || '').trim()
+          : dupeMatch.mode || '';
       // Custom tooltip element with details including time
       const tooltip = document.createElement('span');
       tooltip.className = 'qso-dupe-tooltip';
@@ -909,6 +922,7 @@ async function refreshQsoLog() {
   const qsos = settings.qsos || [];
   isBulkQsoRender = true;
   qsos.forEach((qso) => {
+    normalizeCalculatedFields(qso);
     addQsoEntry(qso, 'normal');
   });
   isBulkQsoRender = false;

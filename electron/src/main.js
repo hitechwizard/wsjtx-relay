@@ -74,6 +74,7 @@ const store = new Store({
   defaults: {
     listenPort: 2237,
     forwards: [],
+    autoStartRelay: false,
     forwardDelaySeconds: 0.5,
     activityPacketFilters: [
       'Heartbeat',
@@ -547,6 +548,7 @@ ipcMain.handle('get-settings', () => {
   return {
     listenPort: store.get('listenPort'),
     forwards: store.get('forwards'),
+    autoStartRelay: store.get('autoStartRelay', false),
     forwardDelaySeconds: store.get('forwardDelaySeconds', 0.5),
     activityPacketFilters: store.get('activityPacketFilters', [
       'Heartbeat',
@@ -561,11 +563,44 @@ ipcMain.handle('get-settings', () => {
   };
 });
 
+ipcMain.handle('validate-forward-host', async (event, host) => {
+  const normalizedHost = String(host || '').trim();
+
+  if (!normalizedHost) {
+    return { valid: false, error: 'Host is required' };
+  }
+
+  try {
+    const results = await dns.promises.lookup(normalizedHost, {
+      family: 4,
+      all: true,
+      verbatim: true,
+    });
+
+    if (!Array.isArray(results) || results.length === 0) {
+      return { valid: false, error: 'Host did not resolve to an IPv4 address' };
+    }
+
+    return {
+      valid: true,
+      addresses: results.map((entry) => entry.address).filter(Boolean),
+    };
+  } catch (error) {
+    return {
+      valid: false,
+      error: error && error.message ? error.message : 'Host lookup failed',
+    };
+  }
+});
+
 ipcMain.handle(
   'save-settings',
-  (event, { listenPort, forwards, forwardDelaySeconds, activityPacketFilters, theme }) => {
+  (event, { listenPort, forwards, autoStartRelay, forwardDelaySeconds, activityPacketFilters, theme }) => {
     store.set('listenPort', listenPort);
     store.set('forwards', forwards);
+    if (typeof autoStartRelay === 'boolean') {
+      store.set('autoStartRelay', autoStartRelay);
+    }
     if (typeof forwardDelaySeconds === 'number' && Number.isFinite(forwardDelaySeconds)) {
       store.set('forwardDelaySeconds', forwardDelaySeconds);
     }
@@ -584,6 +619,7 @@ ipcMain.handle(
     const updatedSettings = {
       listenPort: store.get('listenPort'),
       forwards: store.get('forwards'),
+      autoStartRelay: store.get('autoStartRelay', false),
       forwardDelaySeconds: store.get('forwardDelaySeconds', 0.5),
       activityPacketFilters: store.get('activityPacketFilters', [
         'Heartbeat',
@@ -829,6 +865,41 @@ app.on('ready', () => {
   createWindow();
   configureUpdateChecks();
 
+  if (store.get('autoStartRelay', false)) {
+    if (!relay) {
+      const listenPort = store.get('listenPort');
+      const forwards = store.get('forwards');
+      const forwardDelaySeconds = store.get('forwardDelaySeconds', 0.5);
+      relay = new WSJTXRelay(listenPort, forwards, forwardDelaySeconds);
+
+      relay.on('log', (msg) => {
+        mainWindow && mainWindow.webContents.send('relay-log', msg);
+      });
+
+      relay.on('status', (status) => {
+        mainWindow && mainWindow.webContents.send('relay-status', status);
+      });
+
+      relay.on('error', (msg) => {
+        mainWindow && mainWindow.webContents.send('relay-error', msg);
+      });
+
+      relay.on('decode', (msg) => {
+        mainWindow && mainWindow.webContents.send('relay-decode', msg);
+      });
+
+      relay.on('status-update', (statusData) => {
+        mainWindow && mainWindow.webContents.send('relay-status-update', statusData);
+      });
+
+      relay.on('qso-logged', (qso) => {
+        mainWindow && mainWindow.webContents.send('relay-qso-logged', qso);
+      });
+    }
+
+    relay.start();
+  }
+
   const template = [
     {
       label: isMac ? app.name : 'File',
@@ -849,6 +920,21 @@ app.on('ready', () => {
             app.quit();
           },
         },
+      ],
+    },
+
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        ...(isMac ? [{ role: 'pasteAndMatchStyle' }] : []),
+        { role: 'delete' },
+        { role: 'selectAll' },
       ],
     },
 

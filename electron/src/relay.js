@@ -1,4 +1,5 @@
 const dgram = require('dgram');
+const dns = require('dns');
 const EventEmitter = require('events');
 const { WsjtxUdpParser } = require('./WsjtxUdpParser');
 const { AdiWriter } = require('./adif/AdiWriter');
@@ -17,6 +18,8 @@ class WSJTXRelay extends EventEmitter {
     this.socket = null;
     this.running = false;
     this.mapping = new Map(); // forward addr -> Map of client addr -> timestamp
+    this.forwardHostAddressMap = new Map(); // host -> Set of resolved IPv4 addresses
+    this.pendingHostLookups = new Set();
     this.cleanupInterval = null;
   }
 
@@ -44,6 +47,8 @@ class WSJTXRelay extends EventEmitter {
       );
       this.emit('status', 'running');
     });
+
+    this.refreshForwardHostAddressMap();
 
     // Start cleanup interval
     this.cleanupInterval = setInterval(() => {
@@ -93,6 +98,7 @@ class WSJTXRelay extends EventEmitter {
     this.listenPort = listenPort;
     this.forwards = nextForwards;
     this.forwardDelayMs = nextDelayMs;
+    this.refreshForwardHostAddressMap();
 
     if (wasRunning) {
       this.start();
@@ -104,9 +110,7 @@ class WSJTXRelay extends EventEmitter {
     const srcKey = `${rinfo.address}|${rinfo.port}`;
 
     // Check if this is from a configured forward endpoint
-    const forwardConfig = this.forwards.find(
-      (f) => f.host === rinfo.address && f.port === rinfo.port,
-    );
+    const forwardConfig = this.forwards.find((f) => this.matchesForwardSource(f, rinfo));
     const fromForward = forwardConfig && !forwardConfig.disabled ? forwardConfig : null;
 
     if (forwardConfig && forwardConfig.disabled) {
@@ -172,6 +176,76 @@ class WSJTXRelay extends EventEmitter {
 
   getActiveForwards() {
     return this.forwards.filter((fwd) => !fwd.disabled);
+  }
+
+  matchesForwardSource(forward, rinfo) {
+    if (!forward || !rinfo) {
+      return false;
+    }
+
+    if (Number(forward.port) !== Number(rinfo.port)) {
+      return false;
+    }
+
+    if (forward.host === rinfo.address) {
+      return true;
+    }
+
+    const knownAddresses = this.forwardHostAddressMap.get(forward.host);
+    if (knownAddresses && knownAddresses.has(rinfo.address)) {
+      return true;
+    }
+
+    // Keep resolution cache warm for hostnames, so reverse packets map correctly.
+    this.lookupForwardHost(forward.host);
+    return false;
+  }
+
+  refreshForwardHostAddressMap() {
+    this.forwardHostAddressMap.clear();
+
+    this.forwards.forEach((forward) => {
+      if (!forward || !forward.host) {
+        return;
+      }
+
+      this.lookupForwardHost(forward.host);
+    });
+  }
+
+  async lookupForwardHost(host) {
+    if (!host || this.pendingHostLookups.has(host)) {
+      return;
+    }
+
+    if (this.isValidIPv4(host)) {
+      this.forwardHostAddressMap.set(host, new Set([host]));
+      return;
+    }
+
+    this.pendingHostLookups.add(host);
+    try {
+      const results = await dns.promises.lookup(host, {
+        family: 4,
+        all: true,
+        verbatim: true,
+      });
+
+      const addresses = (results || []).map((entry) => entry.address).filter(Boolean);
+      if (addresses.length > 0) {
+        this.forwardHostAddressMap.set(host, new Set(addresses));
+      }
+    } catch (err) {
+      this.emit('error', `Unable to resolve forward host ${host}: ${err.message}`);
+    } finally {
+      this.pendingHostLookups.delete(host);
+    }
+  }
+
+  isValidIPv4(ip) {
+    return /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/.test(
+      ip,
+    );
   }
 
   areForwardsEqual(currentForwards, nextForwards) {

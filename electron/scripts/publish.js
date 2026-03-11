@@ -143,6 +143,30 @@ function getReleaseArtifactFiles() {
   });
 }
 
+function isReleaseDraft(token, ghCommand) {
+  const tag = getReleaseTag();
+  const checkResult = spawnSync(ghCommand, ['release', 'view', tag, '--json', 'isDraft'], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: {
+      ...process.env,
+      GH_TOKEN: token,
+      GITHUB_TOKEN: token,
+    },
+    encoding: 'utf8',
+  });
+
+  if (checkResult.status !== 0) {
+    return false;
+  }
+
+  try {
+    const output = JSON.parse(checkResult.stdout);
+    return output.isDraft === true;
+  } catch {
+    return false;
+  }
+}
+
 function ensureReleaseExists(token, ghCommand) {
   const tag = getReleaseTag();
   // Check if release exists
@@ -176,6 +200,15 @@ function uploadReleaseFiles(token, filesToUpload, ghCommand) {
 
   if (!ensureReleaseExists(token, ghCommand)) {
     console.error('Failed to create or find GitHub release.');
+    return 1;
+  }
+
+  // Check if release is in draft mode
+  if (!isReleaseDraft(token, ghCommand)) {
+    console.error(
+      `Release ${getReleaseTag()} already exists and is published. Only draft releases can be overwritten. ` +
+      'Create a new version in package.json to publish a new release.'
+    );
     return 1;
   }
 

@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.0.5 - 03/12/2026
+
+### Added
+
+- Added `my_state` and `state` fields to the QSO editor field schema with uppercase normalization.
+- Added `my_gridsquare` field to the QSO editor with grid square validation pattern.
+- Added native macOS `Edit` menu with standard keyboard shortcuts:
+  - Undo/Redo
+  - Cut/Copy/Paste
+  - Paste and Match Style (macOS only)
+  - Delete
+  - Select All
+- Added "Set My Park" button in QSO Editor to bulk-update all QSOs:
+  - Opens modal dialog to enter park reference (format: `XX-####` or `XX-#####`)
+  - Validates park reference format
+  - Updates `my_sig_info` and sets `my_sig` to `POTA` for all entries
+  - Supports Enter key to confirm, Escape to cancel
+- Added `Auto Start Relay` setting in Settings UI to automatically start the relay on app launch.
+
+### Changed
+
+- Updated Settings editor to allow FQDN in addition to IPv4 Addresses in the forwarders list.
+- Updated QSO editor field preprocessing to auto-uppercase `my_state`, `state`, and `my_gridsquare` on input.
+- Replaced unsupported `prompt()` with custom modal dialog in QSO editor.
+- Standardized submode handling to use `submode` consistently in parser and UI normalization paths.
+
+### Fixed
+
+- Fixed clipboard operations (cut/copy/paste) not working on macOS in QSO editor text fields.
+- Fixed QSO Log mode display so MFSK entries show submode when present.
+- Fixed QSO duplicate detection for MFSK entries to compare submode when available.
+
 ## 1.0.4 - 03/05/2026
 
 ### Changed
