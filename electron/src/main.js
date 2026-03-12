@@ -2,6 +2,7 @@ const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const dns = require('dns');
+const https = require('https');
 const Store = require('electron-store');
 const { autoUpdater } = require('electron-updater');
 const WSJTXRelay = require('./relay');
@@ -14,6 +15,7 @@ let mainWindow;
 let settingsWindow;
 let qsoEditorWindow;
 let examplesWindow;
+let potaSpotsWindow;
 let relay;
 let updateCheckTimer;
 let isUpdateCheckInProgress = false;
@@ -24,6 +26,8 @@ let updateReadyToInstall = false;
 
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const INTERNET_CHECK_TIMEOUT_MS = 3000;
+const POTA_SPOTS_URL = 'https://api.pota.app/spot/activator';
+const POTA_REQUEST_TIMEOUT_MS = 5000;
 const APP_ICON_PATH = path.join(
   __dirname,
   process.platform === 'win32' ? '../assets/icon.ico' : '../assets/icon.png',
@@ -75,6 +79,7 @@ const store = new Store({
     listenPort: 2237,
     forwards: [],
     autoStartRelay: false,
+    usePotaSpotMap: false,
     forwardDelaySeconds: 0.5,
     activityPacketFilters: [
       'Heartbeat',
@@ -88,6 +93,7 @@ const store = new Store({
     windowBounds: { width: 1200, height: 800 },
     settingsWindowBounds: { width: 600, height: 500 },
     qsoEditorWindowBounds: { width: 1000, height: 700 },
+    potaSpotsWindowBounds: { width: 1400, height: 700 },
     qsos: [],
   },
 });
@@ -367,6 +373,89 @@ function configureUpdateChecks() {
   }, UPDATE_CHECK_INTERVAL_MS);
 }
 
+function logPotaRequestFailure(message) {
+  const detail = String(message || 'Unknown error').trim();
+  const logMessage = `POTA request failed: ${detail}`;
+  console.warn(logMessage);
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send('relay-log', logMessage);
+  }
+}
+
+function fetchPotaSpots() {
+  return new Promise((resolve, reject) => {
+    const request = https.get(POTA_SPOTS_URL, (response) => {
+        const chunks = [];
+
+        response.on('data', (chunk) => chunks.push(chunk));
+        response.on('end', () => {
+          try {
+            if (response.statusCode !== 200) {
+              reject(new Error(`POTA spots request failed with status ${response.statusCode}`));
+              return;
+            }
+
+            const payload = Buffer.concat(chunks).toString('utf8');
+            const parsed = JSON.parse(payload);
+            resolve(Array.isArray(parsed) ? parsed : []);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      });
+
+    request.setTimeout(POTA_REQUEST_TIMEOUT_MS, () => {
+      request.destroy(new Error(`timeout after ${POTA_REQUEST_TIMEOUT_MS}ms`));
+    });
+
+    request.on('error', reject);
+  });
+}
+
+function enrichQsoWithPotaSpot(qso, spots) {
+  const nextQso = { ...(qso || {}) };
+  const dxCall = String(nextQso.dx_call || nextQso.dxCall || nextQso.call || '')
+    .toUpperCase()
+    .trim();
+
+  if (!dxCall || !Array.isArray(spots) || spots.length === 0) {
+    return nextQso;
+  }
+
+  const spotMatch = spots.find((spot) => String(spot?.activator || '').toUpperCase().trim() === dxCall);
+  if (!spotMatch) {
+    return nextQso;
+  }
+
+  const existingGrid = String(nextQso.dx_grid || nextQso.dxGrid || nextQso.gridsquare || '').trim();
+  const spotGrid = String(spotMatch.grid4 || '').toUpperCase().trim();
+  if (!existingGrid && spotGrid) {
+    nextQso.dx_grid = spotGrid;
+    if (!String(nextQso.gridsquare || '').trim()) {
+      nextQso.gridsquare = spotGrid;
+    }
+  }
+
+  nextQso.sig_info = String(spotMatch.reference || '').toUpperCase().trim();
+  nextQso.sig = 'POTA';
+  return nextQso;
+}
+
+async function maybeEnrichQsoFromPotaSpotMap(qso) {
+  if (!store.get('usePotaSpotMap', false)) {
+    return qso;
+  }
+
+  try {
+    const spots = await fetchPotaSpots();
+    return enrichQsoWithPotaSpot(qso, spots);
+  } catch (error) {
+    const message = error && error.message ? error.message : String(error);
+    logPotaRequestFailure(message);
+    return qso;
+  }
+}
+
 function createExamplesWindow() {
   if (examplesWindow) {
     examplesWindow.focus();
@@ -543,12 +632,64 @@ function createQsoEditorWindow() {
   });
 }
 
+function createPotaSpotsWindow() {
+  if (potaSpotsWindow) {
+    potaSpotsWindow.focus();
+    return;
+  }
+
+  const bounds = store.get('potaSpotsWindowBounds', { width: 1400, height: 700 });
+
+  const windowOptions = {
+    width: bounds.width,
+    height: bounds.height,
+    parent: mainWindow,
+    show: false,
+    icon: APP_ICON_PATH,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  };
+
+  if (typeof bounds.x === 'number' && typeof bounds.y === 'number') {
+    windowOptions.x = bounds.x;
+    windowOptions.y = bounds.y;
+  }
+
+  potaSpotsWindow = new BrowserWindow(windowOptions);
+
+  potaSpotsWindow.loadFile(path.join(__dirname, '../ui/pota-spots.html'));
+
+  // Send initial theme to POTA Spots window when ready
+  potaSpotsWindow.webContents.on('did-finish-load', () => {
+    const theme = store.get('theme', 'light');
+    potaSpotsWindow.webContents.send('theme-changed', theme);
+  });
+
+  potaSpotsWindow.on('closed', () => {
+    potaSpotsWindow = null;
+  });
+
+  potaSpotsWindow.on('close', () => {
+    const currentBounds = potaSpotsWindow.getBounds();
+    store.set('potaSpotsWindowBounds', currentBounds);
+  });
+
+  potaSpotsWindow.once('ready-to-show', () => {
+    potaSpotsWindow.show();
+  });
+}
+
 // IPC Handlers
 ipcMain.handle('get-settings', () => {
   return {
     listenPort: store.get('listenPort'),
     forwards: store.get('forwards'),
     autoStartRelay: store.get('autoStartRelay', false),
+    usePotaSpotMap: store.get('usePotaSpotMap', false),
     forwardDelaySeconds: store.get('forwardDelaySeconds', 0.5),
     activityPacketFilters: store.get('activityPacketFilters', [
       'Heartbeat',
@@ -595,11 +736,17 @@ ipcMain.handle('validate-forward-host', async (event, host) => {
 
 ipcMain.handle(
   'save-settings',
-  (event, { listenPort, forwards, autoStartRelay, forwardDelaySeconds, activityPacketFilters, theme }) => {
+  (
+    event,
+    { listenPort, forwards, autoStartRelay, usePotaSpotMap, forwardDelaySeconds, activityPacketFilters, theme },
+  ) => {
     store.set('listenPort', listenPort);
     store.set('forwards', forwards);
     if (typeof autoStartRelay === 'boolean') {
       store.set('autoStartRelay', autoStartRelay);
+    }
+    if (typeof usePotaSpotMap === 'boolean') {
+      store.set('usePotaSpotMap', usePotaSpotMap);
     }
     if (typeof forwardDelaySeconds === 'number' && Number.isFinite(forwardDelaySeconds)) {
       store.set('forwardDelaySeconds', forwardDelaySeconds);
@@ -620,6 +767,7 @@ ipcMain.handle(
       listenPort: store.get('listenPort'),
       forwards: store.get('forwards'),
       autoStartRelay: store.get('autoStartRelay', false),
+      usePotaSpotMap: store.get('usePotaSpotMap', false),
       forwardDelaySeconds: store.get('forwardDelaySeconds', 0.5),
       activityPacketFilters: store.get('activityPacketFilters', [
         'Heartbeat',
@@ -704,11 +852,12 @@ ipcMain.handle('log-qso', (event, qso) => {
   return { success: false, error: 'Relay not running' };
 });
 
-ipcMain.handle('save-qso', (event, qso) => {
+ipcMain.handle('save-qso', async (event, qso) => {
+  const enrichedQso = await maybeEnrichQsoFromPotaSpotMap(qso);
   const qsos = store.get('qsos', []);
-  qsos.push(qso);
+  qsos.push(enrichedQso);
   store.set('qsos', qsos);
-  return { success: true };
+  return { success: true, qso: enrichedQso };
 });
 
 ipcMain.handle('clear-qsos', () => {
@@ -720,12 +869,12 @@ ipcMain.handle('get-qsos', () => {
   return store.get('qsos', []);
 });
 
-ipcMain.handle('update-qsos', (event, qsos) => {
+ipcMain.handle('update-qsos', async (event, qsos) => {
   store.set('qsos', qsos);
   return { success: true };
 });
 
-ipcMain.handle('update-qso', (event, index, qso) => {
+ipcMain.handle('update-qso', async (event, index, qso) => {
   const qsos = store.get('qsos', []);
   if (index >= 0 && index < qsos.length) {
     qsos[index] = qso;
@@ -846,6 +995,25 @@ ipcMain.on('close-qso-editor', () => {
   }
 });
 
+ipcMain.on('open-pota-spots', createPotaSpotsWindow);
+
+ipcMain.on('close-pota-spots', () => {
+  if (potaSpotsWindow) {
+    potaSpotsWindow.close();
+    potaSpotsWindow = null;
+  }
+});
+
+ipcMain.handle('fetch-pota-spots', async () => {
+  try {
+    const spots = await fetchPotaSpots();
+    return { success: true, spots };
+  } catch (error) {
+    const message = error && error.message ? error.message : String(error);
+    return { success: false, error: message };
+  }
+});
+
 ipcMain.handle('get-theme', () => {
   return store.get('theme', 'light');
 });
@@ -945,6 +1113,11 @@ app.on('ready', () => {
           label: 'QSO Editor',
           accelerator: 'CmdOrCtrl+E',
           click: createQsoEditorWindow,
+        },
+        {
+          label: 'POTA Spots',
+          accelerator: 'CmdOrCtrl+P',
+          click: createPotaSpotsWindow,
         },
         { type: 'separator' },
         { role: 'minimize' },

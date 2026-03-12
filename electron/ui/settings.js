@@ -8,6 +8,7 @@ const cancelBtn = document.getElementById('cancelBtn');
 const themeLightInput = document.getElementById('themeLight');
 const themeDarkInput = document.getElementById('themeDark');
 const autoStartRelayInput = document.getElementById('autoStartRelay');
+const usePotaSpotMapInput = document.getElementById('usePotaSpotMap');
 
 let forwardsData = [];
 let currentTheme = 'light';
@@ -33,6 +34,7 @@ async function loadSettings() {
   const settings = await window.electron.getSettings();
   listenPortInput.value = settings.listenPort;
   autoStartRelayInput.checked = Boolean(settings.autoStartRelay);
+  usePotaSpotMapInput.checked = Boolean(settings.usePotaSpotMap);
   forwardDelaySecondsInput.value = settings.forwardDelaySeconds ?? 0.5;
   currentTheme = settings.theme || 'light';
   forwardsData = (settings.forwards || []).map((forward) => ({
@@ -186,6 +188,7 @@ async function saveSettings(e) {
 
   const listenPort = parseInt(listenPortInput.value);
   const autoStartRelay = Boolean(autoStartRelayInput.checked);
+  const usePotaSpotMap = Boolean(usePotaSpotMapInput.checked);
   const forwardDelaySeconds = parseFloat(forwardDelaySecondsInput.value);
   const theme = themeDarkInput.checked ? 'dark' : 'light';
 
@@ -209,6 +212,7 @@ async function saveSettings(e) {
       listenPort,
       forwards: forwardsData,
       autoStartRelay,
+      usePotaSpotMap,
       forwardDelaySeconds,
       theme,
     });

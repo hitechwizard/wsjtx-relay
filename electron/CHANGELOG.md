@@ -17,31 +17,42 @@
   - Validates park reference format
   - Updates `my_sig_info` and sets `my_sig` to `POTA` for all entries
   - Supports Enter key to confirm, Escape to cancel
-- Added `Auto Start Relay` setting in Settings UI to automatically start the relay on app launch.
+- Added `Auto Start Relay` setting in Settings.
+- Added `Use POTA Spot Map` setting in Settings.
+- Added a `POTA Spots` window in the Window menu with sortable columns and filters for mode, band, and region prefix (`locationDesc` first two characters).
+- Added persistence for POTA Spots window bounds and active filters (mode, band, region) across reopen.
 
 ### Changed
 
-- Updated Settings editor to allow FQDN in addition to IPv4 Addresses in the forwarders list.
+- Updated Settings to allow FQDN in addition to IPv4 addresses in the forwarders list.
 - Updated QSO editor field preprocessing to auto-uppercase `my_state`, `state`, and `my_gridsquare` on input.
 - Replaced unsupported `prompt()` with custom modal dialog in QSO editor.
 - Standardized submode handling to use `submode` consistently in parser and UI normalization paths.
+- When `Use POTA Spot Map` is enabled, new QSO persistence now checks `https://api.pota.app/spot/activator` and enriches matching QSOs by:
+  - filling `dx_grid` (and `gridsquare` when empty) from `grid4` if no DX grid is already set
+  - setting `sig_info` from the spot reference
+  - setting `sig` to `POTA`
+- Updated POTA Spots frequency handling to convert API `frequency` values from kHz to MHz for display and band filtering.
+- Updated POTA Spots time display to match QSO Log format (`MM-DD @ HH:MM`) using UTC values.
 
 ### Fixed
 
 - Fixed clipboard operations (cut/copy/paste) not working on macOS in QSO editor text fields.
 - Fixed QSO Log mode display so MFSK entries show submode when present.
 - Fixed QSO duplicate detection for MFSK entries to compare submode when available.
+- Fixed POTA Spots table layout rendering.
+- Fixed POTA Spots auto-refresh to update once per minute while keeping manual refresh available.
 
 ## 1.0.4 - 03/05/2026
 
 ### Changed
 
-- Update plist on Mac to allow application to perform upgrades
-- Emit QSO Logged packet in addition to the Logged ADIF packet for Manual QSO Entries
+- Update plist on Mac to allow application to perform upgrades.
+- Emit QSO Logged packet in addition to the Logged ADIF packet for Manual QSO Entries.
 
 ### Fixed
 
-- Fixes for Windows icon
+- Fixes for Windows icon.
 
 ## 1.0.3 - 02/26/2026
 
@@ -125,9 +136,9 @@
 - Added a configurable forward resend delay (`forwardDelaySeconds`) with default `0.5` seconds.
 - Added a call filter textbox in the QSO log header for live filtering as users type.
 - Added a QSO counter for the current day.
-- Added show/hide capability for Manual QSO and Status sections
-- Added packet filter options for the activity log
-- Added setting My Park if the WSJT-X configuation name is in [callsign]@[park id] format
+- Added show/hide capability for Manual QSO and Status sections.
+- Added packet filter options for the activity log.
+- Added setting My Park if the WSJT-X configuation name is in [callsign]@[park id] format.
 
 ### Changed
 

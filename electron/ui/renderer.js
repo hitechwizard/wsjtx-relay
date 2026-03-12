@@ -238,9 +238,11 @@ function setupEventListeners() {
   window.electron.onRelayQsoLogged(async (qso) => {
     applyManualMyParkToLoggedQso(qso);
     normalizeCalculatedFields(qso);
-    addQsoEntry(qso, 'normal');
     // Save QSO from relay to persistent storage
-    await window.electron.saveQso(qso);
+    const saveResult = await window.electron.saveQso(qso);
+    const persistedQso = saveResult && saveResult.qso ? saveResult.qso : qso;
+    normalizeCalculatedFields(persistedQso);
+    addQsoEntry(persistedQso, 'normal');
   });
 
   // Update time-based QSO counters every minute
@@ -639,14 +641,15 @@ async function handleQsoLogContact() {
     }
   });
 
-  addQsoEntry(qso, 'normal');
-
   // Save QSO to persistent storage
-  await window.electron.saveQso(qso);
+  const saveResult = await window.electron.saveQso(qso);
+  const persistedQso = saveResult && saveResult.qso ? saveResult.qso : qso;
+  normalizeCalculatedFields(persistedQso);
+  addQsoEntry(persistedQso, 'normal');
 
   // Send to forwarders via relay
   try {
-    await window.electron.resendQso(qso);
+    await window.electron.resendQso(persistedQso);
   } catch (err) {
     console.error('Failed to send QSO to forwarders:', err);
   }

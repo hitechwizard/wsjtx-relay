@@ -492,8 +492,6 @@ class WSJTXRelay extends EventEmitter {
     } else {
       dialFrequency = Math.round(dialFrequency);
     }
-    // Band: try all possible field names
-    const band = qso.band || qso.band_rx || '';
     // Mode
     const mode = qso.mode || qso.submode || '';
     // RST Sent

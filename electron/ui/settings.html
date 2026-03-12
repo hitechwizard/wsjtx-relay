@@ -41,6 +41,16 @@
         </div>
 
         <div class="form-group">
+          <label class="forward-enabled-label" for="usePotaSpotMap">
+            <input type="checkbox" id="usePotaSpotMap" name="usePotaSpotMap" />
+            <span>Use POTA Spot Map</span>
+          </label>
+          <small>
+            On QSO save, query POTA activator spots and auto-fill DX grid/sig fields when callsign matches
+          </small>
+        </div>
+
+        <div class="form-group">
           <label for="forwardsList">Forward Endpoints (host:port):</label>
           <div class="forwards-editor">
             <div id="forwardsList" class="forwards-list"></div>

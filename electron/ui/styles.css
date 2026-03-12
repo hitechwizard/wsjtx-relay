@@ -1428,3 +1428,178 @@ body.dark-theme .qso-pota-icon {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================================
+   13. POTA SPOTS WINDOW
+   ============================================================================ */
+
+.pota-spots-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 0;
+  margin: 0;
+}
+
+.pota-spots-header {
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 15px 20px;
+  flex-shrink: 0;
+}
+
+.pota-spots-header h1 {
+  margin: 0 0 15px 0;
+  font-size: 24px;
+  color: var(--header-color);
+}
+
+.pota-spots-controls {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.pota-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pota-filter-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.pota-filter-select,
+.pota-filter-input {
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 14px;
+  min-width: 120px;
+}
+
+.pota-filter-select {
+  cursor: pointer;
+}
+
+.pota-filter-select:hover {
+  border-color: var(--blue);
+}
+
+.pota-filter-input {
+  min-width: 80px;
+}
+
+.pota-filter-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.pota-last-update {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.pota-spots-content {
+  flex: 1;
+  overflow: auto;
+  padding: 10px;
+}
+
+.pota-spots-table-container {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+}
+
+.pota-spots-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pota-spots-table thead {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-tertiary);
+  z-index: 10;
+}
+
+.pota-spots-table thead th {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--border-color);
+  font-weight: 600;
+  color: var(--header-color);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  position: relative;
+}
+
+.pota-spots-table thead th:hover {
+  background-color: var(--bg-secondary);
+  color: var(--blue);
+}
+
+.pota-spots-table thead th.sort-asc::after {
+  content: ' ▲';
+  font-size: 10px;
+  color: var(--blue);
+  margin-left: 4px;
+}
+
+.pota-spots-table thead th.sort-desc::after {
+  content: ' ▼';
+  font-size: 10px;
+  color: var(--blue);
+  margin-left: 4px;
+}
+
+.pota-spots-table tbody tr {
+  border-bottom: 1px solid var(--border-light);
+}
+
+.pota-spots-table tbody tr:nth-of-type(odd) {
+  background-color: var(--bg-secondary);
+}
+
+.pota-spots-table tbody tr:nth-of-type(even) {
+  background-color: var(--bg-tertiary);
+}
+
+.pota-spots-table tbody tr:hover {
+  background-color: var(--blue-light);
+}
+
+.pota-spot-row td {
+  padding: 8px 12px;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.pota-spot-row:hover td {
+  background-color: var(--blue-light);
+}
+
+.pota-no-spots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  font-size: 16px;
+  text-align: center;
+  padding: 20px;
+}

@@ -33,9 +33,14 @@ contextBridge.exposeInMainWorld('electron', {
   // Window control API
   openSettings: () => ipcRenderer.send('open-settings'),
   openQsoEditor: () => ipcRenderer.send('open-qso-editor'),
+  openPotaSpots: () => ipcRenderer.send('open-pota-spots'),
   closeSettings: () => ipcRenderer.send('close-settings'),
   closeQsoEditor: () => ipcRenderer.send('close-qso-editor'),
+  closePotaSpots: () => ipcRenderer.send('close-pota-spots'),
   performUpdateAction: () => ipcRenderer.invoke('perform-update-action'),
+
+  // POTA Spots API
+  fetchPotaSpots: () => ipcRenderer.invoke('fetch-pota-spots'),
 
   // Events from relay
   onRelayLog: (callback) => ipcRenderer.on('relay-log', (event, msg) => callback(msg)),
