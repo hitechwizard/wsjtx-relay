@@ -473,11 +473,139 @@ class WSJTXRelay extends EventEmitter {
       return buf;
     }
 
+    function normalizeDateDigits(value) {
+      return String(value || '')
+        .replace(/[^0-9]/g, '')
+        .trim();
+    }
+
+    function normalizeTimeDigits(value) {
+      return String(value || '')
+        .replace(/[^0-9]/g, '')
+        .trim();
+    }
+
+    function isFiniteInteger(value) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && Number.isInteger(parsed);
+    }
+
+    function toQtDateAndTimeFromDate(date) {
+      const year = date.getUTCFullYear();
+      const month = date.getUTCMonth();
+      const day = date.getUTCDate();
+      const hour = date.getUTCHours();
+      const minute = date.getUTCMinutes();
+      const second = date.getUTCSeconds();
+      const millisecond = date.getUTCMilliseconds();
+
+      const MS_PER_DAY = 24 * 60 * 60 * 1000;
+      const JULIAN_UNIX_EPOCH = 2440588;
+      const utcMidnight = Date.UTC(year, month, day);
+      const qtDate = Math.floor(utcMidnight / MS_PER_DAY) + JULIAN_UNIX_EPOCH;
+      const qtTime =
+        hour * 60 * 60 * 1000 + minute * 60 * 1000 + second * 1000 + millisecond;
+
+      return { qtDate, qtTime };
+    }
+
+    function parseQtDateAndTimeFromIso(value) {
+      const candidate = String(value || '').trim();
+      if (!candidate) {
+        return null;
+      }
+
+      const parsedDate = new Date(candidate);
+      if (Number.isNaN(parsedDate.getTime())) {
+        return null;
+      }
+
+      return toQtDateAndTimeFromDate(parsedDate);
+    }
+
+    function parseQtDateAndTimeFromAdif(dateValue, timeValue) {
+      const dateDigits = normalizeDateDigits(dateValue);
+      if (dateDigits.length !== 8) {
+        return null;
+      }
+
+      const year = Number.parseInt(dateDigits.slice(0, 4), 10);
+      const month = Number.parseInt(dateDigits.slice(4, 6), 10);
+      const day = Number.parseInt(dateDigits.slice(6, 8), 10);
+      if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+        return null;
+      }
+
+      const rawTimeDigits = normalizeTimeDigits(timeValue);
+      const paddedTime = (rawTimeDigits || '000000').padEnd(6, '0').slice(0, 6);
+      const hour = Number.parseInt(paddedTime.slice(0, 2), 10);
+      const minute = Number.parseInt(paddedTime.slice(2, 4), 10);
+      const second = Number.parseInt(paddedTime.slice(4, 6), 10);
+
+      if (
+        !Number.isFinite(hour) ||
+        !Number.isFinite(minute) ||
+        !Number.isFinite(second) ||
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59 ||
+        second < 0 ||
+        second > 59
+      ) {
+        return null;
+      }
+
+      const parsedDate = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+      if (Number.isNaN(parsedDate.getTime())) {
+        return null;
+      }
+
+      return toQtDateAndTimeFromDate(parsedDate);
+    }
+
+    function resolveQtDateAndTime({ qtDateCandidate, qtTimeCandidate, adifDate, adifTime, isoTimestamp }) {
+      if (isFiniteInteger(qtDateCandidate) && isFiniteInteger(qtTimeCandidate)) {
+        return {
+          qtDate: Number(qtDateCandidate),
+          qtTime: Number(qtTimeCandidate),
+        };
+      }
+
+      const fromAdif = parseQtDateAndTimeFromAdif(adifDate, adifTime);
+      if (fromAdif) {
+        return fromAdif;
+      }
+
+      const fromIso = parseQtDateAndTimeFromIso(isoTimestamp);
+      if (fromIso) {
+        return fromIso;
+      }
+
+      return { qtDate: 0, qtTime: 0 };
+    }
+
     // Map QSO fields to QSO Logged packet fields
     // These should match the order in parseQSOLoggedMessage
+    const onDateTime = resolveQtDateAndTime({
+      qtDateCandidate: qso.dateOn,
+      qtTimeCandidate: qso.timeOn,
+      adifDate: qso.date_on || qso.qso_date,
+      adifTime: qso.time_on,
+      isoTimestamp: qso.start,
+    });
+
+    const offDateTime = resolveQtDateAndTime({
+      qtDateCandidate: qso.dateOff,
+      qtTimeCandidate: qso.timeOff,
+      adifDate: qso.date_off || qso.qso_date_off || qso.date_on || qso.qso_date,
+      adifTime: qso.time_off || qso.time_on,
+      isoTimestamp: qso.end || qso.start,
+    });
+
     // Date/time off
-    const dateOff = qso.dateOff || 0;
-    const timeOff = qso.timeOff || 0;
+    const dateOff = offDateTime.qtDate;
+    const timeOff = offDateTime.qtTime;
     const timespecOff = qso.timespecOff || 0;
     const offsetOff = qso.offsetOff || 0;
     // QSO details
@@ -505,8 +633,8 @@ class WSJTXRelay extends EventEmitter {
     // Name
     const name = qso.name || '';
     // Date/time on
-    const dateOn = qso.dateOn || qso.date_on || 0;
-    const timeOn = qso.timeOn || qso.time_on || 0;
+    const dateOn = onDateTime.qtDate;
+    const timeOn = onDateTime.qtTime;
     const timespecOn = qso.timespecOn || 0;
     const offsetOn = qso.offsetOn || 0;
     // Operator and station
