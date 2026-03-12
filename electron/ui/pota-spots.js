@@ -9,14 +9,16 @@ class PotaSpotsManager {
     this.minUpdateIntervalMs = 60 * 1000; // 1 minute
     this.lastFetchTime = 0;
     this.autoRefreshTimer = null;
+    this.persistedFilters = { modeFilter: '', bandFilter: '', regionFilter: '' };
     
     this.init();
   }
 
-  init() {
+  async init() {
     this.setupEventListeners();
     this.setupThemeListener();
-    this.loadFilterState();
+    await this.loadFilterState();
+    this.applyPersistedRegionFilter();
     this.fetchSpots();
     this.startAutoRefresh();
   }
@@ -47,6 +49,26 @@ class PotaSpotsManager {
         this.sortByField(field);
       });
     });
+
+    const tableBody = document.getElementById('spotsTableBody');
+    if (tableBody) {
+      tableBody.addEventListener('dblclick', (event) => {
+        const row = event.target.closest('tr[data-spot-index]');
+        if (!row) {
+          return;
+        }
+
+        const spotIndex = Number.parseInt(row.getAttribute('data-spot-index'), 10);
+        if (!Number.isInteger(spotIndex) || spotIndex < 0 || spotIndex >= this.filteredSpots.length) {
+          return;
+        }
+
+        const selectedSpot = this.filteredSpots[spotIndex];
+        this.selectSpot(selectedSpot);
+      });
+    }
+
+    window.addEventListener('beforeunload', () => this.stopAutoRefresh());
   }
 
   setupThemeListener() {
@@ -83,32 +105,67 @@ class PotaSpotsManager {
     }
   }
 
+  async selectSpot(spot) {
+    if (!window.electron || typeof window.electron.selectPotaSpot !== 'function') {
+      return;
+    }
+
+    try {
+      await window.electron.selectPotaSpot(spot || {});
+    } catch (error) {
+      console.error('Failed to send selected POTA spot:', error);
+    }
+  }
+
   saveFilterState() {
     const state = {
       modeFilter: document.getElementById('modeFilter').value,
       bandFilter: document.getElementById('bandFilter').value,
-      regionFilter: document.getElementById('regionFilter').value,
+      regionFilter: String(document.getElementById('regionFilter').value || '').toUpperCase(),
     };
-    localStorage.setItem('potaSpotsFilters', JSON.stringify(state));
+    this.persistedFilters = { ...state };
+    if (window.electron && typeof window.electron.savePotaSpotsFilters === 'function') {
+      window.electron.savePotaSpotsFilters(state).catch((error) => {
+        console.error('Error saving filter state:', error);
+      });
+    }
   }
 
-  loadFilterState() {
+  async loadFilterState() {
     try {
-      const saved = localStorage.getItem('potaSpotsFilters');
-      if (saved) {
-        const state = JSON.parse(saved);
-        if (state.modeFilter) {
-          document.getElementById('modeFilter').value = state.modeFilter;
-        }
-        if (state.bandFilter) {
-          document.getElementById('bandFilter').value = state.bandFilter;
-        }
-        if (state.regionFilter) {
-          document.getElementById('regionFilter').value = state.regionFilter;
-        }
+      if (window.electron && typeof window.electron.getPotaSpotsFilters === 'function') {
+        const state = await window.electron.getPotaSpotsFilters();
+        this.persistedFilters = {
+          modeFilter: String(state?.modeFilter || ''),
+          bandFilter: String(state?.bandFilter || ''),
+          regionFilter: String(state?.regionFilter || '').toUpperCase(),
+        };
       }
     } catch (error) {
       console.error('Error loading filter state:', error);
+    }
+  }
+
+  applyPersistedRegionFilter() {
+    const regionInput = document.getElementById('regionFilter');
+    if (regionInput) {
+      regionInput.value = this.persistedFilters.regionFilter || '';
+    }
+  }
+
+  applyPersistedSelectFiltersIfAvailable() {
+    const modeSelect = document.getElementById('modeFilter');
+    const bandSelect = document.getElementById('bandFilter');
+
+    const persistedMode = String(this.persistedFilters.modeFilter || '');
+    const persistedBand = String(this.persistedFilters.bandFilter || '');
+
+    if (modeSelect && persistedMode && modeSelect.querySelector(`option[value="${persistedMode}"]`)) {
+      modeSelect.value = persistedMode;
+    }
+
+    if (bandSelect && persistedBand && bandSelect.querySelector(`option[value="${persistedBand}"]`)) {
+      bandSelect.value = persistedBand;
     }
   }
 
@@ -186,6 +243,8 @@ class PotaSpotsManager {
         bandSelect.appendChild(option);
       });
     bandSelect.value = currentBand;
+
+    this.applyPersistedSelectFiltersIfAvailable();
   }
 
   frequencyToBand(freqMHz) {
@@ -360,9 +419,11 @@ class PotaSpotsManager {
 
     noSpotsMsg.style.display = 'none';
     tbody.innerHTML = this.filteredSpots
-      .map((spot) => {
+      .map((spot, index) => {
         const row = document.createElement('tr');
         row.className = 'pota-spot-row';
+        row.setAttribute('data-spot-index', String(index));
+        row.title = 'Double-click to populate Manual QSO fields';
         row.innerHTML = `
           <td>${this.escapeHtml(spot.activator || '')}</td>
           <td>${this.formatFrequency(spot.frequency)}</td>

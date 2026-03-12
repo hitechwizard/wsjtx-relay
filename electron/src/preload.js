@@ -41,6 +41,9 @@ contextBridge.exposeInMainWorld('electron', {
 
   // POTA Spots API
   fetchPotaSpots: () => ipcRenderer.invoke('fetch-pota-spots'),
+  getPotaSpotsFilters: () => ipcRenderer.invoke('get-pota-spots-filters'),
+  savePotaSpotsFilters: (filters) => ipcRenderer.invoke('save-pota-spots-filters', filters),
+  selectPotaSpot: (spot) => ipcRenderer.invoke('select-pota-spot', spot),
 
   // Events from relay
   onRelayLog: (callback) => ipcRenderer.on('relay-log', (event, msg) => callback(msg)),
@@ -56,5 +59,7 @@ contextBridge.exposeInMainWorld('electron', {
   onSettingsChanged: (callback) =>
     ipcRenderer.on('settings-changed', (event, settings) => callback(settings)),
   onQsoDataRefresh: (callback) => ipcRenderer.on('qso-data-refresh', () => callback()),
+  onPotaSpotSelected: (callback) =>
+    ipcRenderer.on('pota-spot-selected', (event, spotData) => callback(spotData)),
   notifyQsoDataChanged: () => ipcRenderer.send('qso-data-changed'),
 });

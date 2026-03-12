@@ -210,6 +210,10 @@ function setupEventListeners() {
     refreshQsoLog();
   });
 
+  window.electron.onPotaSpotSelected((spotData) => {
+    applySelectedPotaSpotToManualQso(spotData);
+  });
+
   // Relay events
   window.electron.onRelayLog((msg) => {
     blinkActivityRxIndicator();
@@ -250,6 +254,38 @@ function setupEventListeners() {
     updateQsoLastHourCount();
     updateQsoTodayUtcCount();
   }, 60000);
+
+  updateLogContactButtonState();
+}
+
+function applySelectedPotaSpotToManualQso(spotData) {
+  const selectedSpot = spotData || {};
+
+  const activator = String(selectedSpot.activator || '')
+    .trim()
+    .toUpperCase();
+  const reference = String(selectedSpot.reference || '')
+    .trim()
+    .toUpperCase();
+  const locationDesc = String(selectedSpot.locationDesc || '')
+    .trim();
+  const stateValue = locationDesc.length >= 2 ? locationDesc.slice(-2).toUpperCase() : '';
+
+  const dxCallInput = document.getElementById('qso-dxcall');
+  const theirParkInput = document.getElementById('qso-siginfo');
+  const stateInput = document.getElementById('qso-state');
+
+  if (dxCallInput) {
+    dxCallInput.value = activator;
+  }
+  if (theirParkInput) {
+    theirParkInput.value = reference;
+    theirParkInput.dispatchEvent(new Event('input', { bubbles: true }));
+    theirParkInput.dispatchEvent(new Event('blur', { bubbles: true }));
+  }
+  if (stateInput) {
+    stateInput.value = stateValue;
+  }
 
   updateLogContactButtonState();
 }

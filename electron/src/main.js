@@ -94,6 +94,7 @@ const store = new Store({
     settingsWindowBounds: { width: 600, height: 500 },
     qsoEditorWindowBounds: { width: 1000, height: 700 },
     potaSpotsWindowBounds: { width: 1400, height: 700 },
+    potaSpotsFilters: { modeFilter: '', bandFilter: '', regionFilter: '' },
     qsos: [],
   },
 });
@@ -1012,6 +1013,34 @@ ipcMain.handle('fetch-pota-spots', async () => {
     const message = error && error.message ? error.message : String(error);
     return { success: false, error: message };
   }
+});
+
+ipcMain.handle('get-pota-spots-filters', () => {
+  return store.get('potaSpotsFilters', { modeFilter: '', bandFilter: '', regionFilter: '' });
+});
+
+ipcMain.handle('save-pota-spots-filters', (event, filters) => {
+  const nextFilters = {
+    modeFilter: String(filters?.modeFilter || ''),
+    bandFilter: String(filters?.bandFilter || ''),
+    regionFilter: String(filters?.regionFilter || ''),
+  };
+  store.set('potaSpotsFilters', nextFilters);
+  return { success: true };
+});
+
+ipcMain.handle('select-pota-spot', async (event, spot) => {
+  if (!mainWindow || !mainWindow.webContents) {
+    return { success: false, error: 'Main window is not available' };
+  }
+
+  mainWindow.webContents.send('pota-spot-selected', spot || {});
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+  mainWindow.focus();
+
+  return { success: true };
 });
 
 ipcMain.handle('get-theme', () => {
