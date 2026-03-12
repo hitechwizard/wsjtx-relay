@@ -1502,10 +1502,10 @@ body.dark-theme .qso-pota-icon {
 }
 
 .pota-last-update {
-  font-size: 13px;
+  font-size: 0.55em;
+  font-weight: normal;
   color: var(--text-secondary);
   white-space: nowrap;
-  margin-left: auto;
 }
 
 .pota-spots-content {
@@ -1587,6 +1587,16 @@ body.dark-theme .qso-pota-icon {
   padding: 8px 12px;
   color: var(--text-primary);
   word-break: break-word;
+}
+
+.pota-spot-worked td {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+  opacity: 0.75;
+}
+
+.pota-spot-worked:hover td {
+  opacity: 1;
 }
 
 .pota-spot-row:hover td {

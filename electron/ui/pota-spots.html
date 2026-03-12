@@ -9,7 +9,7 @@
   <body>
     <div class="pota-spots-wrapper">
       <div class="pota-spots-header">
-        <h1>POTA Spots</h1>
+        <h1>POTA Spots <span id="lastUpdateTime" class="pota-last-update"></span></h1>
         <div class="pota-spots-controls">
           <div class="pota-filter-group">
             <label for="modeFilter">Mode:</label>
@@ -33,10 +33,6 @@
               maxlength="2"
             />
           </div>
-          <div class="pota-filter-group">
-            <button id="refreshBtn" class="btn btn-primary">Refresh Now</button>
-            <span id="lastUpdateTime" class="pota-last-update"></span>
-          </div>
         </div>
       </div>
 
@@ -52,6 +48,7 @@
                 <th data-field="name">Name</th>
                 <th data-field="locationDesc">Location</th>
                 <th data-field="spotTime">Spot Time</th>
+                <th data-field="age">Age</th>
               </tr>
             </thead>
             <tbody id="spotsTableBody">
@@ -59,7 +56,7 @@
             </tbody>
           </table>
           <div id="noSpotsMessage" class="pota-no-spots" style="display: none;">
-            No spots found. Click "Refresh Now" to fetch POTA spots.
+            No spots found.
           </div>
         </div>
       </div>

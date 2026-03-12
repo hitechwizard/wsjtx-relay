@@ -3,6 +3,8 @@ class PotaSpotsManager {
   constructor() {
     this.spots = [];
     this.filteredSpots = [];
+    this.loggedQsos = [];
+    this.workedQsoKeys = new Set();
     this.sortField = 'spotTime';
     this.sortDescending = true;
     this.lastUpdateTime = null;
@@ -38,9 +40,6 @@ class PotaSpotsManager {
       this.saveFilterState();
     });
 
-    // Refresh button
-    document.getElementById('refreshBtn').addEventListener('click', () => this.fetchSpots());
-
     // Column headers for sorting
     document.querySelectorAll('.pota-spots-table thead th').forEach((th) => {
       th.style.cursor = 'pointer';
@@ -65,6 +64,13 @@ class PotaSpotsManager {
 
         const selectedSpot = this.filteredSpots[spotIndex];
         this.selectSpot(selectedSpot);
+      });
+    }
+
+    if (window.electron && typeof window.electron.onQsoDataRefresh === 'function') {
+      window.electron.onQsoDataRefresh(async () => {
+        await this.loadLoggedQsos();
+        this.render();
       });
     }
 
@@ -177,8 +183,7 @@ class PotaSpotsManager {
     }
 
     try {
-      document.getElementById('refreshBtn').disabled = true;
-      const response = await window.electron.fetchPotaSpots();
+      const [response] = await Promise.all([window.electron.fetchPotaSpots(), this.loadLoggedQsos()]);
       
       if (response && response.success) {
         this.spots = response.spots || [];
@@ -192,8 +197,26 @@ class PotaSpotsManager {
       }
     } catch (error) {
       console.error('Error fetching POTA spots:', error);
-    } finally {
-      document.getElementById('refreshBtn').disabled = false;
+    }
+  }
+
+  async loadLoggedQsos() {
+    if (!window.electron || typeof window.electron.getQsos !== 'function') {
+      this.loggedQsos = [];
+      this.workedQsoKeys = new Set();
+      return;
+    }
+
+    try {
+      const qsos = await window.electron.getQsos();
+      this.loggedQsos = Array.isArray(qsos) ? qsos : [];
+      this.workedQsoKeys = new Set(
+        this.loggedQsos.map((qso) => this.getQsoMatchKey(qso)).filter(Boolean),
+      );
+    } catch (error) {
+      console.error('Error loading logged QSOs:', error);
+      this.loggedQsos = [];
+      this.workedQsoKeys = new Set();
     }
   }
 
@@ -276,6 +299,73 @@ class PotaSpotsManager {
     return null;
   }
 
+  getModeMatchKey(modeValue, submodeValue) {
+    const mode = String(modeValue || '').trim().toUpperCase();
+    const submode = String(submodeValue || '').trim().toUpperCase();
+    return mode === 'MFSK' && submode ? submode : mode;
+  }
+
+  getIsoDatePart(value) {
+    const rawValue = String(value || '').trim();
+    if (!rawValue) {
+      return '';
+    }
+
+    if (/^\d{8}$/.test(rawValue)) {
+      return `${rawValue.slice(0, 4)}-${rawValue.slice(4, 6)}-${rawValue.slice(6, 8)}`;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}/.test(rawValue)) {
+      return rawValue.slice(0, 10);
+    }
+
+    const parsedDate = this.parseSpotTime(rawValue) || new Date(rawValue);
+    return Number.isNaN(parsedDate.getTime()) ? '' : parsedDate.toISOString().slice(0, 10);
+  }
+
+  getQsoMatchKey(qso) {
+    if (!qso) {
+      return '';
+    }
+
+    const call = String(qso.call || qso.dxCall || '').trim().toUpperCase();
+    const band = String(qso.band || '').trim().toUpperCase();
+    const mode = this.getModeMatchKey(qso.mode, qso.submode);
+    const date =
+      this.getIsoDatePart(qso.start || qso.end) ||
+      this.getIsoDatePart(qso.qso_date || qso.date_on || qso.qso_date_off || qso.date_off);
+
+    if (!call || !band || !mode || !date) {
+      return '';
+    }
+
+    return `${call}|${band}|${mode}|${date}`;
+  }
+
+  getSpotMatchKey(spot) {
+    if (!spot) {
+      return '';
+    }
+
+    const call = String(spot.activator || '').trim().toUpperCase();
+    const band = String(this.frequencyToBand((parseFloat(spot.frequency) || 0) / 1000) || '')
+      .trim()
+      .toUpperCase();
+    const mode = this.getModeMatchKey(spot.mode, '');
+    const date = this.getIsoDatePart(spot.spotTime);
+
+    if (!call || !band || !mode || !date) {
+      return '';
+    }
+
+    return `${call}|${band}|${mode}|${date}`;
+  }
+
+  isWorkedSpot(spot) {
+    const spotKey = this.getSpotMatchKey(spot);
+    return Boolean(spotKey) && this.workedQsoKeys.has(spotKey);
+  }
+
   applyFilters() {
     const modeFilter = document.getElementById('modeFilter').value.toUpperCase();
     const bandFilter = document.getElementById('bandFilter').value;
@@ -343,10 +433,15 @@ class PotaSpotsManager {
         bVal = parseFloat(bVal) || 0;
       }
 
+      if (this.sortField === 'age') {
+        aVal = this.getSpotAgeMinutes(a.spotTime);
+        bVal = this.getSpotAgeMinutes(b.spotTime);
+      }
+
       // Handle datetime
       if (this.sortField === 'spotTime') {
-        aVal = new Date(aVal).getTime() || 0;
-        bVal = new Date(bVal).getTime() || 0;
+        aVal = this.parseSpotTime(aVal)?.getTime() || 0;
+        bVal = this.parseSpotTime(bVal)?.getTime() || 0;
       }
 
       // Case-insensitive string comparison
@@ -407,6 +502,31 @@ class PotaSpotsManager {
     }
   }
 
+  parseSpotTime(timeStr) {
+    const rawValue = String(timeStr || '').trim();
+    if (!rawValue) {
+      return null;
+    }
+
+    const normalizedValue = /Z$|[+-]\d{2}:?\d{2}$/.test(rawValue) ? rawValue : `${rawValue}Z`;
+    const parsedDate = new Date(normalizedValue);
+    return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+  }
+
+  getSpotAgeMinutes(timeStr) {
+    const spotDate = this.parseSpotTime(timeStr);
+    if (!spotDate) {
+      return 0;
+    }
+
+    const ageMs = Date.now() - spotDate.getTime();
+    return Math.max(0, Math.floor(ageMs / 60000));
+  }
+
+  formatSpotAge(timeStr) {
+    return `${this.getSpotAgeMinutes(timeStr)}m`;
+  }
+
   render() {
     const tbody = document.getElementById('spotsTableBody');
     const noSpotsMsg = document.getElementById('noSpotsMessage');
@@ -421,9 +541,12 @@ class PotaSpotsManager {
     tbody.innerHTML = this.filteredSpots
       .map((spot, index) => {
         const row = document.createElement('tr');
-        row.className = 'pota-spot-row';
+        const isWorked = this.isWorkedSpot(spot);
+        row.className = isWorked ? 'pota-spot-row pota-spot-worked' : 'pota-spot-row';
         row.setAttribute('data-spot-index', String(index));
-        row.title = 'Double-click to populate Manual QSO fields';
+        row.title = isWorked
+          ? 'Already worked today. Double-click to populate Manual QSO fields'
+          : 'Double-click to populate Manual QSO fields';
         row.innerHTML = `
           <td>${this.escapeHtml(spot.activator || '')}</td>
           <td>${this.formatFrequency(spot.frequency)}</td>
@@ -432,6 +555,7 @@ class PotaSpotsManager {
           <td>${this.escapeHtml(spot.name || '')}</td>
           <td>${this.escapeHtml(spot.locationDesc || '')}</td>
           <td>${this.formatSpotTime(spot.spotTime)}</td>
+          <td>${this.formatSpotAge(spot.spotTime)}</td>
         `;
         return row.outerHTML;
       })
@@ -442,7 +566,8 @@ class PotaSpotsManager {
     const lastUpdateEl = document.getElementById('lastUpdateTime');
     if (this.lastUpdateTime) {
       const timeStr = this.lastUpdateTime.toLocaleTimeString();
-      lastUpdateEl.textContent = `Last updated: ${timeStr}`;
+      lastUpdateEl.textContent = `— updated ${timeStr}`;
+      document.title = `POTA Spots — updated ${timeStr}`;
     }
   }
 
