@@ -405,26 +405,27 @@ class WSJTXRelay extends EventEmitter {
         ),
       );
 
+      // Only send type 12 packet as Gridtracker was complaining it was a duplicate QSO
       // Send QSO Logged packet after ADIF packet
-      const qsoLoggedBuffer = this.createQsoLoggedPacket(qso);
-      await Promise.all(
-        activeForwards.map(
-          (fwd) =>
-            new Promise((resolve) => {
-              this.socket.send(qsoLoggedBuffer, fwd.port, fwd.host, (err) => {
-                if (err) {
-                  this.emit(
-                    'error',
-                    `Error sending QSO Logged to ${fwd.host}:${fwd.port}: ${err.message}`,
-                  );
-                } else {
-                  this.emit('log', `QSO Logged -> ${fwd.host}:${fwd.port} ${qsoInfo}`);
-                }
-                resolve();
-              });
-            }),
-        ),
-      );
+      // const qsoLoggedBuffer = this.createQsoLoggedPacket(qso);
+      // await Promise.all(
+      //   activeForwards.map(
+      //     (fwd) =>
+      //       new Promise((resolve) => {
+      //         this.socket.send(qsoLoggedBuffer, fwd.port, fwd.host, (err) => {
+      //           if (err) {
+      //             this.emit(
+      //               'error',
+      //               `Error sending QSO Logged to ${fwd.host}:${fwd.port}: ${err.message}`,
+      //             );
+      //           } else {
+      //             this.emit('log', `QSO Logged -> ${fwd.host}:${fwd.port} ${qsoInfo}`);
+      //           }
+      //           resolve();
+      //         });
+      //       }),
+      //   ),
+      // );
       if (this.forwardDelayMs > 0 && index < qsos.length - 1) {
         await this.sleep(this.forwardDelayMs);
       }

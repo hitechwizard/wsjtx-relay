@@ -25,6 +25,7 @@
 - Added worked-spot marking in POTA Spots: rows matching a same-day QSO in the log (callsign, mode, band) are shown with strikethrough and dimmed text.
 - Added last-update timestamp inline in the POTA Spots window title and header.
 - Added POTA Spots indicator for stations already worked.
+- Added POTA Spots filter to hide already worked stations.
 
 ### Changed
 

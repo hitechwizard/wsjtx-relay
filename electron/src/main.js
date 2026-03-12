@@ -1028,7 +1028,12 @@ ipcMain.handle('fetch-pota-spots', async () => {
 });
 
 ipcMain.handle('get-pota-spots-filters', () => {
-  return store.get('potaSpotsFilters', { modeFilter: '', bandFilter: '', regionFilter: '' });
+  return store.get('potaSpotsFilters', {
+    modeFilter: '',
+    bandFilter: '',
+    regionFilter: '',
+    hideWorked: false,
+  });
 });
 
 ipcMain.handle('save-pota-spots-filters', (event, filters) => {
@@ -1036,6 +1041,7 @@ ipcMain.handle('save-pota-spots-filters', (event, filters) => {
     modeFilter: String(filters?.modeFilter || ''),
     bandFilter: String(filters?.bandFilter || ''),
     regionFilter: String(filters?.regionFilter || ''),
+    hideWorked: Boolean(filters?.hideWorked),
   };
   store.set('potaSpotsFilters', nextFilters);
   return { success: true };
@@ -1060,9 +1066,11 @@ ipcMain.handle('get-theme', () => {
 });
 
 ipcMain.on('qso-data-changed', () => {
-  if (mainWindow && mainWindow.webContents) {
-    mainWindow.webContents.send('qso-data-refresh');
-  }
+  [mainWindow, qsoEditorWindow, potaSpotsWindow].forEach((win) => {
+    if (win && win.webContents) {
+      win.webContents.send('qso-data-refresh');
+    }
+  });
 });
 
 ipcMain.handle('perform-update-action', async () => {

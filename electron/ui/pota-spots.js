@@ -11,7 +11,7 @@ class PotaSpotsManager {
     this.minUpdateIntervalMs = 60 * 1000; // 1 minute
     this.lastFetchTime = 0;
     this.autoRefreshTimer = null;
-    this.persistedFilters = { modeFilter: '', bandFilter: '', regionFilter: '' };
+    this.persistedFilters = { modeFilter: '', bandFilter: '', regionFilter: '', hideWorked: false };
     
     this.init();
   }
@@ -36,6 +36,10 @@ class PotaSpotsManager {
       this.saveFilterState();
     });
     document.getElementById('regionFilter').addEventListener('input', () => {
+      this.applyFilters();
+      this.saveFilterState();
+    });
+    document.getElementById('hideWorkedFilter').addEventListener('change', () => {
       this.applyFilters();
       this.saveFilterState();
     });
@@ -70,7 +74,7 @@ class PotaSpotsManager {
     if (window.electron && typeof window.electron.onQsoDataRefresh === 'function') {
       window.electron.onQsoDataRefresh(async () => {
         await this.loadLoggedQsos();
-        this.render();
+        this.applyFilters();
       });
     }
 
@@ -128,6 +132,7 @@ class PotaSpotsManager {
       modeFilter: document.getElementById('modeFilter').value,
       bandFilter: document.getElementById('bandFilter').value,
       regionFilter: String(document.getElementById('regionFilter').value || '').toUpperCase(),
+      hideWorked: document.getElementById('hideWorkedFilter').checked,
     };
     this.persistedFilters = { ...state };
     if (window.electron && typeof window.electron.savePotaSpotsFilters === 'function') {
@@ -145,6 +150,7 @@ class PotaSpotsManager {
           modeFilter: String(state?.modeFilter || ''),
           bandFilter: String(state?.bandFilter || ''),
           regionFilter: String(state?.regionFilter || '').toUpperCase(),
+          hideWorked: Boolean(state?.hideWorked),
         };
       }
     } catch (error) {
@@ -156,6 +162,11 @@ class PotaSpotsManager {
     const regionInput = document.getElementById('regionFilter');
     if (regionInput) {
       regionInput.value = this.persistedFilters.regionFilter || '';
+    }
+
+    const hideWorkedInput = document.getElementById('hideWorkedFilter');
+    if (hideWorkedInput) {
+      hideWorkedInput.checked = Boolean(this.persistedFilters.hideWorked);
     }
   }
 
@@ -370,8 +381,13 @@ class PotaSpotsManager {
     const modeFilter = document.getElementById('modeFilter').value.toUpperCase();
     const bandFilter = document.getElementById('bandFilter').value;
     const regionFilter = document.getElementById('regionFilter').value.toUpperCase();
+    const hideWorked = document.getElementById('hideWorkedFilter').checked;
 
     this.filteredSpots = this.spots.filter((spot) => {
+      if (hideWorked && this.isWorkedSpot(spot)) {
+        return false;
+      }
+
       // Mode filter
       if (modeFilter && String(spot.mode || '').toUpperCase() !== modeFilter) {
         return false;
@@ -542,13 +558,15 @@ class PotaSpotsManager {
       .map((spot, index) => {
         const row = document.createElement('tr');
         const isWorked = this.isWorkedSpot(spot);
+        const activator = this.escapeHtml(spot.activator || '');
+        const workedBadge = isWorked ? '<span class="pota-worked-badge">Worked</span>' : '';
         row.className = isWorked ? 'pota-spot-row pota-spot-worked' : 'pota-spot-row';
         row.setAttribute('data-spot-index', String(index));
         row.title = isWorked
           ? 'Already worked today. Double-click to populate Manual QSO fields'
           : 'Double-click to populate Manual QSO fields';
         row.innerHTML = `
-          <td>${this.escapeHtml(spot.activator || '')}</td>
+          <td class="pota-activator-cell"><span>${activator}</span>${workedBadge}</td>
           <td>${this.formatFrequency(spot.frequency)}</td>
           <td>${this.escapeHtml(spot.mode || '')}</td>
           <td>${this.escapeHtml(spot.reference || '')}</td>
