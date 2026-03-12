@@ -21,6 +21,10 @@
 - Added `Use POTA Spot Map` setting in Settings.
 - Added a `POTA Spots` window in the Window menu with sortable columns and filters for mode, band, and region prefix (`locationDesc` first two characters).
 - Added persistence for POTA Spots window bounds and active filters (mode, band, region) across reopen.
+- Added `Age` column to POTA Spots table showing minutes since spot time.
+- Added worked-spot marking in POTA Spots: rows matching a same-day QSO in the log (callsign, mode, band) are shown with strikethrough and dimmed text.
+- Added last-update timestamp inline in the POTA Spots window title and header.
+- Added POTA Spots indicator for stations already worked.
 
 ### Changed
 
@@ -34,6 +38,8 @@
   - setting `sig` to `POTA`
 - Updated POTA Spots frequency handling to convert API `frequency` values from kHz to MHz for display and band filtering.
 - Updated POTA Spots time display to match QSO Log format (`MM-DD @ HH:MM`) using UTC values.
+- Updated POTA Spots to auto-refresh every 60 seconds; removed manual refresh button.
+- Double-clicking a POTA Spot row populates the Manual QSO form with the activator call, park reference, and state.
 
 ### Fixed
 
@@ -41,7 +47,8 @@
 - Fixed QSO Log mode display so MFSK entries show submode when present.
 - Fixed QSO duplicate detection for MFSK entries to compare submode when available.
 - Fixed POTA Spots table layout rendering.
-- Fixed POTA Spots auto-refresh to update once per minute while keeping manual refresh available.
+- Fixed POTA Spots spot age calculation to treat `spotTime` values without a timezone suffix as UTC.
+- Fixed QSO Logged packet date/time encoding for manually entered QSOs.
 
 ## 1.0.4 - 03/05/2026
 
