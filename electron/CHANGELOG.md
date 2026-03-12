@@ -33,7 +33,7 @@
 - Replaced unsupported `prompt()` with custom modal dialog in QSO editor.
 - Standardized submode handling to use `submode` consistently in parser and UI normalization paths.
 - When `Use POTA Spot Map` is enabled, new QSO persistence now checks `https://api.pota.app/spot/activator` and enriches matching QSOs by:
-  - filling `dx_grid` (and `gridsquare` when empty) from `grid4` if no DX grid is already set
+  - filling `gridsquare` from `grid4` if no DX grid is already set
   - setting `sig_info` from the spot reference
   - setting `sig` to `POTA`
 - Updated POTA Spots frequency handling to convert API `frequency` values from kHz to MHz for display and band filtering.

@@ -428,13 +428,10 @@ function enrichQsoWithPotaSpot(qso, spots) {
     return nextQso;
   }
 
-  const existingGrid = String(nextQso.dx_grid || nextQso.dxGrid || nextQso.gridsquare || '').trim();
+  const existingGrid = String(nextQso.dxGrid || nextQso.gridsquare || '').trim();
   const spotGrid = String(spotMatch.grid4 || '').toUpperCase().trim();
   if (!existingGrid && spotGrid) {
-    nextQso.dx_grid = spotGrid;
-    if (!String(nextQso.gridsquare || '').trim()) {
-      nextQso.gridsquare = spotGrid;
-    }
+    nextQso.gridsquare = spotGrid;
   }
 
   nextQso.sig_info = String(spotMatch.reference || '').toUpperCase().trim();

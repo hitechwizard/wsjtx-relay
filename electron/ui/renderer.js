@@ -245,6 +245,9 @@ function setupEventListeners() {
     // Save QSO from relay to persistent storage
     const saveResult = await window.electron.saveQso(qso);
     const persistedQso = saveResult && saveResult.qso ? saveResult.qso : qso;
+    if (saveResult && saveResult.success && typeof window.electron.notifyQsoDataChanged === 'function') {
+      window.electron.notifyQsoDataChanged();
+    }
     normalizeCalculatedFields(persistedQso);
     addQsoEntry(persistedQso, 'normal');
   });
@@ -677,9 +680,25 @@ async function handleQsoLogContact() {
     }
   });
 
+  const commentParts = [];
+  if (pota.state) {
+    commentParts.push(`State: ${pota.state}`);
+  }
+  if (qso.sig_info) {
+    commentParts.push(`POTA: ${String(qso.sig_info).trim().toUpperCase()}`);
+  }
+  if (commentParts.length > 0) {
+    const existingComment = String(qso.comment || '').trim();
+    const detailComment = commentParts.join(' | ');
+    qso.comment = existingComment ? `${existingComment} | ${detailComment}` : detailComment;
+  }
+
   // Save QSO to persistent storage
   const saveResult = await window.electron.saveQso(qso);
   const persistedQso = saveResult && saveResult.qso ? saveResult.qso : qso;
+  if (saveResult && saveResult.success && typeof window.electron.notifyQsoDataChanged === 'function') {
+    window.electron.notifyQsoDataChanged();
+  }
   normalizeCalculatedFields(persistedQso);
   addQsoEntry(persistedQso, 'normal');
 
