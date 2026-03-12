@@ -79,7 +79,6 @@ npx electron-builder
 
 Settings are automatically saved to:
 
-
 ## Command Line Options (Python Version)
 
 The original Python version used these command line options:

@@ -386,24 +386,24 @@ function logPotaRequestFailure(message) {
 function fetchPotaSpots() {
   return new Promise((resolve, reject) => {
     const request = https.get(POTA_SPOTS_URL, (response) => {
-        const chunks = [];
+      const chunks = [];
 
-        response.on('data', (chunk) => chunks.push(chunk));
-        response.on('end', () => {
-          try {
-            if (response.statusCode !== 200) {
-              reject(new Error(`POTA spots request failed with status ${response.statusCode}`));
-              return;
-            }
-
-            const payload = Buffer.concat(chunks).toString('utf8');
-            const parsed = JSON.parse(payload);
-            resolve(Array.isArray(parsed) ? parsed : []);
-          } catch (error) {
-            reject(error);
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => {
+        try {
+          if (response.statusCode !== 200) {
+            reject(new Error(`POTA spots request failed with status ${response.statusCode}`));
+            return;
           }
-        });
+
+          const payload = Buffer.concat(chunks).toString('utf8');
+          const parsed = JSON.parse(payload);
+          resolve(Array.isArray(parsed) ? parsed : []);
+        } catch (error) {
+          reject(error);
+        }
       });
+    });
 
     request.setTimeout(POTA_REQUEST_TIMEOUT_MS, () => {
       request.destroy(new Error(`timeout after ${POTA_REQUEST_TIMEOUT_MS}ms`));
@@ -423,18 +423,27 @@ function enrichQsoWithPotaSpot(qso, spots) {
     return nextQso;
   }
 
-  const spotMatch = spots.find((spot) => String(spot?.activator || '').toUpperCase().trim() === dxCall);
+  const spotMatch = spots.find(
+    (spot) =>
+      String(spot?.activator || '')
+        .toUpperCase()
+        .trim() === dxCall,
+  );
   if (!spotMatch) {
     return nextQso;
   }
 
   const existingGrid = String(nextQso.dxGrid || nextQso.gridsquare || '').trim();
-  const spotGrid = String(spotMatch.grid4 || '').toUpperCase().trim();
+  const spotGrid = String(spotMatch.grid4 || '')
+    .toUpperCase()
+    .trim();
   if (!existingGrid && spotGrid) {
     nextQso.gridsquare = spotGrid;
   }
 
-  nextQso.sig_info = String(spotMatch.reference || '').toUpperCase().trim();
+  nextQso.sig_info = String(spotMatch.reference || '')
+    .toUpperCase()
+    .trim();
   nextQso.sig = 'POTA';
   return nextQso;
 }
@@ -751,7 +760,15 @@ ipcMain.handle(
   'save-settings',
   (
     event,
-    { listenPort, forwards, autoStartRelay, usePotaSpotMap, forwardDelaySeconds, activityPacketFilters, theme },
+    {
+      listenPort,
+      forwards,
+      autoStartRelay,
+      usePotaSpotMap,
+      forwardDelaySeconds,
+      activityPacketFilters,
+      theme,
+    },
   ) => {
     store.set('listenPort', listenPort);
     store.set('forwards', forwards);

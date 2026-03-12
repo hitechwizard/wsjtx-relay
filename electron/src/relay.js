@@ -504,8 +504,7 @@ class WSJTXRelay extends EventEmitter {
       const JULIAN_UNIX_EPOCH = 2440588;
       const utcMidnight = Date.UTC(year, month, day);
       const qtDate = Math.floor(utcMidnight / MS_PER_DAY) + JULIAN_UNIX_EPOCH;
-      const qtTime =
-        hour * 60 * 60 * 1000 + minute * 60 * 1000 + second * 1000 + millisecond;
+      const qtTime = hour * 60 * 60 * 1000 + minute * 60 * 1000 + second * 1000 + millisecond;
 
       return { qtDate, qtTime };
     }
@@ -565,7 +564,13 @@ class WSJTXRelay extends EventEmitter {
       return toQtDateAndTimeFromDate(parsedDate);
     }
 
-    function resolveQtDateAndTime({ qtDateCandidate, qtTimeCandidate, adifDate, adifTime, isoTimestamp }) {
+    function resolveQtDateAndTime({
+      qtDateCandidate,
+      qtTimeCandidate,
+      adifDate,
+      adifTime,
+      isoTimestamp,
+    }) {
       if (isFiniteInteger(qtDateCandidate) && isFiniteInteger(qtTimeCandidate)) {
         return {
           qtDate: Number(qtDateCandidate),
@@ -646,11 +651,7 @@ class WSJTXRelay extends EventEmitter {
     const exchangeRcvd = qso.exchangeRcvd || '';
 
     // Build packet
-    let fields = [
-      encodeUint64(dateOff),
-      encodeUint32(timeOff),
-      encodeUint8(timespecOff),
-    ];
+    let fields = [encodeUint64(dateOff), encodeUint32(timeOff), encodeUint8(timespecOff)];
     if (timespecOff == 2) fields.push(encodeUint32(offsetOff));
     fields = fields.concat([
       encodeString(dxCall),
@@ -675,13 +676,7 @@ class WSJTXRelay extends EventEmitter {
       encodeString(exchangeRcvd),
     ]);
 
-    const packet = Buffer.concat([
-      magicBytes,
-      version,
-      type,
-      id,
-      ...fields,
-    ]);
+    const packet = Buffer.concat([magicBytes, version, type, id, ...fields]);
     return packet;
   }
 }

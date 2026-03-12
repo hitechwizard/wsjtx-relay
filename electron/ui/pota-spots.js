@@ -11,8 +11,13 @@ class PotaSpotsManager {
     this.minUpdateIntervalMs = 60 * 1000; // 1 minute
     this.lastFetchTime = 0;
     this.autoRefreshTimer = null;
-    this.persistedFilters = { modeFilter: '', bandFilter: '', regionFilter: '', hideWorked: false };
-    
+    this.persistedFilters = {
+      modeFilter: '',
+      bandFilter: '',
+      regionFilter: '',
+      hideWorked: false,
+    };
+
     this.init();
   }
 
@@ -62,7 +67,11 @@ class PotaSpotsManager {
         }
 
         const spotIndex = Number.parseInt(row.getAttribute('data-spot-index'), 10);
-        if (!Number.isInteger(spotIndex) || spotIndex < 0 || spotIndex >= this.filteredSpots.length) {
+        if (
+          !Number.isInteger(spotIndex) ||
+          spotIndex < 0 ||
+          spotIndex >= this.filteredSpots.length
+        ) {
           return;
         }
 
@@ -101,7 +110,7 @@ class PotaSpotsManager {
     if (this.autoRefreshTimer) {
       clearInterval(this.autoRefreshTimer);
     }
-    
+
     // Auto-refresh every minute
     this.autoRefreshTimer = setInterval(() => {
       this.fetchSpots();
@@ -177,11 +186,19 @@ class PotaSpotsManager {
     const persistedMode = String(this.persistedFilters.modeFilter || '');
     const persistedBand = String(this.persistedFilters.bandFilter || '');
 
-    if (modeSelect && persistedMode && modeSelect.querySelector(`option[value="${persistedMode}"]`)) {
+    if (
+      modeSelect &&
+      persistedMode &&
+      modeSelect.querySelector(`option[value="${persistedMode}"]`)
+    ) {
       modeSelect.value = persistedMode;
     }
 
-    if (bandSelect && persistedBand && bandSelect.querySelector(`option[value="${persistedBand}"]`)) {
+    if (
+      bandSelect &&
+      persistedBand &&
+      bandSelect.querySelector(`option[value="${persistedBand}"]`)
+    ) {
       bandSelect.value = persistedBand;
     }
   }
@@ -194,8 +211,11 @@ class PotaSpotsManager {
     }
 
     try {
-      const [response] = await Promise.all([window.electron.fetchPotaSpots(), this.loadLoggedQsos()]);
-      
+      const [response] = await Promise.all([
+        window.electron.fetchPotaSpots(),
+        this.loadLoggedQsos(),
+      ]);
+
       if (response && response.success) {
         this.spots = response.spots || [];
         this.lastUpdateTime = new Date();
@@ -311,8 +331,12 @@ class PotaSpotsManager {
   }
 
   getModeMatchKey(modeValue, submodeValue) {
-    const mode = String(modeValue || '').trim().toUpperCase();
-    const submode = String(submodeValue || '').trim().toUpperCase();
+    const mode = String(modeValue || '')
+      .trim()
+      .toUpperCase();
+    const submode = String(submodeValue || '')
+      .trim()
+      .toUpperCase();
     return mode === 'MFSK' && submode ? submode : mode;
   }
 
@@ -339,8 +363,12 @@ class PotaSpotsManager {
       return '';
     }
 
-    const call = String(qso.call || qso.dxCall || '').trim().toUpperCase();
-    const band = String(qso.band || '').trim().toUpperCase();
+    const call = String(qso.call || qso.dxCall || '')
+      .trim()
+      .toUpperCase();
+    const band = String(qso.band || '')
+      .trim()
+      .toUpperCase();
     const mode = this.getModeMatchKey(qso.mode, qso.submode);
     const date =
       this.getIsoDatePart(qso.start || qso.end) ||
@@ -358,7 +386,9 @@ class PotaSpotsManager {
       return '';
     }
 
-    const call = String(spot.activator || '').trim().toUpperCase();
+    const call = String(spot.activator || '')
+      .trim()
+      .toUpperCase();
     const band = String(this.frequencyToBand((parseFloat(spot.frequency) || 0) / 1000) || '')
       .trim()
       .toUpperCase();
@@ -497,13 +527,13 @@ class PotaSpotsManager {
         // Format: MM-DD @ HH:MM
         return `${datePart.substr(5, 5)} @ ${timePart.substr(0, 5)}`;
       }
-      
+
       // Fallback: try to parse as date
       const date = new Date(timeStr);
       if (Number.isNaN(date.getTime())) {
         return String(timeStr || '');
       }
-      
+
       const isoFormatted = date.toISOString();
       const fallbackParts = isoFormatted.split('T');
       if (fallbackParts.length >= 2) {
@@ -511,7 +541,7 @@ class PotaSpotsManager {
         const timePart = fallbackParts[1];
         return `${datePart.substr(5, 5)} @ ${timePart.substr(0, 5)}`;
       }
-      
+
       return String(timeStr || '');
     } catch {
       return String(timeStr || '');

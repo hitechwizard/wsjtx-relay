@@ -245,7 +245,11 @@ function setupEventListeners() {
     // Save QSO from relay to persistent storage
     const saveResult = await window.electron.saveQso(qso);
     const persistedQso = saveResult && saveResult.qso ? saveResult.qso : qso;
-    if (saveResult && saveResult.success && typeof window.electron.notifyQsoDataChanged === 'function') {
+    if (
+      saveResult &&
+      saveResult.success &&
+      typeof window.electron.notifyQsoDataChanged === 'function'
+    ) {
       window.electron.notifyQsoDataChanged();
     }
     normalizeCalculatedFields(persistedQso);
@@ -270,8 +274,7 @@ function applySelectedPotaSpotToManualQso(spotData) {
   const reference = String(selectedSpot.reference || '')
     .trim()
     .toUpperCase();
-  const locationDesc = String(selectedSpot.locationDesc || '')
-    .trim();
+  const locationDesc = String(selectedSpot.locationDesc || '').trim();
   const stateValue = locationDesc.length >= 2 ? locationDesc.slice(-2).toUpperCase() : '';
 
   const dxCallInput = document.getElementById('qso-dxcall');
@@ -351,7 +354,8 @@ function applyUpdateBadgeState(state) {
     return;
   }
 
-  const label = typeof state.label === 'string' && state.label.trim() ? state.label : 'Update Available';
+  const label =
+    typeof state.label === 'string' && state.label.trim() ? state.label : 'Update Available';
   updateBadgeBtn.textContent = label;
 
   if (state.kind === 'ready') {
@@ -553,7 +557,10 @@ function applySettingsToStatusIndicators(settings) {
     window.currentForwards = [];
   }
 
-  if (typeof settings.forwardDelaySeconds === 'number' && Number.isFinite(settings.forwardDelaySeconds)) {
+  if (
+    typeof settings.forwardDelaySeconds === 'number' &&
+    Number.isFinite(settings.forwardDelaySeconds)
+  ) {
     window.currentForwardDelaySeconds = settings.forwardDelaySeconds;
   }
 
@@ -563,7 +570,12 @@ function applySettingsToStatusIndicators(settings) {
 
   const enabledForwards = window.currentForwards.filter((forward) => !forward.disabled);
   if (enabledForwards.length > 0) {
-    forwardsValue.textContent = enabledForwards.map((forward) => `${forward.host == '127.0.0.1' || forward.host == 'localhost' ? '' : forward.host + ':'}${forward.port}`).join(', ');
+    forwardsValue.textContent = enabledForwards
+      .map(
+        (forward) =>
+          `${forward.host == '127.0.0.1' || forward.host == 'localhost' ? '' : forward.host + ':'}${forward.port}`,
+      )
+      .join(', ');
   } else {
     forwardsValue.textContent = 'None enabled';
   }
@@ -696,7 +708,11 @@ async function handleQsoLogContact() {
   // Save QSO to persistent storage
   const saveResult = await window.electron.saveQso(qso);
   const persistedQso = saveResult && saveResult.qso ? saveResult.qso : qso;
-  if (saveResult && saveResult.success && typeof window.electron.notifyQsoDataChanged === 'function') {
+  if (
+    saveResult &&
+    saveResult.success &&
+    typeof window.electron.notifyQsoDataChanged === 'function'
+  ) {
     window.electron.notifyQsoDataChanged();
   }
   normalizeCalculatedFields(persistedQso);
@@ -838,8 +854,12 @@ function addQsoEntry(qso, type = 'normal') {
 
   // Duplicate detection: match on call, band, and start date (YYYY-MM-DD)
   const modeMatchKey = (item) => {
-    const mode = String(item.mode || '').trim().toUpperCase();
-    const submode = String(item.submode || '').trim().toUpperCase();
+    const mode = String(item.mode || '')
+      .trim()
+      .toUpperCase();
+    const submode = String(item.submode || '')
+      .trim()
+      .toUpperCase();
     return mode === 'MFSK' && submode ? submode : mode;
   };
 
@@ -891,7 +911,8 @@ function addQsoEntry(qso, type = 'normal') {
       const exDate = exIso.split('T')[0] || '';
       const exTime = (exIso.split('T')[1] || '').substr(0, 8) || '';
       const exMode =
-        String(dupeMatch.mode || '').toUpperCase() === 'MFSK' && String(dupeMatch.submode || '').trim()
+        String(dupeMatch.mode || '').toUpperCase() === 'MFSK' &&
+        String(dupeMatch.submode || '').trim()
           ? String(dupeMatch.submode || '').trim()
           : dupeMatch.mode || '';
       // Custom tooltip element with details including time
@@ -1047,7 +1068,9 @@ function updateMyParkFromConfigurationName(statusData) {
     return;
   }
 
-  const statusCall = String(statusData.deCall || '').trim().toUpperCase();
+  const statusCall = String(statusData.deCall || '')
+    .trim()
+    .toUpperCase();
   if (!statusCall || configCall.trim().toUpperCase() !== statusCall) {
     return;
   }

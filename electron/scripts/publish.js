@@ -181,14 +181,18 @@ function ensureReleaseExists(token, ghCommand) {
   });
   if (checkResult.status === 0) return true;
   // Create release if missing
-  const createResult = spawnSync(ghCommand, ['release', 'create', tag, '--title', tag, '--notes', 'Automated release', '--draft'], {
-    stdio: 'inherit',
-    env: {
-      ...process.env,
-      GH_TOKEN: token,
-      GITHUB_TOKEN: token,
+  const createResult = spawnSync(
+    ghCommand,
+    ['release', 'create', tag, '--title', tag, '--notes', 'Automated release', '--draft'],
+    {
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        GH_TOKEN: token,
+        GITHUB_TOKEN: token,
+      },
     },
-  });
+  );
   return createResult.status === 0;
 }
 
@@ -207,7 +211,7 @@ function uploadReleaseFiles(token, filesToUpload, ghCommand) {
   if (!isReleaseDraft(token, ghCommand)) {
     console.error(
       `Release ${getReleaseTag()} already exists and is published. Only draft releases can be overwritten. ` +
-      'Create a new version in package.json to publish a new release.'
+        'Create a new version in package.json to publish a new release.',
     );
     return 1;
   }

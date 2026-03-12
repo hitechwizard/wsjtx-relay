@@ -212,7 +212,8 @@ function openRawDataModal(qso) {
   const entries = Object.entries(qso || {});
 
   if (entries.length === 0) {
-    rawDataModalContent.innerHTML = '<p class="qso-raw-empty">No raw fields available for this QSO.</p>';
+    rawDataModalContent.innerHTML =
+      '<p class="qso-raw-empty">No raw fields available for this QSO.</p>';
   } else {
     const rows = entries
       .map(
@@ -529,7 +530,7 @@ function openParkModal() {
   parkReferenceInput.value = '';
   parkValidationError.textContent = '';
   setMyParkModal.hidden = false;
-  
+
   // Focus input after modal is shown
   setTimeout(() => {
     parkReferenceInput.focus();
@@ -548,18 +549,19 @@ function closeParkModal() {
 
 function confirmSetMyPark() {
   const parkRef = parkReferenceInput?.value;
-  
+
   if (!parkRef) {
     parkValidationError.textContent = 'Please enter a park reference';
     return;
   }
 
   const normalized = parkRef.trim().toUpperCase();
-  
+
   // Validate park reference format: XX-#### or XX-#####
   const parkPattern = /^[A-Z]{2}-[0-9]{4}[0-9]?$/;
   if (!parkPattern.test(normalized)) {
-    parkValidationError.textContent = 'Invalid format. Expected: XX-#### or XX-##### (e.g., US-1234 or K-12345)';
+    parkValidationError.textContent =
+      'Invalid format. Expected: XX-#### or XX-##### (e.g., US-1234 or K-12345)';
     return;
   }
 
@@ -573,13 +575,13 @@ function confirmSetMyPark() {
   });
 
   hasUnsavedChanges = true;
-  
+
   // Close modal
   closeParkModal();
-  
+
   // Re-render to show updated values
   renderQsoList();
-  
+
   addSuccessMessage(`Updated ${updatedCount} QSO(s) with My Park: ${normalized}`);
 }
 
