@@ -1,15 +1,67 @@
 # Changelog
 
+## 1.0.5 - 03/12/2026
+
+### Added
+
+- Added `my_state` and `state` fields to the QSO editor field schema with uppercase normalization.
+- Added `my_gridsquare` field to the QSO editor with grid square validation pattern.
+- Added native macOS `Edit` menu with standard keyboard shortcuts:
+  - Undo/Redo
+  - Cut/Copy/Paste
+  - Paste and Match Style (macOS only)
+  - Delete
+  - Select All
+- Added "Set My Park" button in QSO Editor to bulk-update all QSOs:
+  - Opens modal dialog to enter park reference (format: `XX-####` or `XX-#####`)
+  - Validates park reference format
+  - Updates `my_sig_info` and sets `my_sig` to `POTA` for all entries
+  - Supports Enter key to confirm, Escape to cancel
+- Added `Auto Start Relay` setting in Settings.
+- Added `Use POTA Spot Map` setting in Settings.
+- Added a `POTA Spots` window in the Window menu with sortable columns and filters for mode, band, and region prefix (`locationDesc` first two characters).
+- Added persistence for POTA Spots window bounds and active filters (mode, band, region) across reopen.
+- Added `Age` column to POTA Spots table showing minutes since spot time.
+- Added worked-spot marking in POTA Spots: rows matching a same-day QSO in the log (callsign, mode, band) are shown with strikethrough and dimmed text.
+- Added last-update timestamp inline in the POTA Spots window title and header.
+- Added POTA Spots indicator for stations already worked.
+- Added POTA Spots filter to hide already worked stations.
+
+### Changed
+
+- Updated Settings to allow FQDN in addition to IPv4 addresses in the forwarders list.
+- Updated QSO editor field preprocessing to auto-uppercase `my_state`, `state`, and `my_gridsquare` on input.
+- Replaced unsupported `prompt()` with custom modal dialog in QSO editor.
+- Standardized submode handling to use `submode` consistently in parser and UI normalization paths.
+- When `Use POTA Spot Map` is enabled, new QSO persistence now checks `https://api.pota.app/spot/activator` and enriches matching QSOs by:
+  - filling `gridsquare` from `grid4` if no DX grid is already set
+  - setting `sig_info` from the spot reference
+  - setting `sig` to `POTA`
+- Updated POTA Spots frequency handling to convert API `frequency` values from kHz to MHz for display and band filtering.
+- Updated POTA Spots time display to match QSO Log format (`MM-DD @ HH:MM`) using UTC values.
+- Updated POTA Spots to auto-refresh every 60 seconds; removed manual refresh button.
+- Double-clicking a POTA Spot row populates the Manual QSO form with the activator call, park reference, and state.
+
+### Fixed
+
+- Fixed clipboard operations (cut/copy/paste) not working on macOS in QSO editor text fields.
+- Fixed QSO Log mode display so MFSK entries show submode when present.
+- Fixed QSO duplicate detection for MFSK entries to compare submode when available.
+- Fixed POTA Spots table layout rendering.
+- Fixed POTA Spots spot age calculation to treat `spotTime` values without a timezone suffix as UTC.
+- Fixed QSO Logged packet date/time encoding for manually entered QSOs.
+- Fixed secondary windows on macOS (Examples, Settings, QSO Editor, POTA Spots) to restore and return to the foreground reliably when reopened from menus/window list.
+
 ## 1.0.4 - 03/05/2026
 
 ### Changed
 
-- Update plist on Mac to allow application to perform upgrades
-- Emit QSO Logged packet in addition to the Logged ADIF packet for Manual QSO Entries
+- Update plist on Mac to allow application to perform upgrades.
+- Emit QSO Logged packet in addition to the Logged ADIF packet for Manual QSO Entries.
 
 ### Fixed
 
-- Fixes for Windows icon
+- Fixes for Windows icon.
 
 ## 1.0.3 - 02/26/2026
 
@@ -93,9 +145,9 @@
 - Added a configurable forward resend delay (`forwardDelaySeconds`) with default `0.5` seconds.
 - Added a call filter textbox in the QSO log header for live filtering as users type.
 - Added a QSO counter for the current day.
-- Added show/hide capability for Manual QSO and Status sections
-- Added packet filter options for the activity log
-- Added setting My Park if the WSJT-X configuation name is in [callsign]@[park id] format
+- Added show/hide capability for Manual QSO and Status sections.
+- Added packet filter options for the activity log.
+- Added setting My Park if the WSJT-X configuation name is in [callsign]@[park id] format.
 
 ### Changed
 

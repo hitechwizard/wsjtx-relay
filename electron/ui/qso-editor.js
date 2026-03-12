@@ -4,9 +4,16 @@ const cancelQsoChanges = document.getElementById('cancelQsoChanges');
 const importQsosBtn = document.getElementById('importQsosBtn');
 const exportQsosBtn = document.getElementById('exportQsosBtn');
 const resendAllQsosBtn = document.getElementById('resendAllQsosBtn');
+const setMyParkBtn = document.getElementById('setMyParkBtn');
 const rawDataModal = document.getElementById('rawDataModal');
 const rawDataModalContent = document.getElementById('rawDataModalContent');
 const closeRawDataModalBtn = document.getElementById('closeRawDataModalBtn');
+const setMyParkModal = document.getElementById('setMyParkModal');
+const parkReferenceInput = document.getElementById('parkReferenceInput');
+const parkValidationError = document.getElementById('parkValidationError');
+const closeParkModalBtn = document.getElementById('closeParkModalBtn');
+const cancelParkBtn = document.getElementById('cancelParkBtn');
+const confirmParkBtn = document.getElementById('confirmParkBtn');
 
 const qsoFields = window.wsjtxQsoFields || {};
 const normalizeCalculatedFields = window.wsjtxNormalizeCalculatedFields || (() => {});
@@ -36,6 +43,7 @@ function setupEventListeners() {
   importQsosBtn.addEventListener('click', handleImportQsos);
   exportQsosBtn.addEventListener('click', handleExportQsos);
   resendAllQsosBtn.addEventListener('click', handleResendAllQsos);
+  setMyParkBtn.addEventListener('click', handleSetMyPark);
   if (closeRawDataModalBtn) {
     closeRawDataModalBtn.addEventListener('click', closeRawDataModal);
   }
@@ -46,9 +54,35 @@ function setupEventListeners() {
       }
     });
   }
+  if (setMyParkModal) {
+    setMyParkModal.addEventListener('click', (e) => {
+      if (e.target?.dataset?.action === 'close-park-modal') {
+        closeParkModal();
+      }
+    });
+  }
+  if (closeParkModalBtn) {
+    closeParkModalBtn.addEventListener('click', closeParkModal);
+  }
+  if (cancelParkBtn) {
+    cancelParkBtn.addEventListener('click', closeParkModal);
+  }
+  if (confirmParkBtn) {
+    confirmParkBtn.addEventListener('click', confirmSetMyPark);
+  }
+  if (parkReferenceInput) {
+    parkReferenceInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        confirmSetMyPark();
+      }
+    });
+  }
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && rawDataModal && !rawDataModal.hidden) {
       closeRawDataModal();
+    }
+    if (e.key === 'Escape' && setMyParkModal && !setMyParkModal.hidden) {
+      closeParkModal();
     }
   });
 
@@ -178,7 +212,8 @@ function openRawDataModal(qso) {
   const entries = Object.entries(qso || {});
 
   if (entries.length === 0) {
-    rawDataModalContent.innerHTML = '<p class="qso-raw-empty">No raw fields available for this QSO.</p>';
+    rawDataModalContent.innerHTML =
+      '<p class="qso-raw-empty">No raw fields available for this QSO.</p>';
   } else {
     const rows = entries
       .map(
@@ -382,8 +417,11 @@ function preprocessFieldValue(fieldName, value) {
 
   if (
     fieldName === 'gridsquare' ||
+    fieldName === 'my_gridsquare' ||
     fieldName === 'call' ||
     fieldName === 'station_callsign' ||
+    fieldName === 'my_state' ||
+    fieldName === 'state' ||
     fieldName === 'sig_info' ||
     fieldName === 'my_sig_info'
   ) {
@@ -478,6 +516,73 @@ async function handleResendAllQsos() {
     alert(`✗ Resend error: ${err.message}`);
     addErrorMessage(`Resend error: ${err.message}`);
   }
+}
+
+function handleSetMyPark() {
+  openParkModal();
+}
+
+function openParkModal() {
+  if (!setMyParkModal || !parkReferenceInput || !parkValidationError) {
+    return;
+  }
+
+  parkReferenceInput.value = '';
+  parkValidationError.textContent = '';
+  setMyParkModal.hidden = false;
+
+  // Focus input after modal is shown
+  setTimeout(() => {
+    parkReferenceInput.focus();
+  }, 100);
+}
+
+function closeParkModal() {
+  if (!setMyParkModal || !parkReferenceInput || !parkValidationError) {
+    return;
+  }
+
+  setMyParkModal.hidden = true;
+  parkReferenceInput.value = '';
+  parkValidationError.textContent = '';
+}
+
+function confirmSetMyPark() {
+  const parkRef = parkReferenceInput?.value;
+
+  if (!parkRef) {
+    parkValidationError.textContent = 'Please enter a park reference';
+    return;
+  }
+
+  const normalized = parkRef.trim().toUpperCase();
+
+  // Validate park reference format: XX-#### or XX-#####
+  const parkPattern = /^[A-Z]{2}-[0-9]{4}[0-9]?$/;
+  if (!parkPattern.test(normalized)) {
+    parkValidationError.textContent =
+      'Invalid format. Expected: XX-#### or XX-##### (e.g., US-1234 or K-12345)';
+    return;
+  }
+
+  // Update all QSOs
+  let updatedCount = 0;
+  qsos.forEach((qso, index) => {
+    qso.my_sig_info = normalized;
+    qso.my_sig = 'POTA';
+    changedQsos.add(index);
+    updatedCount++;
+  });
+
+  hasUnsavedChanges = true;
+
+  // Close modal
+  closeParkModal();
+
+  // Re-render to show updated values
+  renderQsoList();
+
+  addSuccessMessage(`Updated ${updatedCount} QSO(s) with My Park: ${normalized}`);
 }
 
 function closeWindow() {

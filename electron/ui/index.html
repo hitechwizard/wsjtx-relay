@@ -28,7 +28,9 @@
           <button id="startBtn" class="btn btn-primary">Start</button>
           <button id="stopBtn" class="btn btn-danger" disabled>Stop</button>
           <button id="settingsBtn" class="btn btn-secondary">Settings</button>
-          <button id="updateBadgeBtn" class="status-badge update-badge" hidden>Update Available</button>
+          <button id="updateBadgeBtn" class="status-badge update-badge" hidden>
+            Update Available
+          </button>
           <div class="theme-toggle-group">
             <span id="themeToggleIcon" class="theme-toggle-icon" title="Toggle theme">🌙</span>
             <input type="checkbox" id="themeToggle" class="theme-toggle-checkbox" />
@@ -160,8 +162,16 @@
           <h2 style="display: flex; justify-content: space-between; align-items: center">
             <span>Activity Log</span>
             <div class="activity-log-tools">
-              <span class="activity-log-rx" aria-label="Packet activity indicator" title="Blinks when packets are received">
-                <span id="activityRxIndicator" class="activity-log-rx-dot" aria-hidden="true"></span>
+              <span
+                class="activity-log-rx"
+                aria-label="Packet activity indicator"
+                title="Blinks when packets are received"
+              >
+                <span
+                  id="activityRxIndicator"
+                  class="activity-log-rx-dot"
+                  aria-hidden="true"
+                ></span>
                 RX
               </span>
               <span class="activity-log-filter-label">Packets:</span>
@@ -218,7 +228,7 @@
             </div>
           </h2>
           <div class="log-container" id="logContainer"></div>
-          <div style="display: flex; gap: 10px; margin-top: 10px">
+          <div class="log-panel-footer">
             <button
               id="clearLogBtn"
               class="btn btn-danger"
@@ -256,7 +266,7 @@
               <span>Pwr</span>
             </div>
           </div>
-          <div style="display: flex; gap: 10px; margin-top: 10px">
+          <div class="log-panel-footer">
             <button
               id="clearQsoBtn"
               class="btn btn-danger"

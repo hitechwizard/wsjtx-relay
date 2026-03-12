@@ -1,4 +1,5 @@
 const dgram = require('dgram');
+const dns = require('dns');
 const EventEmitter = require('events');
 const { WsjtxUdpParser } = require('./WsjtxUdpParser');
 const { AdiWriter } = require('./adif/AdiWriter');
@@ -17,6 +18,8 @@ class WSJTXRelay extends EventEmitter {
     this.socket = null;
     this.running = false;
     this.mapping = new Map(); // forward addr -> Map of client addr -> timestamp
+    this.forwardHostAddressMap = new Map(); // host -> Set of resolved IPv4 addresses
+    this.pendingHostLookups = new Set();
     this.cleanupInterval = null;
   }
 
@@ -44,6 +47,8 @@ class WSJTXRelay extends EventEmitter {
       );
       this.emit('status', 'running');
     });
+
+    this.refreshForwardHostAddressMap();
 
     // Start cleanup interval
     this.cleanupInterval = setInterval(() => {
@@ -93,6 +98,7 @@ class WSJTXRelay extends EventEmitter {
     this.listenPort = listenPort;
     this.forwards = nextForwards;
     this.forwardDelayMs = nextDelayMs;
+    this.refreshForwardHostAddressMap();
 
     if (wasRunning) {
       this.start();
@@ -104,9 +110,7 @@ class WSJTXRelay extends EventEmitter {
     const srcKey = `${rinfo.address}|${rinfo.port}`;
 
     // Check if this is from a configured forward endpoint
-    const forwardConfig = this.forwards.find(
-      (f) => f.host === rinfo.address && f.port === rinfo.port,
-    );
+    const forwardConfig = this.forwards.find((f) => this.matchesForwardSource(f, rinfo));
     const fromForward = forwardConfig && !forwardConfig.disabled ? forwardConfig : null;
 
     if (forwardConfig && forwardConfig.disabled) {
@@ -172,6 +176,76 @@ class WSJTXRelay extends EventEmitter {
 
   getActiveForwards() {
     return this.forwards.filter((fwd) => !fwd.disabled);
+  }
+
+  matchesForwardSource(forward, rinfo) {
+    if (!forward || !rinfo) {
+      return false;
+    }
+
+    if (Number(forward.port) !== Number(rinfo.port)) {
+      return false;
+    }
+
+    if (forward.host === rinfo.address) {
+      return true;
+    }
+
+    const knownAddresses = this.forwardHostAddressMap.get(forward.host);
+    if (knownAddresses && knownAddresses.has(rinfo.address)) {
+      return true;
+    }
+
+    // Keep resolution cache warm for hostnames, so reverse packets map correctly.
+    this.lookupForwardHost(forward.host);
+    return false;
+  }
+
+  refreshForwardHostAddressMap() {
+    this.forwardHostAddressMap.clear();
+
+    this.forwards.forEach((forward) => {
+      if (!forward || !forward.host) {
+        return;
+      }
+
+      this.lookupForwardHost(forward.host);
+    });
+  }
+
+  async lookupForwardHost(host) {
+    if (!host || this.pendingHostLookups.has(host)) {
+      return;
+    }
+
+    if (this.isValidIPv4(host)) {
+      this.forwardHostAddressMap.set(host, new Set([host]));
+      return;
+    }
+
+    this.pendingHostLookups.add(host);
+    try {
+      const results = await dns.promises.lookup(host, {
+        family: 4,
+        all: true,
+        verbatim: true,
+      });
+
+      const addresses = (results || []).map((entry) => entry.address).filter(Boolean);
+      if (addresses.length > 0) {
+        this.forwardHostAddressMap.set(host, new Set(addresses));
+      }
+    } catch (err) {
+      this.emit('error', `Unable to resolve forward host ${host}: ${err.message}`);
+    } finally {
+      this.pendingHostLookups.delete(host);
+    }
+  }
+
+  isValidIPv4(ip) {
+    return /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/.test(
+      ip,
+    );
   }
 
   areForwardsEqual(currentForwards, nextForwards) {
@@ -331,26 +405,27 @@ class WSJTXRelay extends EventEmitter {
         ),
       );
 
+      // Only send type 12 packet as Gridtracker was complaining it was a duplicate QSO
       // Send QSO Logged packet after ADIF packet
-      const qsoLoggedBuffer = this.createQsoLoggedPacket(qso);
-      await Promise.all(
-        activeForwards.map(
-          (fwd) =>
-            new Promise((resolve) => {
-              this.socket.send(qsoLoggedBuffer, fwd.port, fwd.host, (err) => {
-                if (err) {
-                  this.emit(
-                    'error',
-                    `Error sending QSO Logged to ${fwd.host}:${fwd.port}: ${err.message}`,
-                  );
-                } else {
-                  this.emit('log', `QSO Logged -> ${fwd.host}:${fwd.port} ${qsoInfo}`);
-                }
-                resolve();
-              });
-            }),
-        ),
-      );
+      // const qsoLoggedBuffer = this.createQsoLoggedPacket(qso);
+      // await Promise.all(
+      //   activeForwards.map(
+      //     (fwd) =>
+      //       new Promise((resolve) => {
+      //         this.socket.send(qsoLoggedBuffer, fwd.port, fwd.host, (err) => {
+      //           if (err) {
+      //             this.emit(
+      //               'error',
+      //               `Error sending QSO Logged to ${fwd.host}:${fwd.port}: ${err.message}`,
+      //             );
+      //           } else {
+      //             this.emit('log', `QSO Logged -> ${fwd.host}:${fwd.port} ${qsoInfo}`);
+      //           }
+      //           resolve();
+      //         });
+      //       }),
+      //   ),
+      // );
       if (this.forwardDelayMs > 0 && index < qsos.length - 1) {
         await this.sleep(this.forwardDelayMs);
       }
@@ -399,11 +474,144 @@ class WSJTXRelay extends EventEmitter {
       return buf;
     }
 
+    function normalizeDateDigits(value) {
+      return String(value || '')
+        .replace(/[^0-9]/g, '')
+        .trim();
+    }
+
+    function normalizeTimeDigits(value) {
+      return String(value || '')
+        .replace(/[^0-9]/g, '')
+        .trim();
+    }
+
+    function isFiniteInteger(value) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && Number.isInteger(parsed);
+    }
+
+    function toQtDateAndTimeFromDate(date) {
+      const year = date.getUTCFullYear();
+      const month = date.getUTCMonth();
+      const day = date.getUTCDate();
+      const hour = date.getUTCHours();
+      const minute = date.getUTCMinutes();
+      const second = date.getUTCSeconds();
+      const millisecond = date.getUTCMilliseconds();
+
+      const MS_PER_DAY = 24 * 60 * 60 * 1000;
+      const JULIAN_UNIX_EPOCH = 2440588;
+      const utcMidnight = Date.UTC(year, month, day);
+      const qtDate = Math.floor(utcMidnight / MS_PER_DAY) + JULIAN_UNIX_EPOCH;
+      const qtTime = hour * 60 * 60 * 1000 + minute * 60 * 1000 + second * 1000 + millisecond;
+
+      return { qtDate, qtTime };
+    }
+
+    function parseQtDateAndTimeFromIso(value) {
+      const candidate = String(value || '').trim();
+      if (!candidate) {
+        return null;
+      }
+
+      const parsedDate = new Date(candidate);
+      if (Number.isNaN(parsedDate.getTime())) {
+        return null;
+      }
+
+      return toQtDateAndTimeFromDate(parsedDate);
+    }
+
+    function parseQtDateAndTimeFromAdif(dateValue, timeValue) {
+      const dateDigits = normalizeDateDigits(dateValue);
+      if (dateDigits.length !== 8) {
+        return null;
+      }
+
+      const year = Number.parseInt(dateDigits.slice(0, 4), 10);
+      const month = Number.parseInt(dateDigits.slice(4, 6), 10);
+      const day = Number.parseInt(dateDigits.slice(6, 8), 10);
+      if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+        return null;
+      }
+
+      const rawTimeDigits = normalizeTimeDigits(timeValue);
+      const paddedTime = (rawTimeDigits || '000000').padEnd(6, '0').slice(0, 6);
+      const hour = Number.parseInt(paddedTime.slice(0, 2), 10);
+      const minute = Number.parseInt(paddedTime.slice(2, 4), 10);
+      const second = Number.parseInt(paddedTime.slice(4, 6), 10);
+
+      if (
+        !Number.isFinite(hour) ||
+        !Number.isFinite(minute) ||
+        !Number.isFinite(second) ||
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59 ||
+        second < 0 ||
+        second > 59
+      ) {
+        return null;
+      }
+
+      const parsedDate = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+      if (Number.isNaN(parsedDate.getTime())) {
+        return null;
+      }
+
+      return toQtDateAndTimeFromDate(parsedDate);
+    }
+
+    function resolveQtDateAndTime({
+      qtDateCandidate,
+      qtTimeCandidate,
+      adifDate,
+      adifTime,
+      isoTimestamp,
+    }) {
+      if (isFiniteInteger(qtDateCandidate) && isFiniteInteger(qtTimeCandidate)) {
+        return {
+          qtDate: Number(qtDateCandidate),
+          qtTime: Number(qtTimeCandidate),
+        };
+      }
+
+      const fromAdif = parseQtDateAndTimeFromAdif(adifDate, adifTime);
+      if (fromAdif) {
+        return fromAdif;
+      }
+
+      const fromIso = parseQtDateAndTimeFromIso(isoTimestamp);
+      if (fromIso) {
+        return fromIso;
+      }
+
+      return { qtDate: 0, qtTime: 0 };
+    }
+
     // Map QSO fields to QSO Logged packet fields
     // These should match the order in parseQSOLoggedMessage
+    const onDateTime = resolveQtDateAndTime({
+      qtDateCandidate: qso.dateOn,
+      qtTimeCandidate: qso.timeOn,
+      adifDate: qso.date_on || qso.qso_date,
+      adifTime: qso.time_on,
+      isoTimestamp: qso.start,
+    });
+
+    const offDateTime = resolveQtDateAndTime({
+      qtDateCandidate: qso.dateOff,
+      qtTimeCandidate: qso.timeOff,
+      adifDate: qso.date_off || qso.qso_date_off || qso.date_on || qso.qso_date,
+      adifTime: qso.time_off || qso.time_on,
+      isoTimestamp: qso.end || qso.start,
+    });
+
     // Date/time off
-    const dateOff = qso.dateOff || 0;
-    const timeOff = qso.timeOff || 0;
+    const dateOff = offDateTime.qtDate;
+    const timeOff = offDateTime.qtTime;
     const timespecOff = qso.timespecOff || 0;
     const offsetOff = qso.offsetOff || 0;
     // QSO details
@@ -418,8 +626,6 @@ class WSJTXRelay extends EventEmitter {
     } else {
       dialFrequency = Math.round(dialFrequency);
     }
-    // Band: try all possible field names
-    const band = qso.band || qso.band_rx || '';
     // Mode
     const mode = qso.mode || qso.submode || '';
     // RST Sent
@@ -433,8 +639,8 @@ class WSJTXRelay extends EventEmitter {
     // Name
     const name = qso.name || '';
     // Date/time on
-    const dateOn = qso.dateOn || qso.date_on || 0;
-    const timeOn = qso.timeOn || qso.time_on || 0;
+    const dateOn = onDateTime.qtDate;
+    const timeOn = onDateTime.qtTime;
     const timespecOn = qso.timespecOn || 0;
     const offsetOn = qso.offsetOn || 0;
     // Operator and station
@@ -445,11 +651,7 @@ class WSJTXRelay extends EventEmitter {
     const exchangeRcvd = qso.exchangeRcvd || '';
 
     // Build packet
-    let fields = [
-      encodeUint64(dateOff),
-      encodeUint32(timeOff),
-      encodeUint8(timespecOff),
-    ];
+    let fields = [encodeUint64(dateOff), encodeUint32(timeOff), encodeUint8(timespecOff)];
     if (timespecOff == 2) fields.push(encodeUint32(offsetOff));
     fields = fields.concat([
       encodeString(dxCall),
@@ -474,13 +676,7 @@ class WSJTXRelay extends EventEmitter {
       encodeString(exchangeRcvd),
     ]);
 
-    const packet = Buffer.concat([
-      magicBytes,
-      version,
-      type,
-      id,
-      ...fields,
-    ]);
+    const packet = Buffer.concat([magicBytes, version, type, id, ...fields]);
     return packet;
   }
 }

@@ -530,6 +530,7 @@ body {
 
 .main-container .log-panel {
   min-height: 0;
+  overflow: hidden;
 }
 
 .main-container .log-panel:first-child {
@@ -641,7 +642,14 @@ body {
 .main-container .log-container {
   height: auto;
   flex: 1;
-  min-height: 220px;
+  min-height: 0;
+}
+
+.log-panel-footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-shrink: 0;
 }
 
 .log-entry {
@@ -1427,4 +1435,243 @@ body.dark-theme .qso-pota-icon {
   .examples-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ============================================================================
+   13. POTA SPOTS WINDOW
+   ============================================================================ */
+
+.pota-spots-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 0;
+  margin: 0;
+}
+
+.pota-spots-header {
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 15px 20px;
+  flex-shrink: 0;
+}
+
+.pota-spots-header h1 {
+  margin: 0 0 15px 0;
+  font-size: 24px;
+  color: var(--header-color);
+}
+
+.pota-spots-controls {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.pota-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pota-filter-checkbox-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.pota-filter-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--blue);
+}
+
+.pota-filter-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.pota-filter-select,
+.pota-filter-input {
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 14px;
+  min-width: 120px;
+}
+
+.pota-filter-select {
+  cursor: pointer;
+}
+
+.pota-filter-select:hover {
+  border-color: var(--blue);
+}
+
+.pota-filter-input {
+  min-width: 80px;
+}
+
+.pota-filter-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.pota-last-update {
+  font-size: 0.55em;
+  font-weight: normal;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.pota-spots-content {
+  flex: 1;
+  overflow: auto;
+  padding: 10px;
+}
+
+.pota-spots-table-container {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+}
+
+.pota-spots-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pota-spots-table thead {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-tertiary);
+  z-index: 10;
+}
+
+.pota-spots-table thead th {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--border-color);
+  font-weight: 600;
+  color: var(--header-color);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  position: relative;
+}
+
+.pota-spots-table thead th:hover {
+  background-color: var(--bg-secondary);
+  color: var(--blue);
+}
+
+.pota-spots-table thead th.sort-asc::after {
+  content: ' ▲';
+  font-size: 10px;
+  color: var(--blue);
+  margin-left: 4px;
+}
+
+.pota-spots-table thead th.sort-desc::after {
+  content: ' ▼';
+  font-size: 10px;
+  color: var(--blue);
+  margin-left: 4px;
+}
+
+.pota-spots-table tbody tr {
+  border-bottom: 1px solid var(--border-light);
+}
+
+.pota-spots-table tbody tr:nth-of-type(odd) {
+  background-color: var(--bg-secondary);
+}
+
+.pota-spots-table tbody tr:nth-of-type(even) {
+  background-color: var(--bg-tertiary);
+}
+
+.pota-spots-table tbody tr:hover {
+  background-color: var(--blue-light);
+}
+
+.pota-spot-row {
+  cursor: pointer;
+}
+
+.pota-spot-row td {
+  padding: 8px 12px;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.pota-activator-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pota-worked-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--blue);
+  background-color: color-mix(in srgb, var(--blue-light) 80%, var(--bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--blue) 28%, var(--border-color));
+  text-decoration: none;
+}
+
+.pota-spot-worked {
+  cursor: not-allowed;
+}
+
+.pota-spot-worked td {
+  background-color: color-mix(in srgb, var(--blue-light) 42%, var(--bg-secondary));
+  text-decoration: line-through;
+  color: var(--text-secondary);
+  opacity: 0.9;
+}
+
+.pota-spot-worked td:first-child {
+  border-left: 4px solid var(--blue);
+}
+
+.pota-spot-worked:hover td {
+  opacity: 1;
+}
+
+.pota-spot-worked .pota-worked-badge {
+  text-decoration: none;
+  opacity: 1;
+}
+
+.pota-spot-row:hover td {
+  background-color: var(--blue-light);
+}
+
+.pota-no-spots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  font-size: 16px;
+  text-align: center;
+  padding: 20px;
 }

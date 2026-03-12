@@ -22,7 +22,9 @@ async function generateWindowsIcon() {
     process.exit(1);
   }
 
-  console.log(`Converting '${path.basename(svgSource)}' to Windows ICO with sizes: ${sizes.join(', ')}`);
+  console.log(
+    `Converting '${path.basename(svgSource)}' to Windows ICO with sizes: ${sizes.join(', ')}`,
+  );
 
   try {
     // Generate PNG buffers for each size
@@ -34,7 +36,7 @@ async function generateWindowsIcon() {
       const pngBuffer = await sharp(svgSource)
         .resize(size, size, {
           fit: 'contain',
-          background: { r: 0, g: 0, b: 0, alpha: 0 }
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
         })
         .png()
         .toBuffer();

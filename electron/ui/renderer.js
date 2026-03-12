@@ -210,6 +210,10 @@ function setupEventListeners() {
     refreshQsoLog();
   });
 
+  window.electron.onPotaSpotSelected((spotData) => {
+    applySelectedPotaSpotToManualQso(spotData);
+  });
+
   // Relay events
   window.electron.onRelayLog((msg) => {
     blinkActivityRxIndicator();
@@ -238,9 +242,18 @@ function setupEventListeners() {
   window.electron.onRelayQsoLogged(async (qso) => {
     applyManualMyParkToLoggedQso(qso);
     normalizeCalculatedFields(qso);
-    addQsoEntry(qso, 'normal');
     // Save QSO from relay to persistent storage
-    await window.electron.saveQso(qso);
+    const saveResult = await window.electron.saveQso(qso);
+    const persistedQso = saveResult && saveResult.qso ? saveResult.qso : qso;
+    if (
+      saveResult &&
+      saveResult.success &&
+      typeof window.electron.notifyQsoDataChanged === 'function'
+    ) {
+      window.electron.notifyQsoDataChanged();
+    }
+    normalizeCalculatedFields(persistedQso);
+    addQsoEntry(persistedQso, 'normal');
   });
 
   // Update time-based QSO counters every minute
@@ -248,6 +261,37 @@ function setupEventListeners() {
     updateQsoLastHourCount();
     updateQsoTodayUtcCount();
   }, 60000);
+
+  updateLogContactButtonState();
+}
+
+function applySelectedPotaSpotToManualQso(spotData) {
+  const selectedSpot = spotData || {};
+
+  const activator = String(selectedSpot.activator || '')
+    .trim()
+    .toUpperCase();
+  const reference = String(selectedSpot.reference || '')
+    .trim()
+    .toUpperCase();
+  const locationDesc = String(selectedSpot.locationDesc || '').trim();
+  const stateValue = locationDesc.length >= 2 ? locationDesc.slice(-2).toUpperCase() : '';
+
+  const dxCallInput = document.getElementById('qso-dxcall');
+  const theirParkInput = document.getElementById('qso-siginfo');
+  const stateInput = document.getElementById('qso-state');
+
+  if (dxCallInput) {
+    dxCallInput.value = activator;
+  }
+  if (theirParkInput) {
+    theirParkInput.value = reference;
+    theirParkInput.dispatchEvent(new Event('input', { bubbles: true }));
+    theirParkInput.dispatchEvent(new Event('blur', { bubbles: true }));
+  }
+  if (stateInput) {
+    stateInput.value = stateValue;
+  }
 
   updateLogContactButtonState();
 }
@@ -310,7 +354,8 @@ function applyUpdateBadgeState(state) {
     return;
   }
 
-  const label = typeof state.label === 'string' && state.label.trim() ? state.label : 'Update Available';
+  const label =
+    typeof state.label === 'string' && state.label.trim() ? state.label : 'Update Available';
   updateBadgeBtn.textContent = label;
 
   if (state.kind === 'ready') {
@@ -512,7 +557,10 @@ function applySettingsToStatusIndicators(settings) {
     window.currentForwards = [];
   }
 
-  if (typeof settings.forwardDelaySeconds === 'number' && Number.isFinite(settings.forwardDelaySeconds)) {
+  if (
+    typeof settings.forwardDelaySeconds === 'number' &&
+    Number.isFinite(settings.forwardDelaySeconds)
+  ) {
     window.currentForwardDelaySeconds = settings.forwardDelaySeconds;
   }
 
@@ -522,7 +570,12 @@ function applySettingsToStatusIndicators(settings) {
 
   const enabledForwards = window.currentForwards.filter((forward) => !forward.disabled);
   if (enabledForwards.length > 0) {
-    forwardsValue.textContent = enabledForwards.map((forward) => `${forward.host == '127.0.0.1' || forward.host == 'localhost' ? '' : forward.host + ':'}${forward.port}`).join(', ');
+    forwardsValue.textContent = enabledForwards
+      .map(
+        (forward) =>
+          `${forward.host == '127.0.0.1' || forward.host == 'localhost' ? '' : forward.host + ':'}${forward.port}`,
+      )
+      .join(', ');
   } else {
     forwardsValue.textContent = 'None enabled';
   }
@@ -639,14 +692,35 @@ async function handleQsoLogContact() {
     }
   });
 
-  addQsoEntry(qso, 'normal');
+  const commentParts = [];
+  if (pota.state) {
+    commentParts.push(`State: ${pota.state}`);
+  }
+  if (qso.sig_info) {
+    commentParts.push(`POTA: ${String(qso.sig_info).trim().toUpperCase()}`);
+  }
+  if (commentParts.length > 0) {
+    const existingComment = String(qso.comment || '').trim();
+    const detailComment = commentParts.join(' | ');
+    qso.comment = existingComment ? `${existingComment} | ${detailComment}` : detailComment;
+  }
 
   // Save QSO to persistent storage
-  await window.electron.saveQso(qso);
+  const saveResult = await window.electron.saveQso(qso);
+  const persistedQso = saveResult && saveResult.qso ? saveResult.qso : qso;
+  if (
+    saveResult &&
+    saveResult.success &&
+    typeof window.electron.notifyQsoDataChanged === 'function'
+  ) {
+    window.electron.notifyQsoDataChanged();
+  }
+  normalizeCalculatedFields(persistedQso);
+  addQsoEntry(persistedQso, 'normal');
 
   // Send to forwarders via relay
   try {
-    await window.electron.resendQso(qso);
+    await window.electron.resendQso(persistedQso);
   } catch (err) {
     console.error('Failed to send QSO to forwarders:', err);
   }
@@ -739,12 +813,16 @@ function addQsoEntry(qso, type = 'normal') {
   entry.className = `log-entry ${type} qso-log-entry`;
   entry.dataset.call = String(qso.call || '').toUpperCase();
 
+  const qsoMode = String(qso.mode || '').trim();
+  const qsoSubmode = String(qso.submode || '').trim();
+  const displayMode = qsoMode.toUpperCase() === 'MFSK' && qsoSubmode ? qsoSubmode : qsoMode;
+
   // Field Formatting should happen here.
   const isoStart = qso.start ? qso.start : qso.end ? qso.end : '0000-00-00T00:00:00Z';
   const display = {
     start: isoStart,
     call: qso.call || 'UNKNOWN',
-    mode: qso.mode || '',
+    mode: displayMode,
     freq: typeof qso.freq === 'number' ? qso.freq.toFixed(4) : qso.freq || '',
     band: qso.band || '',
     tx_pwr: qso.tx_pwr || '',
@@ -775,17 +853,27 @@ function addQsoEntry(qso, type = 'normal') {
   });
 
   // Duplicate detection: match on call, band, and start date (YYYY-MM-DD)
+  const modeMatchKey = (item) => {
+    const mode = String(item.mode || '')
+      .trim()
+      .toUpperCase();
+    const submode = String(item.submode || '')
+      .trim()
+      .toUpperCase();
+    return mode === 'MFSK' && submode ? submode : mode;
+  };
+
   const incomingCall = (qso.call || '').toUpperCase();
   const incomingBand = qso.band || '';
   const incomingDate = isoStart.split('T')[0] || '';
-  const incomingMode = (qso.mode || '').toUpperCase();
+  const incomingMode = modeMatchKey(qso);
 
   const isDupe = qsoList.some((existing) => {
     const exCall = (existing.call || '').toUpperCase();
     const exBand = existing.band || '';
     const exIso = existing.start || existing.end || '';
     const exDate = exIso.split('T')[0] || '';
-    const exMode = (existing.mode || '').toUpperCase();
+    const exMode = modeMatchKey(existing);
     return (
       exCall === incomingCall &&
       exBand === incomingBand &&
@@ -802,7 +890,7 @@ function addQsoEntry(qso, type = 'normal') {
       const exBand = existing.band || '';
       const exIso = existing.start || existing.end || '';
       const exDate = exIso.split('T')[0] || '';
-      const exMode = (existing.mode || '').toUpperCase();
+      const exMode = modeMatchKey(existing);
       return (
         exCall === incomingCall &&
         exBand === incomingBand &&
@@ -822,7 +910,11 @@ function addQsoEntry(qso, type = 'normal') {
       const exIso = dupeMatch.start || dupeMatch.end || '';
       const exDate = exIso.split('T')[0] || '';
       const exTime = (exIso.split('T')[1] || '').substr(0, 8) || '';
-      const exMode = dupeMatch.mode || '';
+      const exMode =
+        String(dupeMatch.mode || '').toUpperCase() === 'MFSK' &&
+        String(dupeMatch.submode || '').trim()
+          ? String(dupeMatch.submode || '').trim()
+          : dupeMatch.mode || '';
       // Custom tooltip element with details including time
       const tooltip = document.createElement('span');
       tooltip.className = 'qso-dupe-tooltip';
@@ -909,6 +1001,7 @@ async function refreshQsoLog() {
   const qsos = settings.qsos || [];
   isBulkQsoRender = true;
   qsos.forEach((qso) => {
+    normalizeCalculatedFields(qso);
     addQsoEntry(qso, 'normal');
   });
   isBulkQsoRender = false;
@@ -975,7 +1068,9 @@ function updateMyParkFromConfigurationName(statusData) {
     return;
   }
 
-  const statusCall = String(statusData.deCall || '').trim().toUpperCase();
+  const statusCall = String(statusData.deCall || '')
+    .trim()
+    .toUpperCase();
   if (!statusCall || configCall.trim().toUpperCase() !== statusCall) {
     return;
   }

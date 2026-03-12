@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('electron', {
   // Settings API
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
+  validateForwardHost: (host) => ipcRenderer.invoke('validate-forward-host', host),
 
   // Theme API
   getTheme: () => ipcRenderer.invoke('get-theme'),
@@ -32,9 +33,17 @@ contextBridge.exposeInMainWorld('electron', {
   // Window control API
   openSettings: () => ipcRenderer.send('open-settings'),
   openQsoEditor: () => ipcRenderer.send('open-qso-editor'),
+  openPotaSpots: () => ipcRenderer.send('open-pota-spots'),
   closeSettings: () => ipcRenderer.send('close-settings'),
   closeQsoEditor: () => ipcRenderer.send('close-qso-editor'),
+  closePotaSpots: () => ipcRenderer.send('close-pota-spots'),
   performUpdateAction: () => ipcRenderer.invoke('perform-update-action'),
+
+  // POTA Spots API
+  fetchPotaSpots: () => ipcRenderer.invoke('fetch-pota-spots'),
+  getPotaSpotsFilters: () => ipcRenderer.invoke('get-pota-spots-filters'),
+  savePotaSpotsFilters: (filters) => ipcRenderer.invoke('save-pota-spots-filters', filters),
+  selectPotaSpot: (spot) => ipcRenderer.invoke('select-pota-spot', spot),
 
   // Events from relay
   onRelayLog: (callback) => ipcRenderer.on('relay-log', (event, msg) => callback(msg)),
@@ -50,5 +59,7 @@ contextBridge.exposeInMainWorld('electron', {
   onSettingsChanged: (callback) =>
     ipcRenderer.on('settings-changed', (event, settings) => callback(settings)),
   onQsoDataRefresh: (callback) => ipcRenderer.on('qso-data-refresh', () => callback()),
+  onPotaSpotSelected: (callback) =>
+    ipcRenderer.on('pota-spot-selected', (event, spotData) => callback(spotData)),
   notifyQsoDataChanged: () => ipcRenderer.send('qso-data-changed'),
 });

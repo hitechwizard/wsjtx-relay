@@ -21,6 +21,7 @@
           <button id="importQsosBtn" class="btn btn-secondary">Import ADIF</button>
           <button id="exportQsosBtn" class="btn btn-secondary">Export ADIF</button>
           <button id="resendAllQsosBtn" class="btn btn-secondary">Resend All</button>
+          <button id="setMyParkBtn" class="btn btn-secondary">Set My Park</button>
         </div>
         <div style="display: flex; gap: 10px">
           <button id="saveQsoChanges" class="btn btn-primary">Save All Changes</button>
@@ -31,12 +32,57 @@
 
     <div id="rawDataModal" class="qso-raw-modal" hidden>
       <div class="qso-raw-modal-backdrop" data-action="close-raw-modal"></div>
-      <div class="qso-raw-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="rawDataModalTitle">
+      <div
+        class="qso-raw-modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rawDataModalTitle"
+      >
         <div class="qso-raw-modal-header">
           <h2 id="rawDataModalTitle">Raw QSO Data</h2>
-          <button id="closeRawDataModalBtn" class="btn btn-secondary btn-sm" type="button">Close</button>
+          <button id="closeRawDataModalBtn" class="btn btn-secondary btn-sm" type="button">
+            Close
+          </button>
         </div>
         <div id="rawDataModalContent" class="qso-raw-modal-content"></div>
+      </div>
+    </div>
+
+    <div id="setMyParkModal" class="qso-raw-modal" hidden>
+      <div class="qso-raw-modal-backdrop" data-action="close-park-modal"></div>
+      <div
+        class="qso-raw-modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="setParkModalTitle"
+        style="max-width: 500px"
+      >
+        <div class="qso-raw-modal-header">
+          <h2 id="setParkModalTitle">Set My Park</h2>
+          <button id="closeParkModalBtn" class="btn btn-secondary btn-sm" type="button">
+            Cancel
+          </button>
+        </div>
+        <div class="qso-raw-modal-content" style="padding: 20px">
+          <p style="margin: 0 0 12px; color: var(--text-secondary); font-size: 13px">
+            Enter your Park reference (e.g., US-1234 or K-12345)
+          </p>
+          <input
+            type="text"
+            id="parkReferenceInput"
+            class="editor-field"
+            style="width: 100%; padding: 10px; font-size: 14px; text-transform: uppercase"
+            placeholder="XX-####"
+          />
+          <p
+            id="parkValidationError"
+            style="margin: 8px 0 0; color: var(--red); font-size: 12px; min-height: 16px"
+          ></p>
+          <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end">
+            <button id="cancelParkBtn" class="btn btn-secondary">Cancel</button>
+            <button id="confirmParkBtn" class="btn btn-primary">Set Park</button>
+          </div>
+        </div>
       </div>
     </div>
 

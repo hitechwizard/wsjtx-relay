@@ -7,6 +7,8 @@ const addForwardBtn = document.getElementById('addForwardBtn');
 const cancelBtn = document.getElementById('cancelBtn');
 const themeLightInput = document.getElementById('themeLight');
 const themeDarkInput = document.getElementById('themeDark');
+const autoStartRelayInput = document.getElementById('autoStartRelay');
+const usePotaSpotMapInput = document.getElementById('usePotaSpotMap');
 
 let forwardsData = [];
 let currentTheme = 'light';
@@ -31,6 +33,8 @@ function setupEventListeners() {
 async function loadSettings() {
   const settings = await window.electron.getSettings();
   listenPortInput.value = settings.listenPort;
+  autoStartRelayInput.checked = Boolean(settings.autoStartRelay);
+  usePotaSpotMapInput.checked = Boolean(settings.usePotaSpotMap);
   forwardDelaySecondsInput.value = settings.forwardDelaySeconds ?? 0.5;
   currentTheme = settings.theme || 'light';
   forwardsData = (settings.forwards || []).map((forward) => ({
@@ -110,7 +114,7 @@ function applyTheme(theme) {
   }
 }
 
-function addForward() {
+async function addForward() {
   const value = newForwardInput.value.trim();
 
   if (!value) {
@@ -119,18 +123,18 @@ function addForward() {
   }
 
   // Validate format: host:port
-  const parts = value.split(':');
-  if (parts.length !== 2) {
+  const separatorIndex = value.lastIndexOf(':');
+  if (separatorIndex <= 0 || separatorIndex === value.length - 1) {
     alert('Invalid format. Use: host:port (e.g., 127.0.0.1:2238)');
     return;
   }
 
-  const host = parts[0].trim();
-  const portStr = parts[1].trim();
+  const host = value.slice(0, separatorIndex).trim();
+  const portStr = value.slice(separatorIndex + 1).trim();
 
-  // Validate IPv4 address
-  if (!isValidIPv4(host)) {
-    alert('Invalid IPv4 address');
+  // Validate host syntax before DNS preflight
+  if (!isValidForwardHost(host)) {
+    alert('Invalid host. Use an IPv4 address or valid hostname (FQDN).');
     return;
   }
 
@@ -145,6 +149,18 @@ function addForward() {
   const duplicate = forwardsData.find((f) => f.host === host && f.port === port);
   if (duplicate) {
     alert('This forward address is already in the list');
+    return;
+  }
+
+  // Ensure host resolves to IPv4 so udp4 send/receive behavior is predictable.
+  try {
+    const validation = await window.electron.validateForwardHost(host);
+    if (!validation || !validation.valid) {
+      alert(`Host lookup failed: ${validation?.error || 'No IPv4 address found'}`);
+      return;
+    }
+  } catch (error) {
+    alert(`Unable to validate host: ${error.message}`);
     return;
   }
 
@@ -171,6 +187,8 @@ async function saveSettings(e) {
   e.preventDefault();
 
   const listenPort = parseInt(listenPortInput.value);
+  const autoStartRelay = Boolean(autoStartRelayInput.checked);
+  const usePotaSpotMap = Boolean(usePotaSpotMapInput.checked);
   const forwardDelaySeconds = parseFloat(forwardDelaySecondsInput.value);
   const theme = themeDarkInput.checked ? 'dark' : 'light';
 
@@ -193,6 +211,8 @@ async function saveSettings(e) {
     await window.electron.saveSettings({
       listenPort,
       forwards: forwardsData,
+      autoStartRelay,
+      usePotaSpotMap,
       forwardDelaySeconds,
       theme,
     });
@@ -211,4 +231,26 @@ function isValidIPv4(ip) {
   const ipRegex =
     /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
   return ipRegex.test(ip);
+}
+
+function isValidForwardHost(host) {
+  if (isValidIPv4(host)) {
+    return true;
+  }
+
+  // RFC-aligned hostname validation, permitting single-label hostnames and FQDNs.
+  const normalized = host.endsWith('.') ? host.slice(0, -1) : host;
+  if (!normalized || normalized.length > 253) {
+    return false;
+  }
+
+  const labels = normalized.split('.');
+  return labels.every(
+    (label) =>
+      label.length > 0 &&
+      label.length <= 63 &&
+      /^[A-Za-z0-9-]+$/.test(label) &&
+      !label.startsWith('-') &&
+      !label.endsWith('-'),
+  );
 }

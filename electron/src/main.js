@@ -2,6 +2,7 @@ const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const dns = require('dns');
+const https = require('https');
 const Store = require('electron-store');
 const { autoUpdater } = require('electron-updater');
 const WSJTXRelay = require('./relay');
@@ -14,6 +15,7 @@ let mainWindow;
 let settingsWindow;
 let qsoEditorWindow;
 let examplesWindow;
+let potaSpotsWindow;
 let relay;
 let updateCheckTimer;
 let isUpdateCheckInProgress = false;
@@ -24,6 +26,8 @@ let updateReadyToInstall = false;
 
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const INTERNET_CHECK_TIMEOUT_MS = 3000;
+const POTA_SPOTS_URL = 'https://api.pota.app/spot/activator';
+const POTA_REQUEST_TIMEOUT_MS = 5000;
 const APP_ICON_PATH = path.join(
   __dirname,
   process.platform === 'win32' ? '../assets/icon.ico' : '../assets/icon.png',
@@ -74,6 +78,8 @@ const store = new Store({
   defaults: {
     listenPort: 2237,
     forwards: [],
+    autoStartRelay: false,
+    usePotaSpotMap: false,
     forwardDelaySeconds: 0.5,
     activityPacketFilters: [
       'Heartbeat',
@@ -87,6 +93,8 @@ const store = new Store({
     windowBounds: { width: 1200, height: 800 },
     settingsWindowBounds: { width: 600, height: 500 },
     qsoEditorWindowBounds: { width: 1000, height: 700 },
+    potaSpotsWindowBounds: { width: 1400, height: 700 },
+    potaSpotsFilters: { modeFilter: '', bandFilter: '', regionFilter: '' },
     qsos: [],
   },
 });
@@ -366,16 +374,121 @@ function configureUpdateChecks() {
   }, UPDATE_CHECK_INTERVAL_MS);
 }
 
+function logPotaRequestFailure(message) {
+  const detail = String(message || 'Unknown error').trim();
+  const logMessage = `POTA request failed: ${detail}`;
+  console.warn(logMessage);
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send('relay-log', logMessage);
+  }
+}
+
+function fetchPotaSpots() {
+  return new Promise((resolve, reject) => {
+    const request = https.get(POTA_SPOTS_URL, (response) => {
+      const chunks = [];
+
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => {
+        try {
+          if (response.statusCode !== 200) {
+            reject(new Error(`POTA spots request failed with status ${response.statusCode}`));
+            return;
+          }
+
+          const payload = Buffer.concat(chunks).toString('utf8');
+          const parsed = JSON.parse(payload);
+          resolve(Array.isArray(parsed) ? parsed : []);
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+
+    request.setTimeout(POTA_REQUEST_TIMEOUT_MS, () => {
+      request.destroy(new Error(`timeout after ${POTA_REQUEST_TIMEOUT_MS}ms`));
+    });
+
+    request.on('error', reject);
+  });
+}
+
+function enrichQsoWithPotaSpot(qso, spots) {
+  const nextQso = { ...(qso || {}) };
+  const dxCall = String(nextQso.dx_call || nextQso.dxCall || nextQso.call || '')
+    .toUpperCase()
+    .trim();
+
+  if (!dxCall || !Array.isArray(spots) || spots.length === 0) {
+    return nextQso;
+  }
+
+  const spotMatch = spots.find(
+    (spot) =>
+      String(spot?.activator || '')
+        .toUpperCase()
+        .trim() === dxCall,
+  );
+  if (!spotMatch) {
+    return nextQso;
+  }
+
+  const existingGrid = String(nextQso.dxGrid || nextQso.gridsquare || '').trim();
+  const spotGrid = String(spotMatch.grid4 || '')
+    .toUpperCase()
+    .trim();
+  if (!existingGrid && spotGrid) {
+    nextQso.gridsquare = spotGrid;
+  }
+
+  nextQso.sig_info = String(spotMatch.reference || '')
+    .toUpperCase()
+    .trim();
+  nextQso.sig = 'POTA';
+  return nextQso;
+}
+
+async function maybeEnrichQsoFromPotaSpotMap(qso) {
+  if (!store.get('usePotaSpotMap', false)) {
+    return qso;
+  }
+
+  try {
+    const spots = await fetchPotaSpots();
+    return enrichQsoWithPotaSpot(qso, spots);
+  } catch (error) {
+    const message = error && error.message ? error.message : String(error);
+    logPotaRequestFailure(message);
+    return qso;
+  }
+}
+
+function bringWindowToFront(targetWindow) {
+  if (!targetWindow || targetWindow.isDestroyed()) {
+    return;
+  }
+
+  if (targetWindow.isMinimized()) {
+    targetWindow.restore();
+  }
+
+  if (!targetWindow.isVisible()) {
+    targetWindow.show();
+  }
+
+  targetWindow.moveTop();
+  targetWindow.focus();
+}
+
 function createExamplesWindow() {
   if (examplesWindow) {
-    examplesWindow.focus();
+    bringWindowToFront(examplesWindow);
     return;
   }
 
   examplesWindow = new BrowserWindow({
     width: 1200,
     height: 860,
-    parent: mainWindow,
     show: false,
     icon: APP_ICON_PATH,
     webPreferences: {
@@ -440,7 +553,7 @@ function createWindow() {
 
 function createSettingsWindow() {
   if (settingsWindow) {
-    settingsWindow.focus();
+    bringWindowToFront(settingsWindow);
     return;
   }
 
@@ -492,7 +605,7 @@ function createSettingsWindow() {
 
 function createQsoEditorWindow() {
   if (qsoEditorWindow) {
-    qsoEditorWindow.focus();
+    bringWindowToFront(qsoEditorWindow);
     return;
   }
 
@@ -542,11 +655,63 @@ function createQsoEditorWindow() {
   });
 }
 
+function createPotaSpotsWindow() {
+  if (potaSpotsWindow) {
+    bringWindowToFront(potaSpotsWindow);
+    return;
+  }
+
+  const bounds = store.get('potaSpotsWindowBounds', { width: 1400, height: 700 });
+
+  const windowOptions = {
+    width: bounds.width,
+    height: bounds.height,
+    show: false,
+    icon: APP_ICON_PATH,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  };
+
+  if (typeof bounds.x === 'number' && typeof bounds.y === 'number') {
+    windowOptions.x = bounds.x;
+    windowOptions.y = bounds.y;
+  }
+
+  potaSpotsWindow = new BrowserWindow(windowOptions);
+
+  potaSpotsWindow.loadFile(path.join(__dirname, '../ui/pota-spots.html'));
+
+  // Send initial theme to POTA Spots window when ready
+  potaSpotsWindow.webContents.on('did-finish-load', () => {
+    const theme = store.get('theme', 'light');
+    potaSpotsWindow.webContents.send('theme-changed', theme);
+  });
+
+  potaSpotsWindow.on('closed', () => {
+    potaSpotsWindow = null;
+  });
+
+  potaSpotsWindow.on('close', () => {
+    const currentBounds = potaSpotsWindow.getBounds();
+    store.set('potaSpotsWindowBounds', currentBounds);
+  });
+
+  potaSpotsWindow.once('ready-to-show', () => {
+    potaSpotsWindow.show();
+  });
+}
+
 // IPC Handlers
 ipcMain.handle('get-settings', () => {
   return {
     listenPort: store.get('listenPort'),
     forwards: store.get('forwards'),
+    autoStartRelay: store.get('autoStartRelay', false),
+    usePotaSpotMap: store.get('usePotaSpotMap', false),
     forwardDelaySeconds: store.get('forwardDelaySeconds', 0.5),
     activityPacketFilters: store.get('activityPacketFilters', [
       'Heartbeat',
@@ -561,11 +726,58 @@ ipcMain.handle('get-settings', () => {
   };
 });
 
+ipcMain.handle('validate-forward-host', async (event, host) => {
+  const normalizedHost = String(host || '').trim();
+
+  if (!normalizedHost) {
+    return { valid: false, error: 'Host is required' };
+  }
+
+  try {
+    const results = await dns.promises.lookup(normalizedHost, {
+      family: 4,
+      all: true,
+      verbatim: true,
+    });
+
+    if (!Array.isArray(results) || results.length === 0) {
+      return { valid: false, error: 'Host did not resolve to an IPv4 address' };
+    }
+
+    return {
+      valid: true,
+      addresses: results.map((entry) => entry.address).filter(Boolean),
+    };
+  } catch (error) {
+    return {
+      valid: false,
+      error: error && error.message ? error.message : 'Host lookup failed',
+    };
+  }
+});
+
 ipcMain.handle(
   'save-settings',
-  (event, { listenPort, forwards, forwardDelaySeconds, activityPacketFilters, theme }) => {
+  (
+    event,
+    {
+      listenPort,
+      forwards,
+      autoStartRelay,
+      usePotaSpotMap,
+      forwardDelaySeconds,
+      activityPacketFilters,
+      theme,
+    },
+  ) => {
     store.set('listenPort', listenPort);
     store.set('forwards', forwards);
+    if (typeof autoStartRelay === 'boolean') {
+      store.set('autoStartRelay', autoStartRelay);
+    }
+    if (typeof usePotaSpotMap === 'boolean') {
+      store.set('usePotaSpotMap', usePotaSpotMap);
+    }
     if (typeof forwardDelaySeconds === 'number' && Number.isFinite(forwardDelaySeconds)) {
       store.set('forwardDelaySeconds', forwardDelaySeconds);
     }
@@ -584,6 +796,8 @@ ipcMain.handle(
     const updatedSettings = {
       listenPort: store.get('listenPort'),
       forwards: store.get('forwards'),
+      autoStartRelay: store.get('autoStartRelay', false),
+      usePotaSpotMap: store.get('usePotaSpotMap', false),
       forwardDelaySeconds: store.get('forwardDelaySeconds', 0.5),
       activityPacketFilters: store.get('activityPacketFilters', [
         'Heartbeat',
@@ -668,11 +882,12 @@ ipcMain.handle('log-qso', (event, qso) => {
   return { success: false, error: 'Relay not running' };
 });
 
-ipcMain.handle('save-qso', (event, qso) => {
+ipcMain.handle('save-qso', async (event, qso) => {
+  const enrichedQso = await maybeEnrichQsoFromPotaSpotMap(qso);
   const qsos = store.get('qsos', []);
-  qsos.push(qso);
+  qsos.push(enrichedQso);
   store.set('qsos', qsos);
-  return { success: true };
+  return { success: true, qso: enrichedQso };
 });
 
 ipcMain.handle('clear-qsos', () => {
@@ -684,12 +899,12 @@ ipcMain.handle('get-qsos', () => {
   return store.get('qsos', []);
 });
 
-ipcMain.handle('update-qsos', (event, qsos) => {
+ipcMain.handle('update-qsos', async (event, qsos) => {
   store.set('qsos', qsos);
   return { success: true };
 });
 
-ipcMain.handle('update-qso', (event, index, qso) => {
+ipcMain.handle('update-qso', async (event, index, qso) => {
   const qsos = store.get('qsos', []);
   if (index >= 0 && index < qsos.length) {
     qsos[index] = qso;
@@ -810,14 +1025,69 @@ ipcMain.on('close-qso-editor', () => {
   }
 });
 
+ipcMain.on('open-pota-spots', createPotaSpotsWindow);
+
+ipcMain.on('close-pota-spots', () => {
+  if (potaSpotsWindow) {
+    potaSpotsWindow.close();
+    potaSpotsWindow = null;
+  }
+});
+
+ipcMain.handle('fetch-pota-spots', async () => {
+  try {
+    const spots = await fetchPotaSpots();
+    return { success: true, spots };
+  } catch (error) {
+    const message = error && error.message ? error.message : String(error);
+    return { success: false, error: message };
+  }
+});
+
+ipcMain.handle('get-pota-spots-filters', () => {
+  return store.get('potaSpotsFilters', {
+    modeFilter: '',
+    bandFilter: '',
+    regionFilter: '',
+    hideWorked: false,
+  });
+});
+
+ipcMain.handle('save-pota-spots-filters', (event, filters) => {
+  const nextFilters = {
+    modeFilter: String(filters?.modeFilter || ''),
+    bandFilter: String(filters?.bandFilter || ''),
+    regionFilter: String(filters?.regionFilter || ''),
+    hideWorked: Boolean(filters?.hideWorked),
+  };
+  store.set('potaSpotsFilters', nextFilters);
+  return { success: true };
+});
+
+ipcMain.handle('select-pota-spot', async (event, spot) => {
+  if (!mainWindow || !mainWindow.webContents) {
+    return { success: false, error: 'Main window is not available' };
+  }
+
+  mainWindow.webContents.send('pota-spot-selected', spot || {});
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+  mainWindow.focus();
+
+  return { success: true };
+});
+
 ipcMain.handle('get-theme', () => {
   return store.get('theme', 'light');
 });
 
 ipcMain.on('qso-data-changed', () => {
-  if (mainWindow && mainWindow.webContents) {
-    mainWindow.webContents.send('qso-data-refresh');
-  }
+  [mainWindow, qsoEditorWindow, potaSpotsWindow].forEach((win) => {
+    if (win && win.webContents) {
+      win.webContents.send('qso-data-refresh');
+    }
+  });
 });
 
 ipcMain.handle('perform-update-action', async () => {
@@ -828,6 +1098,41 @@ ipcMain.handle('perform-update-action', async () => {
 app.on('ready', () => {
   createWindow();
   configureUpdateChecks();
+
+  if (store.get('autoStartRelay', false)) {
+    if (!relay) {
+      const listenPort = store.get('listenPort');
+      const forwards = store.get('forwards');
+      const forwardDelaySeconds = store.get('forwardDelaySeconds', 0.5);
+      relay = new WSJTXRelay(listenPort, forwards, forwardDelaySeconds);
+
+      relay.on('log', (msg) => {
+        mainWindow && mainWindow.webContents.send('relay-log', msg);
+      });
+
+      relay.on('status', (status) => {
+        mainWindow && mainWindow.webContents.send('relay-status', status);
+      });
+
+      relay.on('error', (msg) => {
+        mainWindow && mainWindow.webContents.send('relay-error', msg);
+      });
+
+      relay.on('decode', (msg) => {
+        mainWindow && mainWindow.webContents.send('relay-decode', msg);
+      });
+
+      relay.on('status-update', (statusData) => {
+        mainWindow && mainWindow.webContents.send('relay-status-update', statusData);
+      });
+
+      relay.on('qso-logged', (qso) => {
+        mainWindow && mainWindow.webContents.send('relay-qso-logged', qso);
+      });
+    }
+
+    relay.start();
+  }
 
   const template = [
     {
@@ -853,12 +1158,32 @@ app.on('ready', () => {
     },
 
     {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        ...(isMac ? [{ role: 'pasteAndMatchStyle' }] : []),
+        { role: 'delete' },
+        { role: 'selectAll' },
+      ],
+    },
+
+    {
       label: 'Window',
       submenu: [
         {
           label: 'QSO Editor',
           accelerator: 'CmdOrCtrl+E',
           click: createQsoEditorWindow,
+        },
+        {
+          label: 'POTA Spots',
+          accelerator: 'CmdOrCtrl+P',
+          click: createPotaSpotsWindow,
         },
         { type: 'separator' },
         { role: 'minimize' },
@@ -923,7 +1248,10 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (mainWindow === null) {
     createWindow();
+    return;
   }
+
+  bringWindowToFront(mainWindow);
 });
 
 process.on('exit', () => {

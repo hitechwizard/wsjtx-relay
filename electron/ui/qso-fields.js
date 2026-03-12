@@ -29,11 +29,19 @@
       type: 'string',
       pattern: '^[A-Z]{2}[0-9]{2}(?:[A-Z]{2})?$',
     },
+    my_gridsquare: {
+      label: 'My Grid',
+      type: 'string',
+      pattern: '^[A-Z]{2}[0-9]{2}(?:[A-Z]{2})?$',
+    },
     mode: { label: 'Mode', type: 'enum', values: ['CW', 'SSB', 'FT8', 'MFSK'] },
+    submode: { label: 'Submode', type: 'enum', values: ['', 'FT2', 'FT4', 'FT8'] },
     rst_sent: { label: 'RST Sent', type: 'string' },
     rst_rcvd: { label: 'RST Rcvd', type: 'string' },
     station_callsign: { label: 'DE Call', type: 'string' },
+    my_state: { label: 'My State', type: 'string' },
     operator: { label: 'Operator', type: 'string' },
+    state: { label: 'State', type: 'string' },
     tx_pwr: { label: 'TX Pwr (w)', type: 'number' },
     start: { label: 'Start', type: 'string' },
     end: { label: 'End', type: 'string' },
@@ -79,7 +87,21 @@
   }
 
   function normalizeCalculatedFields(qso) {
+    if (!qso.submode && qso.subMode) {
+      qso.submode = qso.subMode;
+    }
+    delete qso.subMode;
+    qso.submode = String(qso.submode || '')
+      .toUpperCase()
+      .trim();
+
     qso.call = String(qso.call || '')
+      .toUpperCase()
+      .trim();
+    qso.gridsquare = String(qso.gridsquare || '')
+      .toUpperCase()
+      .trim();
+    qso.my_gridsquare = String(qso.my_gridsquare || '')
       .toUpperCase()
       .trim();
     qso.station_callsign = String(qso.station_callsign || '')
