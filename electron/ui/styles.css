@@ -530,6 +530,7 @@ body {
 
 .main-container .log-panel {
   min-height: 0;
+  overflow: hidden;
 }
 
 .main-container .log-panel:first-child {
@@ -641,7 +642,14 @@ body {
 .main-container .log-container {
   height: auto;
   flex: 1;
-  min-height: 220px;
+  min-height: 0;
+}
+
+.log-panel-footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-shrink: 0;
 }
 
 .log-entry {
@@ -1583,10 +1591,18 @@ body.dark-theme .qso-pota-icon {
   background-color: var(--blue-light);
 }
 
+.pota-spot-row {
+  cursor: pointer;
+}
+
 .pota-spot-row td {
   padding: 8px 12px;
   color: var(--text-primary);
   word-break: break-word;
+}
+
+.pota-spot-worked {
+  cursor: not-allowed;
 }
 
 .pota-spot-worked td {

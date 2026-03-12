@@ -457,16 +457,32 @@ async function maybeEnrichQsoFromPotaSpotMap(qso) {
   }
 }
 
+function bringWindowToFront(targetWindow) {
+  if (!targetWindow || targetWindow.isDestroyed()) {
+    return;
+  }
+
+  if (targetWindow.isMinimized()) {
+    targetWindow.restore();
+  }
+
+  if (!targetWindow.isVisible()) {
+    targetWindow.show();
+  }
+
+  targetWindow.moveTop();
+  targetWindow.focus();
+}
+
 function createExamplesWindow() {
   if (examplesWindow) {
-    examplesWindow.focus();
+    bringWindowToFront(examplesWindow);
     return;
   }
 
   examplesWindow = new BrowserWindow({
     width: 1200,
     height: 860,
-    parent: mainWindow,
     show: false,
     icon: APP_ICON_PATH,
     webPreferences: {
@@ -531,7 +547,7 @@ function createWindow() {
 
 function createSettingsWindow() {
   if (settingsWindow) {
-    settingsWindow.focus();
+    bringWindowToFront(settingsWindow);
     return;
   }
 
@@ -583,7 +599,7 @@ function createSettingsWindow() {
 
 function createQsoEditorWindow() {
   if (qsoEditorWindow) {
-    qsoEditorWindow.focus();
+    bringWindowToFront(qsoEditorWindow);
     return;
   }
 
@@ -635,7 +651,7 @@ function createQsoEditorWindow() {
 
 function createPotaSpotsWindow() {
   if (potaSpotsWindow) {
-    potaSpotsWindow.focus();
+    bringWindowToFront(potaSpotsWindow);
     return;
   }
 
@@ -644,7 +660,6 @@ function createPotaSpotsWindow() {
   const windowOptions = {
     width: bounds.width,
     height: bounds.height,
-    parent: mainWindow,
     show: false,
     icon: APP_ICON_PATH,
     webPreferences: {
@@ -1211,7 +1226,10 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (mainWindow === null) {
     createWindow();
+    return;
   }
+
+  bringWindowToFront(mainWindow);
 });
 
 process.on('exit', () => {

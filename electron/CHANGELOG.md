@@ -49,6 +49,7 @@
 - Fixed POTA Spots table layout rendering.
 - Fixed POTA Spots spot age calculation to treat `spotTime` values without a timezone suffix as UTC.
 - Fixed QSO Logged packet date/time encoding for manually entered QSOs.
+- Fixed secondary windows on macOS (Examples, Settings, QSO Editor, POTA Spots) to restore and return to the foreground reliably when reopened from menus/window list.
 
 ## 1.0.4 - 03/05/2026
 
