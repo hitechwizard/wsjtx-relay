@@ -136,7 +136,7 @@ class WSJTXRelay extends EventEmitter {
             }
           });
         });
-        logMsg += this.decodePayload(data);
+        logMsg += this.decodePayload(data, rinfo);
         this.emit('log', logMsg);
       } else {
         this.emit('log', `${srcAddr} -> <no-mapping> (dropped) (${data.length} bytes)`);
@@ -166,7 +166,7 @@ class WSJTXRelay extends EventEmitter {
           this.mapping.get(fwdKey).set(srcKey, Date.now());
         }
       });
-      logMsg += this.decodePayload(data);
+      logMsg += this.decodePayload(data, rinfo);
       if (activeForwards.length === 0) {
         this.emit('log', `${srcAddr} -> <no-enabled-forwards> (dropped) (${data.length} bytes)`);
         return;
@@ -308,7 +308,7 @@ class WSJTXRelay extends EventEmitter {
     forwardsToDelete.forEach((fa) => this.mapping.delete(fa));
   }
 
-  decodePayload(data) {
+  decodePayload(data, rinfo = null) {
     let message = `Not decoded`;
     try {
       const parsed = new WsjtxUdpParser(data);
@@ -352,8 +352,11 @@ class WSJTXRelay extends EventEmitter {
             utcTime: String(parsed.time_utc || ''),
             deltaFreq: Number(parsed.delta_freq),
             dialFrequency: Number(this.lastStatusSnapshot?.dialFrequency),
+            wsjtxId: String(parsed.id || ''),
+            sourceHost: String(rinfo?.address || ''),
+            sourcePort: Number(rinfo?.port),
             lowConfidence: Boolean(parsed.lowconfidence),
-            modifiers: 0,
+            modifiers: Number(parsed.offair),
           });
         } else if (parsed.type === 4) {
           // Reply
@@ -711,7 +714,11 @@ class WSJTXRelay extends EventEmitter {
     const magicBytes = Buffer.from([0xad, 0xbc, 0xcb, 0xda]);
     const versionBytes = Buffer.from([0x00, 0x00, 0x00, 0x02]);
     const typeBytes = Buffer.from([0x00, 0x00, 0x00, 0x04]);
-    const id = Buffer.concat([Buffer.from([0x00, 0x00, 0x00, 0x06]), Buffer.from('WSJT-X')]);
+    const idText = String(decodePacket?.wsjtxId || 'WSJT-X');
+    const idBuffer = Buffer.from(idText, 'utf8');
+    const idLength = Buffer.alloc(4);
+    idLength.writeUInt32BE(idBuffer.length);
+    const id = Buffer.concat([idLength, idBuffer]);
 
     function encodeString(str) {
       const value = String(str || '');
@@ -751,12 +758,15 @@ class WSJTXRelay extends EventEmitter {
       return buf;
     }
 
+    const rawMode = String(decodePacket?.rawMode || '').trim();
+    const replyMode = rawMode || String(decodePacket?.mode || '');
+
     const fields = [
       encodeUint32(Number(decodePacket?.time)),
       encodeInt32(Number(decodePacket?.snr)),
       encodeDouble(Number(decodePacket?.deltaTime)),
       encodeUint32(Number(decodePacket?.deltaFreq)),
-      encodeString(decodePacket?.mode),
+      encodeString(replyMode),
       encodeString(decodePacket?.message),
       encodeBool(Boolean(decodePacket?.lowConfidence)),
       encodeUint8(Number(decodePacket?.modifiers)),
@@ -798,8 +808,43 @@ class WSJTXRelay extends EventEmitter {
     );
   }
 
+  sendPacketToEndpoint(packet, host, port) {
+    if (!this.running || !this.socket) {
+      throw new Error('Relay not running');
+    }
+
+    const targetHost = String(host || '').trim();
+    const targetPort = Number(port);
+
+    if (!targetHost || !Number.isInteger(targetPort) || targetPort <= 0 || targetPort > 65535) {
+      throw new Error('Invalid upstream endpoint');
+    }
+
+    return new Promise((resolve, reject) => {
+      this.socket.send(packet, targetPort, targetHost, (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      });
+    });
+  }
+
   async sendReplyPacket(decodePacket) {
     const packet = this.createReplyPacket(decodePacket);
+    const sourceHost = String(decodePacket?.sourceHost || '').trim();
+    const sourcePort = Number(decodePacket?.sourcePort);
+
+    if (sourceHost && Number.isInteger(sourcePort) && sourcePort > 0 && sourcePort <= 65535) {
+      await this.sendPacketToEndpoint(packet, sourceHost, sourcePort);
+      this.emit(
+        'log',
+        `Reply packet sent upstream to ${sourceHost}:${sourcePort} for ${String(decodePacket?.message || '').trim() || '<empty decode>'}`,
+      );
+      return;
+    }
+
     await this.sendPacketUpstream(packet);
     this.emit(
       'log',

@@ -1091,6 +1091,7 @@ ipcMain.handle('save-pota-spots-filters', (event, filters) => {
 });
 
 ipcMain.handle('select-pota-spot', async (event, spot) => {
+  const sourceWindow = BrowserWindow.fromWebContents(event.sender);
   const payload = spot && typeof spot === 'object' && 'spot' in spot ? spot : { spot, decodePacket: null };
   const selectedSpot = payload?.spot || {};
   const decodePacket = payload?.decodePacket || null;
@@ -1120,10 +1121,12 @@ ipcMain.handle('select-pota-spot', async (event, spot) => {
     }
   }
 
-  if (mainWindow.isMinimized()) {
-    mainWindow.restore();
+  if (sourceWindow && !sourceWindow.isDestroyed()) {
+    if (sourceWindow.isMinimized()) {
+      sourceWindow.restore();
+    }
+    sourceWindow.focus();
   }
-  mainWindow.focus();
 
   return { success: true };
 });

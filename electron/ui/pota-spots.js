@@ -711,19 +711,6 @@ class PotaSpotsManager {
     return [...this.spots, ...syntheticSpots];
   }
 
-  getTrackedCqPotaSightings() {
-    return Array.from(this.cqPotaSightings.entries())
-      .map(([activator, sighting]) => ({
-        activator,
-        seenAt: sighting.seenAt,
-        spotTime: sighting.spotTime,
-        mode: sighting.mode,
-        snr: sighting.snr,
-        message: sighting.message,
-      }))
-      .sort((a, b) => Number(b.seenAt) - Number(a.seenAt));
-  }
-
   normalizeDecodeModeForDisplay(modeValue) {
     const mode = String(modeValue || '')
       .trim()
@@ -752,7 +739,11 @@ class PotaSpotsManager {
       deltaTime: Number(packet?.deltaTime),
       deltaFreq: Number(packet?.deltaFreq),
       mode: String(packet?.mode || ''),
+      rawMode: String(packet?.rawMode || ''),
       message,
+      wsjtxId: String(packet?.wsjtxId || ''),
+      sourceHost: String(packet?.sourceHost || ''),
+      sourcePort: Number(packet?.sourcePort),
       lowConfidence: Boolean(packet?.lowConfidence),
       modifiers: Number(packet?.modifiers) || 0,
     });
