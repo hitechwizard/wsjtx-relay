@@ -6,6 +6,7 @@ class PotaSpotsManager {
     this.loggedQsos = [];
     this.workedQsoKeys = new Set();
     this.decodeSightingsByActivator = new Map();
+    this.cqPotaSightings = new Map();
     this.decodeSightingExpirationMinutes = 5;
     this.sortField = 'spotTime';
     this.sortDescending = true;
@@ -130,9 +131,10 @@ class PotaSpotsManager {
     }
 
     this.decodeSightingExpirationMinutes = minutes;
-    const didPrune = this.pruneExpiredDecodeSightings();
-    if (didPrune) {
-      this.render();
+    const prunedDecode = this.pruneExpiredDecodeSightings();
+    const prunedCqPota = this.pruneExpiredCqPotaSightings();
+    if (prunedDecode || prunedCqPota) {
+      this.applyFilters();
     }
   }
 
@@ -170,8 +172,9 @@ class PotaSpotsManager {
 
     this.decodeSightingCleanupTimer = setInterval(() => {
       const prunedDecode = this.pruneExpiredDecodeSightings();
-      if (prunedDecode) {
-        this.render();
+      const prunedCqPota = this.pruneExpiredCqPotaSightings();
+      if (prunedDecode || prunedCqPota) {
+        this.applyFilters();
       }
     }, 15000);
   }
@@ -293,6 +296,7 @@ class PotaSpotsManager {
         this.spots = response.spots || [];
         this.lastUpdateTime = new Date();
         this.lastFetchTime = now;
+        this.prunePromotedCqPotaSightings();
         this.updateFilterOptions();
         this.applyFilters();
         this.updateLastUpdateDisplay();
@@ -328,7 +332,7 @@ class PotaSpotsManager {
     const modes = new Set();
     const bands = new Set();
 
-    this.spots.forEach((spot) => {
+    this.getCombinedSpots().forEach((spot) => {
       if (spot.mode) {
         modes.add(spot.mode);
       }
@@ -546,6 +550,43 @@ class PotaSpotsManager {
     return removedCount > 0;
   }
 
+  pruneExpiredCqPotaSightings(now = Date.now()) {
+    const expirationMs = this.getDecodeSightingExpirationMs();
+    if (expirationMs <= 0 || this.cqPotaSightings.size === 0) {
+      return false;
+    }
+
+    let removedCount = 0;
+
+    Array.from(this.cqPotaSightings.entries()).forEach(([activator, sighting]) => {
+      const seenAt = Number(sighting?.seenAt);
+      if (!Number.isFinite(seenAt) || now - seenAt >= expirationMs) {
+        this.cqPotaSightings.delete(activator);
+        removedCount += 1;
+      }
+    });
+
+    return removedCount > 0;
+  }
+
+  prunePromotedCqPotaSightings() {
+    if (this.cqPotaSightings.size === 0 || this.spots.length === 0) {
+      return false;
+    }
+
+    const officialActivators = new Set(this.spots.map((spot) => this.getActivatorCallsign(spot)));
+    let removedCount = 0;
+
+    Array.from(this.cqPotaSightings.keys()).forEach((activator) => {
+      if (officialActivators.has(activator)) {
+        this.cqPotaSightings.delete(activator);
+        removedCount += 1;
+      }
+    });
+
+    return removedCount > 0;
+  }
+
   doesDecodeMessageContainActivator(message, activator) {
     const normalizedMessage = String(message || '')
       .trim()
@@ -553,18 +594,146 @@ class PotaSpotsManager {
     const normalizedActivator = String(activator || '')
       .trim()
       .toUpperCase();
+    const messageForStartCheck = normalizedMessage.replace(/^[^A-Z0-9/]+/, '');
 
     if (!normalizedMessage || !normalizedActivator) {
       return false;
     }
 
-    if (normalizedMessage.startsWith(normalizedActivator)) {
+    if (messageForStartCheck.startsWith(normalizedActivator)) {
       return false;
     }
 
     const escapedActivator = normalizedActivator.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const activatorPattern = new RegExp(`(^|[^A-Z0-9/])${escapedActivator}($|[^A-Z0-9/])`);
     return activatorPattern.test(normalizedMessage);
+  }
+
+  parseCqPotaActivator(message) {
+    const parts = String(message || '')
+      .trim()
+      .toUpperCase()
+      .split(/\s+/);
+
+    if (parts.length < 3) {
+      return null;
+    }
+
+    const cqIndex = parts.indexOf('CQ');
+    if (cqIndex < 0 || parts[cqIndex + 1] !== 'POTA') {
+      return null;
+    }
+
+    const ignoredTokens = new Set(['CQ', 'POTA', 'DE', 'DX', 'TEST', 'QRZ', 'PSE']);
+    for (let index = cqIndex + 2; index < parts.length; index += 1) {
+      const rawToken = parts[index];
+      if (!rawToken || ignoredTokens.has(rawToken)) {
+        continue;
+      }
+
+      const candidate = this.normalizeDecodeCallsignToken(rawToken);
+      if (this.isLikelyDecodeCallsign(candidate)) {
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
+  normalizeDecodeCallsignToken(token) {
+    return String(token || '')
+      .trim()
+      .toUpperCase()
+      .replace(/^[^A-Z0-9/]+|[^A-Z0-9/]+$/g, '');
+  }
+
+  isLikelyDecodeCallsign(token) {
+    if (!token) {
+      return false;
+    }
+
+    if (/^[A-R]{2}[0-9]{2}([A-X]{2})?$/.test(token)) {
+      return false;
+    }
+
+    if (!/^[A-Z0-9]{1,8}(?:\/[A-Z0-9]{1,8}){0,2}$/.test(token)) {
+      return false;
+    }
+
+    return /[A-Z]/.test(token) && /[0-9]/.test(token);
+  }
+
+  isOfficialPotaActivator(activator) {
+    if (!activator) {
+      return false;
+    }
+
+    return this.spots.some((spot) => this.getActivatorCallsign(spot) === activator);
+  }
+
+  computeSpotTimeFromDecodeTime(timeMs) {
+    const numericTime = Number(timeMs);
+    if (!Number.isFinite(numericTime)) {
+      return new Date().toISOString();
+    }
+
+    const now = new Date();
+    const utcMidnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    const stamp = new Date(utcMidnight + Math.max(0, numericTime));
+    return Number.isNaN(stamp.getTime()) ? new Date().toISOString() : stamp.toISOString();
+  }
+
+  getSyntheticSpotFromCqPotaSighting(activator, sighting) {
+    const normalizedMode = this.normalizeDecodeModeForDisplay(sighting?.mode);
+    const frequencyKHz = Number(sighting?.frequencyKHz);
+    return {
+      activator,
+      frequency: Number.isFinite(frequencyKHz) ? String(frequencyKHz) : null,
+      mode: normalizedMode,
+      reference: '??-????',
+      name: 'CQ POTA',
+      locationDesc: '',
+      spotTime: this.computeSpotTimeFromDecodeTime(sighting?.spotTime),
+      source: 'cq-pota',
+    };
+  }
+
+  getCombinedSpots() {
+    if (this.cqPotaSightings.size === 0) {
+      return this.spots;
+    }
+
+    const officialActivators = new Set(this.spots.map((spot) => this.getActivatorCallsign(spot)));
+    const syntheticSpots = Array.from(this.cqPotaSightings.entries())
+      .filter(([activator]) => !officialActivators.has(activator))
+      .map(([activator, sighting]) => this.getSyntheticSpotFromCqPotaSighting(activator, sighting));
+
+    return [...this.spots, ...syntheticSpots];
+  }
+
+  getTrackedCqPotaSightings() {
+    return Array.from(this.cqPotaSightings.entries())
+      .map(([activator, sighting]) => ({
+        activator,
+        seenAt: sighting.seenAt,
+        spotTime: sighting.spotTime,
+        mode: sighting.mode,
+        snr: sighting.snr,
+        message: sighting.message,
+      }))
+      .sort((a, b) => Number(b.seenAt) - Number(a.seenAt));
+  }
+
+  normalizeDecodeModeForDisplay(modeValue) {
+    const mode = String(modeValue || '')
+      .trim()
+      .toUpperCase();
+
+    if (!mode || mode === '~' || mode === '+') {
+      return '';
+    }
+
+    return mode;
   }
 
   recordDecodePacket(packet) {
@@ -588,6 +757,37 @@ class PotaSpotsManager {
       modifiers: Number(packet?.modifiers) || 0,
     });
 
+    const cqPotaActivator = this.parseCqPotaActivator(message);
+    if (cqPotaActivator && !this.isOfficialPotaActivator(cqPotaActivator)) {
+      const dialFrequencyHz = Number(packet?.dialFrequency);
+      const deltaFrequencyHz = Number(packet?.deltaFreq);
+      let frequencyKHz = null;
+      if (Number.isFinite(dialFrequencyHz) && dialFrequencyHz > 0) {
+        if (Number.isFinite(deltaFrequencyHz)) {
+          frequencyKHz = (dialFrequencyHz + deltaFrequencyHz) / 1000;
+        } else {
+          frequencyKHz = dialFrequencyHz / 1000;
+        }
+      }
+
+      this.cqPotaSightings.set(cqPotaActivator, {
+        activator: cqPotaActivator,
+        seenAt,
+        spotTime: Number(packet?.time),
+        mode: this.normalizeDecodeModeForDisplay(packet?.mode),
+        frequencyKHz,
+        snr: Number.isFinite(snrValue) ? snrValue : null,
+        message,
+        decodePacket: buildDecodePacket(),
+      });
+      this.decodeSightingsByActivator.set(cqPotaActivator, {
+        snr: Number.isFinite(snrValue) ? snrValue : null,
+        seenAt,
+        decodePacket: buildDecodePacket(),
+      });
+      didUpdateSighting = true;
+    }
+
     // Check if any officially-spotted activator appears in this decode
     this.spots.forEach((spot) => {
       const activator = this.getActivatorCallsign(spot);
@@ -604,7 +804,8 @@ class PotaSpotsManager {
 
     if (didUpdateSighting) {
       this.pruneExpiredDecodeSightings();
-      this.render();
+      this.pruneExpiredCqPotaSightings();
+      this.applyFilters();
     }
   }
 
@@ -619,28 +820,33 @@ class PotaSpotsManager {
     const regionFilter = document.getElementById('regionFilter').value.toUpperCase();
     const hideWorked = document.getElementById('hideWorkedFilter').checked;
 
-    this.filteredSpots = this.spots.filter((spot) => {
+    this.filteredSpots = this.getCombinedSpots().filter((spot) => {
+      const isCqPotaSpot = String(spot?.source || '') === 'cq-pota';
+
       if (hideWorked && this.isWorkedSpot(spot)) {
         return false;
       }
 
       // Mode filter
-      if (modeFilter && String(spot.mode || '').toUpperCase() !== modeFilter) {
+      const spotMode = String(spot.mode || '').toUpperCase();
+      if (modeFilter && (!isCqPotaSpot || spotMode) && spotMode !== modeFilter) {
         return false;
       }
 
       // Band filter
       if (bandFilter) {
         const freqKHz = parseFloat(spot.frequency);
-        const freqMHz = freqKHz / 1000;
-        const band = this.frequencyToBand(freqMHz);
-        if (band !== bandFilter) {
-          return false;
+        if (!(isCqPotaSpot && !Number.isFinite(freqKHz))) {
+          const freqMHz = freqKHz / 1000;
+          const band = this.frequencyToBand(freqMHz);
+          if (band !== bandFilter) {
+            return false;
+          }
         }
       }
 
       // Region filter (first 2 chars of locationDesc)
-      if (regionFilter) {
+      if (regionFilter && !isCqPotaSpot) {
         const location = String(spot.locationDesc || '').toUpperCase();
         if (!location.startsWith(regionFilter)) {
           return false;

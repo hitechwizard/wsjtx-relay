@@ -21,6 +21,7 @@ class WSJTXRelay extends EventEmitter {
     this.forwardHostAddressMap = new Map(); // host -> Set of resolved IPv4 addresses
     this.pendingHostLookups = new Set();
     this.cleanupInterval = null;
+    this.lastStatusSnapshot = null;
   }
 
   start() {
@@ -326,18 +327,31 @@ class WSJTXRelay extends EventEmitter {
             message += ` Transmitting ${parsed.txMessage}`;
           }
 
+          this.lastStatusSnapshot = {
+            mode: String(parsed.mode || ''),
+            dialFrequency: Number(parsed.dialFrequency),
+          };
+
           // Emit status update for UI indicators
           this.emit('status-update', parsed);
         } else if (parsed.type === 2) {
           // Decode
+          const decodeMode = String(parsed.mode || '').trim();
+          const fallbackMode = String(this.lastStatusSnapshot?.mode || '').trim();
+          const resolvedMode = decodeMode && decodeMode !== '~' && decodeMode !== '+'
+            ? decodeMode
+            : fallbackMode;
+
           this.emit('decode-packet', {
             time: Number(parsed.time),
             message: String(parsed.message || ''),
             snr: Number(parsed.snr),
             deltaTime: Number(parsed.delta_time),
-            mode: String(parsed.mode || ''),
+            mode: resolvedMode,
+            rawMode: decodeMode,
             utcTime: String(parsed.time_utc || ''),
             deltaFreq: Number(parsed.delta_freq),
+            dialFrequency: Number(this.lastStatusSnapshot?.dialFrequency),
             lowConfidence: Boolean(parsed.lowconfidence),
             modifiers: 0,
           });
