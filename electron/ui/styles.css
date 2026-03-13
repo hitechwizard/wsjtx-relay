@@ -1637,6 +1637,28 @@ body.dark-theme .qso-pota-icon {
   text-decoration: none;
 }
 
+.pota-decode-indicator {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--green);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--green) 40%, var(--border-color));
+  flex-shrink: 0;
+}
+
+.pota-decode-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--green);
+  background-color: color-mix(in srgb, var(--green) 16%, var(--bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--green) 32%, var(--border-color));
+  text-decoration: none;
+}
+
 .pota-spot-worked {
   cursor: not-allowed;
 }

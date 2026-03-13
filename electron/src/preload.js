@@ -50,6 +50,8 @@ contextBridge.exposeInMainWorld('electron', {
   onRelayStatus: (callback) => ipcRenderer.on('relay-status', (event, status) => callback(status)),
   onRelayError: (callback) => ipcRenderer.on('relay-error', (event, msg) => callback(msg)),
   onRelayDecode: (callback) => ipcRenderer.on('relay-decode', (event, msg) => callback(msg)),
+  onRelayDecodePacket: (callback) =>
+    ipcRenderer.on('relay-decode-packet', (event, packet) => callback(packet)),
   onRelayStatusUpdate: (callback) =>
     ipcRenderer.on('relay-status-update', (event, statusData) => callback(statusData)),
   onRelayQsoLogged: (callback) =>

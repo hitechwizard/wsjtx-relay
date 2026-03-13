@@ -5,12 +5,15 @@ class PotaSpotsManager {
     this.filteredSpots = [];
     this.loggedQsos = [];
     this.workedQsoKeys = new Set();
+    this.decodeSightingsByActivator = new Map();
+    this.decodeSightingExpirationMinutes = 5;
     this.sortField = 'spotTime';
     this.sortDescending = true;
     this.lastUpdateTime = null;
     this.minUpdateIntervalMs = 60 * 1000; // 1 minute
     this.lastFetchTime = 0;
     this.autoRefreshTimer = null;
+    this.decodeSightingCleanupTimer = null;
     this.persistedFilters = {
       modeFilter: '',
       bandFilter: '',
@@ -24,10 +27,12 @@ class PotaSpotsManager {
   async init() {
     this.setupEventListeners();
     this.setupThemeListener();
+    await this.loadDecodeSightingSettings();
     await this.loadFilterState();
     this.applyPersistedRegionFilter();
     this.fetchSpots();
     this.startAutoRefresh();
+    this.startDecodeSightingCleanupTimer();
   }
 
   setupEventListeners() {
@@ -87,7 +92,48 @@ class PotaSpotsManager {
       });
     }
 
-    window.addEventListener('beforeunload', () => this.stopAutoRefresh());
+    if (window.electron && typeof window.electron.onRelayDecodePacket === 'function') {
+      window.electron.onRelayDecodePacket((packet) => {
+        this.recordDecodePacket(packet);
+      });
+    }
+
+    if (window.electron && typeof window.electron.onSettingsChanged === 'function') {
+      window.electron.onSettingsChanged((settings) => {
+        this.applyDecodeSightingSettings(settings);
+      });
+    }
+
+    window.addEventListener('beforeunload', () => {
+      this.stopAutoRefresh();
+      this.stopDecodeSightingCleanupTimer();
+    });
+  }
+
+  async loadDecodeSightingSettings() {
+    if (!window.electron || typeof window.electron.getSettings !== 'function') {
+      return;
+    }
+
+    try {
+      const settings = await window.electron.getSettings();
+      this.applyDecodeSightingSettings(settings);
+    } catch (error) {
+      console.error('Error loading decode sighting settings:', error);
+    }
+  }
+
+  applyDecodeSightingSettings(settings) {
+    const minutes = Number.parseInt(settings?.decodeSightingExpirationMinutes, 10);
+    if (!Number.isInteger(minutes) || minutes < 0) {
+      return;
+    }
+
+    this.decodeSightingExpirationMinutes = minutes;
+    const didPrune = this.pruneExpiredDecodeSightings();
+    if (didPrune) {
+      this.render();
+    }
   }
 
   setupThemeListener() {
@@ -117,10 +163,30 @@ class PotaSpotsManager {
     }, this.minUpdateIntervalMs);
   }
 
+  startDecodeSightingCleanupTimer() {
+    if (this.decodeSightingCleanupTimer) {
+      clearInterval(this.decodeSightingCleanupTimer);
+    }
+
+    this.decodeSightingCleanupTimer = setInterval(() => {
+      const prunedDecode = this.pruneExpiredDecodeSightings();
+      if (prunedDecode) {
+        this.render();
+      }
+    }, 15000);
+  }
+
   stopAutoRefresh() {
     if (this.autoRefreshTimer) {
       clearInterval(this.autoRefreshTimer);
       this.autoRefreshTimer = null;
+    }
+  }
+
+  stopDecodeSightingCleanupTimer() {
+    if (this.decodeSightingCleanupTimer) {
+      clearInterval(this.decodeSightingCleanupTimer);
+      this.decodeSightingCleanupTimer = null;
     }
   }
 
@@ -130,7 +196,14 @@ class PotaSpotsManager {
     }
 
     try {
-      await window.electron.selectPotaSpot(spot || {});
+      const decodeSighting = this.getActivatorDecodeSighting(spot);
+      const response = await window.electron.selectPotaSpot({
+        spot: spot || {},
+        decodePacket: decodeSighting?.decodePacket || null,
+      });
+      if (response && response.success === false) {
+        console.error('Failed to activate POTA spot:', response.error || 'Unknown error');
+      }
     } catch (error) {
       console.error('Failed to send selected POTA spot:', error);
     }
@@ -402,6 +475,139 @@ class PotaSpotsManager {
     return `${call}|${band}|${mode}|${date}`;
   }
 
+  getActivatorCallsign(spot) {
+    return String(spot?.activator || '')
+      .trim()
+      .toUpperCase();
+  }
+
+  isActivatorSeenInDecode(spot) {
+    const activator = this.getActivatorCallsign(spot);
+    return Boolean(activator) && this.decodeSightingsByActivator.has(activator);
+  }
+
+  getActivatorDecodeSighting(spot) {
+    const activator = this.getActivatorCallsign(spot);
+    if (!activator) {
+      return null;
+    }
+
+    const sighting = this.decodeSightingsByActivator.get(activator) || null;
+    if (!sighting) {
+      return null;
+    }
+
+    if (this.isDecodeSightingExpired(sighting)) {
+      this.decodeSightingsByActivator.delete(activator);
+      return null;
+    }
+
+    return sighting;
+  }
+
+  getDecodeSightingExpirationMs() {
+    if (!Number.isFinite(this.decodeSightingExpirationMinutes) || this.decodeSightingExpirationMinutes <= 0) {
+      return 0;
+    }
+
+    return this.decodeSightingExpirationMinutes * 60 * 1000;
+  }
+
+  isDecodeSightingExpired(sighting, now = Date.now()) {
+    const expirationMs = this.getDecodeSightingExpirationMs();
+    if (expirationMs <= 0) {
+      return false;
+    }
+
+    const seenAt = Number(sighting?.seenAt);
+    if (!Number.isFinite(seenAt)) {
+      return true;
+    }
+
+    return now - seenAt >= expirationMs;
+  }
+
+  pruneExpiredDecodeSightings() {
+    const expirationMs = this.getDecodeSightingExpirationMs();
+    if (expirationMs <= 0 || this.decodeSightingsByActivator.size === 0) {
+      return false;
+    }
+
+    const now = Date.now();
+    let removedCount = 0;
+
+    Array.from(this.decodeSightingsByActivator.entries()).forEach(([activator, sighting]) => {
+      if (this.isDecodeSightingExpired(sighting, now)) {
+        this.decodeSightingsByActivator.delete(activator);
+        removedCount += 1;
+      }
+    });
+
+    return removedCount > 0;
+  }
+
+  doesDecodeMessageContainActivator(message, activator) {
+    const normalizedMessage = String(message || '')
+      .trim()
+      .toUpperCase();
+    const normalizedActivator = String(activator || '')
+      .trim()
+      .toUpperCase();
+
+    if (!normalizedMessage || !normalizedActivator) {
+      return false;
+    }
+
+    if (normalizedMessage.startsWith(normalizedActivator)) {
+      return false;
+    }
+
+    const escapedActivator = normalizedActivator.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const activatorPattern = new RegExp(`(^|[^A-Z0-9/])${escapedActivator}($|[^A-Z0-9/])`);
+    return activatorPattern.test(normalizedMessage);
+  }
+
+  recordDecodePacket(packet) {
+    const message = String(packet?.message || '');
+    if (!message) {
+      return;
+    }
+
+    const seenAt = Date.now();
+    const snrValue = Number(packet?.snr);
+    let didUpdateSighting = false;
+
+    const buildDecodePacket = () => ({
+      time: Number(packet?.time),
+      snr: Number.isFinite(snrValue) ? snrValue : null,
+      deltaTime: Number(packet?.deltaTime),
+      deltaFreq: Number(packet?.deltaFreq),
+      mode: String(packet?.mode || ''),
+      message,
+      lowConfidence: Boolean(packet?.lowConfidence),
+      modifiers: Number(packet?.modifiers) || 0,
+    });
+
+    // Check if any officially-spotted activator appears in this decode
+    this.spots.forEach((spot) => {
+      const activator = this.getActivatorCallsign(spot);
+      if (!this.doesDecodeMessageContainActivator(message, activator)) {
+        return;
+      }
+      this.decodeSightingsByActivator.set(activator, {
+        snr: Number.isFinite(snrValue) ? snrValue : null,
+        seenAt,
+        decodePacket: buildDecodePacket(),
+      });
+      didUpdateSighting = true;
+    });
+
+    if (didUpdateSighting) {
+      this.pruneExpiredDecodeSightings();
+      this.render();
+    }
+  }
+
   isWorkedSpot(spot) {
     const spotKey = this.getSpotMatchKey(spot);
     return Boolean(spotKey) && this.workedQsoKeys.has(spotKey);
@@ -574,6 +780,8 @@ class PotaSpotsManager {
   }
 
   render() {
+    this.pruneExpiredDecodeSightings();
+
     const tbody = document.getElementById('spotsTableBody');
     const noSpotsMsg = document.getElementById('noSpotsMessage');
 
@@ -588,15 +796,23 @@ class PotaSpotsManager {
       .map((spot, index) => {
         const row = document.createElement('tr');
         const isWorked = this.isWorkedSpot(spot);
+        const isSeenInDecode = this.isActivatorSeenInDecode(spot);
+        const decodeSighting = this.getActivatorDecodeSighting(spot);
         const activator = this.escapeHtml(spot.activator || '');
         const workedBadge = isWorked ? '<span class="pota-worked-badge">Worked</span>' : '';
+        const decodeBadge = isSeenInDecode
+          ? `<span class="pota-decode-badge">SNR ${this.formatDecodeSnr(decodeSighting?.snr)}</span>`
+          : '';
+        const decodeIndicator = isSeenInDecode
+          ? '<span class="pota-decode-indicator" title="Activator seen in decode packets"></span>'
+          : '';
         row.className = isWorked ? 'pota-spot-row pota-spot-worked' : 'pota-spot-row';
         row.setAttribute('data-spot-index', String(index));
         row.title = isWorked
-          ? 'Already worked today. Double-click to populate Manual QSO fields'
-          : 'Double-click to populate Manual QSO fields';
+          ? 'Already worked today. Double-click to activate this spot'
+          : 'Double-click to activate this spot';
         row.innerHTML = `
-          <td class="pota-activator-cell"><span>${activator}</span>${workedBadge}</td>
+          <td class="pota-activator-cell">${decodeIndicator}<span>${activator}</span>${workedBadge}${decodeBadge}</td>
           <td>${this.formatFrequency(spot.frequency)}</td>
           <td>${this.escapeHtml(spot.mode || '')}</td>
           <td>${this.escapeHtml(spot.reference || '')}</td>
@@ -608,6 +824,15 @@ class PotaSpotsManager {
         return row.outerHTML;
       })
       .join('');
+  }
+
+  formatDecodeSnr(snr) {
+    const numericSNR = Number(snr);
+    if (!Number.isFinite(numericSNR)) {
+      return '—';
+    }
+
+    return numericSNR > 0 ? `+${numericSNR}` : `${numericSNR}`;
   }
 
   updateLastUpdateDisplay() {

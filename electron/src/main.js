@@ -81,6 +81,7 @@ const store = new Store({
     autoStartRelay: false,
     usePotaSpotMap: false,
     forwardDelaySeconds: 0.5,
+    decodeSightingExpirationMinutes: 5,
     activityPacketFilters: [
       'Heartbeat',
       'Status',
@@ -480,6 +481,13 @@ function bringWindowToFront(targetWindow) {
   targetWindow.focus();
 }
 
+function shouldPopulateManualQsoForSpot(spot) {
+  const mode = String(spot?.mode || '')
+    .trim()
+    .toUpperCase();
+  return mode === 'SSB' || mode === 'CW';
+}
+
 function createExamplesWindow() {
   if (examplesWindow) {
     bringWindowToFront(examplesWindow);
@@ -713,6 +721,7 @@ ipcMain.handle('get-settings', () => {
     autoStartRelay: store.get('autoStartRelay', false),
     usePotaSpotMap: store.get('usePotaSpotMap', false),
     forwardDelaySeconds: store.get('forwardDelaySeconds', 0.5),
+    decodeSightingExpirationMinutes: store.get('decodeSightingExpirationMinutes', 5),
     activityPacketFilters: store.get('activityPacketFilters', [
       'Heartbeat',
       'Status',
@@ -766,6 +775,7 @@ ipcMain.handle(
       autoStartRelay,
       usePotaSpotMap,
       forwardDelaySeconds,
+      decodeSightingExpirationMinutes,
       activityPacketFilters,
       theme,
     },
@@ -780,6 +790,13 @@ ipcMain.handle(
     }
     if (typeof forwardDelaySeconds === 'number' && Number.isFinite(forwardDelaySeconds)) {
       store.set('forwardDelaySeconds', forwardDelaySeconds);
+    }
+    if (
+      typeof decodeSightingExpirationMinutes === 'number' &&
+      Number.isFinite(decodeSightingExpirationMinutes) &&
+      decodeSightingExpirationMinutes >= 0
+    ) {
+      store.set('decodeSightingExpirationMinutes', decodeSightingExpirationMinutes);
     }
     if (Array.isArray(activityPacketFilters)) {
       store.set('activityPacketFilters', activityPacketFilters);
@@ -799,6 +816,7 @@ ipcMain.handle(
       autoStartRelay: store.get('autoStartRelay', false),
       usePotaSpotMap: store.get('usePotaSpotMap', false),
       forwardDelaySeconds: store.get('forwardDelaySeconds', 0.5),
+      decodeSightingExpirationMinutes: store.get('decodeSightingExpirationMinutes', 5),
       activityPacketFilters: store.get('activityPacketFilters', [
         'Heartbeat',
         'Status',
@@ -846,6 +864,14 @@ ipcMain.handle('start-relay', () => {
 
     relay.on('decode', (msg) => {
       mainWindow && mainWindow.webContents.send('relay-decode', msg);
+    });
+
+    relay.on('decode-packet', (packet) => {
+      [mainWindow, potaSpotsWindow].forEach((win) => {
+        if (win && win.webContents) {
+          win.webContents.send('relay-decode-packet', packet);
+        }
+      });
     });
 
     relay.on('status-update', (statusData) => {
@@ -1065,11 +1091,35 @@ ipcMain.handle('save-pota-spots-filters', (event, filters) => {
 });
 
 ipcMain.handle('select-pota-spot', async (event, spot) => {
+  const payload = spot && typeof spot === 'object' && 'spot' in spot ? spot : { spot, decodePacket: null };
+  const selectedSpot = payload?.spot || {};
+  const decodePacket = payload?.decodePacket || null;
+
   if (!mainWindow || !mainWindow.webContents) {
     return { success: false, error: 'Main window is not available' };
   }
 
-  mainWindow.webContents.send('pota-spot-selected', spot || {});
+  if (shouldPopulateManualQsoForSpot(selectedSpot)) {
+    mainWindow.webContents.send('pota-spot-selected', selectedSpot);
+  } else {
+    if (!decodePacket) {
+      return { success: false, error: 'No matching decode packet available for this spot' };
+    }
+
+    if (!relay || !relay.running || typeof relay.sendReplyPacket !== 'function') {
+      return { success: false, error: 'Relay is not running' };
+    }
+
+    try {
+      await relay.sendReplyPacket(decodePacket);
+    } catch (error) {
+      return {
+        success: false,
+        error: error && error.message ? error.message : String(error),
+      };
+    }
+  }
+
   if (mainWindow.isMinimized()) {
     mainWindow.restore();
   }
@@ -1120,6 +1170,14 @@ app.on('ready', () => {
 
       relay.on('decode', (msg) => {
         mainWindow && mainWindow.webContents.send('relay-decode', msg);
+      });
+
+      relay.on('decode-packet', (packet) => {
+        [mainWindow, potaSpotsWindow].forEach((win) => {
+          if (win && win.webContents) {
+            win.webContents.send('relay-decode-packet', packet);
+          }
+        });
       });
 
       relay.on('status-update', (statusData) => {

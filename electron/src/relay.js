@@ -165,11 +165,11 @@ class WSJTXRelay extends EventEmitter {
           this.mapping.get(fwdKey).set(srcKey, Date.now());
         }
       });
+      logMsg += this.decodePayload(data);
       if (activeForwards.length === 0) {
         this.emit('log', `${srcAddr} -> <no-enabled-forwards> (dropped) (${data.length} bytes)`);
         return;
       }
-      logMsg += this.decodePayload(data);
       this.emit('log', logMsg);
     }
   }
@@ -328,6 +328,19 @@ class WSJTXRelay extends EventEmitter {
 
           // Emit status update for UI indicators
           this.emit('status-update', parsed);
+        } else if (parsed.type === 2) {
+          // Decode
+          this.emit('decode-packet', {
+            time: Number(parsed.time),
+            message: String(parsed.message || ''),
+            snr: Number(parsed.snr),
+            deltaTime: Number(parsed.delta_time),
+            mode: String(parsed.mode || ''),
+            utcTime: String(parsed.time_utc || ''),
+            deltaFreq: Number(parsed.delta_freq),
+            lowConfidence: Boolean(parsed.lowconfidence),
+            modifiers: 0,
+          });
         } else if (parsed.type === 4) {
           // Reply
           message += ` ${parsed.mode}`;
@@ -678,6 +691,106 @@ class WSJTXRelay extends EventEmitter {
 
     const packet = Buffer.concat([magicBytes, version, type, id, ...fields]);
     return packet;
+  }
+
+  createReplyPacket(decodePacket) {
+    const magicBytes = Buffer.from([0xad, 0xbc, 0xcb, 0xda]);
+    const versionBytes = Buffer.from([0x00, 0x00, 0x00, 0x02]);
+    const typeBytes = Buffer.from([0x00, 0x00, 0x00, 0x04]);
+    const id = Buffer.concat([Buffer.from([0x00, 0x00, 0x00, 0x06]), Buffer.from('WSJT-X')]);
+
+    function encodeString(str) {
+      const value = String(str || '');
+      const buf = Buffer.from(value, 'utf8');
+      const len = Buffer.alloc(4);
+      len.writeUInt32BE(buf.length);
+      return Buffer.concat([len, buf]);
+    }
+
+    function encodeUint32(val) {
+      const buf = Buffer.alloc(4);
+      buf.writeUInt32BE(Number.isFinite(val) ? Math.max(0, Math.trunc(val)) : 0);
+      return buf;
+    }
+
+    function encodeInt32(val) {
+      const buf = Buffer.alloc(4);
+      buf.writeInt32BE(Number.isFinite(val) ? Math.trunc(val) : 0);
+      return buf;
+    }
+
+    function encodeDouble(val) {
+      const buf = Buffer.alloc(8);
+      buf.writeDoubleBE(Number.isFinite(val) ? val : 0);
+      return buf;
+    }
+
+    function encodeBool(val) {
+      const buf = Buffer.alloc(1);
+      buf.writeUInt8(val ? 1 : 0);
+      return buf;
+    }
+
+    function encodeUint8(val) {
+      const buf = Buffer.alloc(1);
+      buf.writeUInt8(Number.isFinite(val) ? Math.max(0, Math.trunc(val)) & 0xff : 0);
+      return buf;
+    }
+
+    const fields = [
+      encodeUint32(Number(decodePacket?.time)),
+      encodeInt32(Number(decodePacket?.snr)),
+      encodeDouble(Number(decodePacket?.deltaTime)),
+      encodeUint32(Number(decodePacket?.deltaFreq)),
+      encodeString(decodePacket?.mode),
+      encodeString(decodePacket?.message),
+      encodeBool(Boolean(decodePacket?.lowConfidence)),
+      encodeUint8(Number(decodePacket?.modifiers)),
+    ];
+
+    return Buffer.concat([magicBytes, versionBytes, typeBytes, id, ...fields]);
+  }
+
+  sendPacketUpstream(packet) {
+    if (!this.running || !this.socket) {
+      throw new Error('Relay not running');
+    }
+
+    const destinations = new Set();
+    this.mapping.forEach((clients) => {
+      clients.forEach((timestamp, clientAddr) => {
+        destinations.add(clientAddr);
+      });
+    });
+
+    if (destinations.size === 0) {
+      throw new Error('No upstream WSJT-X clients have been seen');
+    }
+
+    return Promise.all(
+      Array.from(destinations).map(
+        (clientAddr) =>
+          new Promise((resolve, reject) => {
+            const [clientHost, clientPort] = String(clientAddr).split('|');
+            this.socket.send(packet, Number(clientPort), clientHost, (err) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+              resolve();
+            });
+          }),
+      ),
+    );
+  }
+
+  async sendReplyPacket(decodePacket) {
+    const packet = this.createReplyPacket(decodePacket);
+    await this.sendPacketUpstream(packet);
+    this.emit(
+      'log',
+      `Reply packet sent upstream for ${String(decodePacket?.message || '').trim() || '<empty decode>'}`,
+    );
   }
 }
 

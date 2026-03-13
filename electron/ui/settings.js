@@ -9,6 +9,9 @@ const themeLightInput = document.getElementById('themeLight');
 const themeDarkInput = document.getElementById('themeDark');
 const autoStartRelayInput = document.getElementById('autoStartRelay');
 const usePotaSpotMapInput = document.getElementById('usePotaSpotMap');
+const decodeSightingExpirationMinutesInput = document.getElementById(
+  'decodeSightingExpirationMinutes',
+);
 
 let forwardsData = [];
 let currentTheme = 'light';
@@ -36,6 +39,8 @@ async function loadSettings() {
   autoStartRelayInput.checked = Boolean(settings.autoStartRelay);
   usePotaSpotMapInput.checked = Boolean(settings.usePotaSpotMap);
   forwardDelaySecondsInput.value = settings.forwardDelaySeconds ?? 0.5;
+  decodeSightingExpirationMinutesInput.value =
+    settings.decodeSightingExpirationMinutes ?? 5;
   currentTheme = settings.theme || 'light';
   forwardsData = (settings.forwards || []).map((forward) => ({
     host: forward.host,
@@ -190,6 +195,7 @@ async function saveSettings(e) {
   const autoStartRelay = Boolean(autoStartRelayInput.checked);
   const usePotaSpotMap = Boolean(usePotaSpotMapInput.checked);
   const forwardDelaySeconds = parseFloat(forwardDelaySecondsInput.value);
+  const decodeSightingExpirationMinutes = parseInt(decodeSightingExpirationMinutesInput.value, 10);
   const theme = themeDarkInput.checked ? 'dark' : 'light';
 
   if (isNaN(listenPort) || listenPort < 1 || listenPort > 65535) {
@@ -199,6 +205,11 @@ async function saveSettings(e) {
 
   if (isNaN(forwardDelaySeconds) || forwardDelaySeconds < 0) {
     alert('Invalid forward delay (must be 0 or greater)');
+    return;
+  }
+
+  if (isNaN(decodeSightingExpirationMinutes) || decodeSightingExpirationMinutes < 0) {
+    alert('Invalid decode sighting expiration (must be 0 or greater)');
     return;
   }
 
@@ -214,6 +225,7 @@ async function saveSettings(e) {
       autoStartRelay,
       usePotaSpotMap,
       forwardDelaySeconds,
+      decodeSightingExpirationMinutes,
       theme,
     });
     closeWindow();
