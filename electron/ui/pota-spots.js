@@ -47,7 +47,8 @@ class PotaSpotsManager {
       this.applyFilters();
       this.saveFilterState();
     });
-    document.getElementById('regionFilter').addEventListener('input', () => {
+    document.getElementById('regionFilter').addEventListener('input', (event) => {
+      event.target.value = String(event.target.value || '').toUpperCase();
       this.applyFilters();
       this.saveFilterState();
     });
@@ -58,22 +59,31 @@ class PotaSpotsManager {
 
     // Column headers for sorting
     document.querySelectorAll('.pota-spots-table thead th').forEach((th) => {
+      const field = th.getAttribute('data-field');
+      if (!field) {
+        th.style.cursor = 'default';
+        return;
+      }
+
       th.style.cursor = 'pointer';
       th.addEventListener('click', (e) => {
-        const field = e.target.getAttribute('data-field');
-        this.sortByField(field);
+        const nextField = e.target.getAttribute('data-field');
+        if (!nextField) {
+          return;
+        }
+        this.sortByField(nextField);
       });
     });
 
     const tableBody = document.getElementById('spotsTableBody');
     if (tableBody) {
-      tableBody.addEventListener('dblclick', (event) => {
-        const row = event.target.closest('tr[data-spot-index]');
-        if (!row) {
+      tableBody.addEventListener('click', (event) => {
+        const actionButton = event.target.closest('button.pota-action-btn[data-spot-index]');
+        if (!actionButton) {
           return;
         }
 
-        const spotIndex = Number.parseInt(row.getAttribute('data-spot-index'), 10);
+        const spotIndex = Number.parseInt(actionButton.getAttribute('data-spot-index'), 10);
         if (
           !Number.isInteger(spotIndex) ||
           spotIndex < 0 ||
@@ -523,6 +533,13 @@ class PotaSpotsManager {
     return `${call}|${mode}|${date}`;
   }
 
+  shouldUseManualAction(spot) {
+    const mode = String(spot?.mode || '')
+      .trim()
+      .toUpperCase();
+    return mode === 'SSB' || mode === 'CW';
+  }
+
   getActivatorCallsign(spot) {
     return String(spot?.activator || '')
       .trim()
@@ -859,6 +876,24 @@ class PotaSpotsManager {
     return Boolean(fallbackKey) && this.workedQsoFallbackKeys.has(fallbackKey);
   }
 
+  doesSpotLocationMatchFilter(locationDesc, regionFilter) {
+    const normalizedFilter = String(regionFilter || '')
+      .trim()
+      .toUpperCase();
+
+    if (!normalizedFilter) {
+      return true;
+    }
+
+    const locations = String(locationDesc || '')
+      .toUpperCase()
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    return locations.some((location) => location.startsWith(normalizedFilter));
+  }
+
   applyFilters() {
     const modeFilter = document.getElementById('modeFilter').value.toUpperCase();
     const bandFilter = document.getElementById('bandFilter').value;
@@ -890,10 +925,9 @@ class PotaSpotsManager {
         }
       }
 
-      // Region filter (first 2 chars of locationDesc)
+      // Region/location filter (supports comma-separated API locations)
       if (regionFilter && !isCqPotaSpot) {
-        const location = String(spot.locationDesc || '').toUpperCase();
-        if (!location.startsWith(regionFilter)) {
+        if (!this.doesSpotLocationMatchFilter(spot.locationDesc, regionFilter)) {
           return false;
         }
       }
@@ -936,15 +970,20 @@ class PotaSpotsManager {
         bVal = parseFloat(bVal) || 0;
       }
 
+      if (this.sortField === 'offset') {
+        aVal = this.getSpotOffsetHz(a) || 0;
+        bVal = this.getSpotOffsetHz(b) || 0;
+      }
+
       if (this.sortField === 'age') {
-        aVal = this.getSpotAgeMinutes(a.spotTime);
-        bVal = this.getSpotAgeMinutes(b.spotTime);
+        aVal = this.getSpotAgeMinutes(this.getEffectiveSpotTime(a));
+        bVal = this.getSpotAgeMinutes(this.getEffectiveSpotTime(b));
       }
 
       // Handle datetime
       if (this.sortField === 'spotTime') {
-        aVal = this.parseSpotTime(aVal)?.getTime() || 0;
-        bVal = this.parseSpotTime(bVal)?.getTime() || 0;
+        aVal = this.parseSpotTime(this.getEffectiveSpotTime(a))?.getTime() || 0;
+        bVal = this.parseSpotTime(this.getEffectiveSpotTime(b))?.getTime() || 0;
       }
 
       // Case-insensitive string comparison
@@ -971,6 +1010,31 @@ class PotaSpotsManager {
     // Convert from kHz to MHz
     const freqMHz = freq / 1000;
     return freqMHz.toFixed(4);
+  }
+
+  getSpotOffsetHz(spot) {
+    const sighting = this.getActivatorDecodeSighting(spot);
+    const offsetHz = Number(sighting?.decodePacket?.deltaFreq);
+    return Number.isFinite(offsetHz) ? offsetHz : null;
+  }
+
+  getEffectiveSpotTime(spot, decodeSighting = null) {
+    const sighting = decodeSighting || this.getActivatorDecodeSighting(spot);
+    const decodeTime = Number(sighting?.decodePacket?.time);
+    if (Number.isFinite(decodeTime) && decodeTime >= 0) {
+      return this.computeSpotTimeFromDecodeTime(decodeTime);
+    }
+
+    return spot?.spotTime;
+  }
+
+  formatOffset(offsetHz) {
+    const numericOffset = Number(offsetHz);
+    if (!Number.isFinite(numericOffset)) {
+      return '—';
+    }
+
+    return `${Math.trunc(numericOffset)}`;
   }
 
   formatSpotTime(timeStr) {
@@ -1049,7 +1113,20 @@ class PotaSpotsManager {
         const isWorked = this.isWorkedSpot(spot);
         const isSeenInDecode = this.isActivatorSeenInDecode(spot);
         const decodeSighting = this.getActivatorDecodeSighting(spot);
+        const effectiveSpotTime = this.getEffectiveSpotTime(spot, decodeSighting);
+        const offsetHz = Number(decodeSighting?.decodePacket?.deltaFreq);
         const activator = this.escapeHtml(spot.activator || '');
+        const useManualAction = this.shouldUseManualAction(spot);
+        const hasReplySnr = Number.isFinite(Number(decodeSighting?.snr));
+        const replyDisabled = !useManualAction && (isWorked || !hasReplySnr);
+        const actionLabel = useManualAction ? 'Manual' : 'Reply';
+        const actionDisabledAttr = replyDisabled ? ' disabled' : '';
+        const actionTitle = replyDisabled
+          ? isWorked
+            ? 'Reply unavailable for worked spots'
+            : 'Reply requires a decode with valid SNR'
+          : '';
+        const actionTitleAttr = actionTitle ? ` title="${this.escapeHtml(actionTitle)}"` : '';
         const workedBadge = isWorked ? '<span class="pota-worked-badge">Worked</span>' : '';
         const decodeBadge = isSeenInDecode
           ? `<span class="pota-decode-badge">SNR ${this.formatDecodeSnr(decodeSighting?.snr)}</span>`
@@ -1059,18 +1136,18 @@ class PotaSpotsManager {
           : '';
         row.className = isWorked ? 'pota-spot-row pota-spot-worked' : 'pota-spot-row';
         row.setAttribute('data-spot-index', String(index));
-        row.title = isWorked
-          ? 'Already worked today. Double-click to activate this spot'
-          : 'Double-click to activate this spot';
+        row.title = isWorked ? 'Already worked today' : '';
         row.innerHTML = `
           <td class="pota-activator-cell">${decodeIndicator}<span>${activator}</span>${workedBadge}${decodeBadge}</td>
           <td>${this.formatFrequency(spot.frequency)}</td>
+          <td>${this.formatOffset(offsetHz)}</td>
           <td>${this.escapeHtml(spot.mode || '')}</td>
           <td>${this.escapeHtml(spot.reference || '')}</td>
           <td>${this.escapeHtml(spot.name || '')}</td>
           <td>${this.escapeHtml(spot.locationDesc || '')}</td>
-          <td>${this.formatSpotTime(spot.spotTime)}</td>
-          <td>${this.formatSpotAge(spot.spotTime)}</td>
+          <td>${this.formatSpotTime(effectiveSpotTime)}</td>
+          <td>${this.formatSpotAge(effectiveSpotTime)}</td>
+          <td><button type="button" class="btn btn-secondary btn-sm pota-action-btn" data-spot-index="${index}"${actionDisabledAttr}${actionTitleAttr}>${actionLabel}</button></td>
         `;
         return row.outerHTML;
       })
@@ -1090,7 +1167,9 @@ class PotaSpotsManager {
     const lastUpdateEl = document.getElementById('lastUpdateTime');
     if (this.lastUpdateTime) {
       const timeStr = this.lastUpdateTime.toLocaleTimeString();
-      lastUpdateEl.textContent = `— updated ${timeStr}`;
+      if (lastUpdateEl) {
+        lastUpdateEl.textContent = `— updated ${timeStr}`;
+      }
       document.title = `POTA Spots — updated ${timeStr}`;
     }
   }

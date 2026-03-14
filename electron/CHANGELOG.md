@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.0.6 - 03/13/2026
+
+### Added
+
+- Added `Offset` column to POTA Spots (placed between Frequency and Mode), populated from matched decode `delta_freq`.
+- Added explicit `Action` column in POTA Spots with per-row actions:
+  - `Manual` for `SSB`/`CW`
+  - `Reply` for other modes
+- Added support for creating blank QSOs directly in QSO Editor via `Add Blank QSO`.
+
+### Changed
+
+- Replaced hidden POTA row double-click behavior with explicit action buttons.
+- Updated POTA spot-time behavior so spots seen via decode use the decode timestamp for displayed Spot Time, Age, and related sorting.
+- Expanded POTA Region filter to support full location values (e.g. `US-TX`) and kept input normalized to uppercase.
+- Updated POTA location filtering to correctly match comma-separated API location lists (e.g. `US-LA,US-TX`).
+- Reduced POTA header vertical footprint and moved filters onto the same row where space permits.
+- Updated QSO ordering so full-log sorting by timestamp occurs when saving edited QSOs (`update-qsos`).
+
+### Fixed
+
+- Fixed synthesized CQ POTA spots not being marked as worked immediately after logging (before API promotion).
+- Fixed POTA row focus behavior so selecting an action does not hide the POTA window behind the main window.
+- Fixed WSJT-X reply packet construction/routing to use exact decode-derived values and endpoint context.
+- Disabled `Reply` action when a row has no valid decode SNR or is already worked.
+
 ## 1.0.5 - 03/12/2026
 
 ### Added

@@ -1452,21 +1452,28 @@ body.dark-theme .qso-pota-icon {
 .pota-spots-header {
   background-color: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
-  padding: 15px 20px;
+  padding: 12px 20px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
 .pota-spots-header h1 {
-  margin: 0 0 15px 0;
-  font-size: 24px;
+  margin: 0;
+  font-size: 22px;
   color: var(--header-color);
+  white-space: nowrap;
 }
 
 .pota-spots-controls {
   display: flex;
-  gap: 15px;
+  gap: 12px;
   flex-wrap: wrap;
   align-items: center;
+  margin-left: auto;
 }
 
 .pota-filter-group {
@@ -1552,6 +1559,7 @@ body.dark-theme .qso-pota-icon {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  table-layout: fixed;
 }
 
 .pota-spots-table thead {
@@ -1609,13 +1617,70 @@ body.dark-theme .qso-pota-icon {
 }
 
 .pota-spot-row {
-  cursor: pointer;
+  cursor: default;
 }
 
 .pota-spot-row td {
   padding: 8px 12px;
   color: var(--text-primary);
   word-break: break-word;
+}
+
+/* Keep key columns stable so long location lists do not distort the grid */
+.pota-spots-table th:nth-child(1),
+.pota-spots-table td:nth-child(1) {
+  width: 220px;
+}
+
+.pota-spots-table th:nth-child(2),
+.pota-spots-table td:nth-child(2),
+.pota-spots-table th:nth-child(5),
+.pota-spots-table td:nth-child(5),
+.pota-spots-table th:nth-child(8),
+.pota-spots-table td:nth-child(8) {
+  width: 100px;
+}
+
+.pota-spots-table th:nth-child(3),
+.pota-spots-table td:nth-child(3),
+.pota-spots-table th:nth-child(4),
+.pota-spots-table td:nth-child(4),
+.pota-spots-table th:nth-child(9),
+.pota-spots-table td:nth-child(9) {
+  width: 75px;
+}
+
+
+.pota-spots-table th:nth-child(2),
+.pota-spots-table td:nth-child(2),
+.pota-spots-table th:nth-child(3),
+.pota-spots-table td:nth-child(3),
+.pota-spots-table th:nth-child(4),
+.pota-spots-table td:nth-child(4),
+.pota-spots-table th:nth-child(5),
+.pota-spots-table td:nth-child(5),
+.pota-spots-table th:nth-child(8),
+.pota-spots-table td:nth-child(8),
+.pota-spots-table th:nth-child(9),
+.pota-spots-table td:nth-child(9),
+.pota-spots-table th:nth-child(10),
+.pota-spots-table td:nth-child(10) {
+  white-space: nowrap;
+}
+
+.pota-spots-table th:nth-child(10),
+.pota-spots-table td:nth-child(10) {
+  width: 90px;
+  text-align: center;
+}
+
+/* Location column should not force expansion; keep it clipped in-cell */
+.pota-spots-table th:nth-child(7),
+.pota-spots-table td:nth-child(7) {
+  width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pota-activator-cell {

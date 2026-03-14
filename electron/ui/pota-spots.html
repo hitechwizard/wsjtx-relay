@@ -9,7 +9,7 @@
   <body>
     <div class="pota-spots-wrapper">
       <div class="pota-spots-header">
-        <h1>POTA Spots <span id="lastUpdateTime" class="pota-last-update"></span></h1>
+        <h1>POTA Spots</h1>
         <div class="pota-spots-controls">
           <div class="pota-filter-group">
             <label for="modeFilter">Mode:</label>
@@ -24,13 +24,12 @@
             </select>
           </div>
           <div class="pota-filter-group">
-            <label for="regionFilter">Region (First 2 chars):</label>
+            <label for="regionFilter">Region/Location:</label>
             <input
               type="text"
               id="regionFilter"
               class="pota-filter-input"
-              placeholder="e.g., US, EU"
-              maxlength="2"
+              placeholder="e.g., US, US-TX"
             />
           </div>
           <label for="hideWorkedFilter" class="pota-filter-checkbox-group">
@@ -47,12 +46,14 @@
               <tr>
                 <th data-field="activator">Activator</th>
                 <th data-field="frequency">Frequency</th>
+                <th data-field="offset">Offset</th>
                 <th data-field="mode">Mode</th>
                 <th data-field="reference">Reference</th>
                 <th data-field="name">Name</th>
                 <th data-field="locationDesc">Location</th>
                 <th data-field="spotTime">Spot Time</th>
                 <th data-field="age">Age</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody id="spotsTableBody">
