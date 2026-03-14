@@ -5,6 +5,7 @@ class PotaSpotsManager {
     this.filteredSpots = [];
     this.loggedQsos = [];
     this.workedQsoKeys = new Set();
+    this.workedQsoFallbackKeys = new Set();
     this.decodeSightingsByActivator = new Map();
     this.cqPotaSightings = new Map();
     this.decodeSightingExpirationMinutes = 5;
@@ -312,6 +313,7 @@ class PotaSpotsManager {
     if (!window.electron || typeof window.electron.getQsos !== 'function') {
       this.loggedQsos = [];
       this.workedQsoKeys = new Set();
+      this.workedQsoFallbackKeys = new Set();
       return;
     }
 
@@ -321,10 +323,14 @@ class PotaSpotsManager {
       this.workedQsoKeys = new Set(
         this.loggedQsos.map((qso) => this.getQsoMatchKey(qso)).filter(Boolean),
       );
+      this.workedQsoFallbackKeys = new Set(
+        this.loggedQsos.map((qso) => this.getQsoFallbackMatchKey(qso)).filter(Boolean),
+      );
     } catch (error) {
       console.error('Error loading logged QSOs:', error);
       this.loggedQsos = [];
       this.workedQsoKeys = new Set();
+      this.workedQsoFallbackKeys = new Set();
     }
   }
 
@@ -458,6 +464,26 @@ class PotaSpotsManager {
     return `${call}|${band}|${mode}|${date}`;
   }
 
+  getQsoFallbackMatchKey(qso) {
+    if (!qso) {
+      return '';
+    }
+
+    const call = String(qso.call || qso.dxCall || '')
+      .trim()
+      .toUpperCase();
+    const mode = this.getModeMatchKey(qso.mode, qso.submode);
+    const date =
+      this.getIsoDatePart(qso.start || qso.end) ||
+      this.getIsoDatePart(qso.qso_date || qso.date_on || qso.qso_date_off || qso.date_off);
+
+    if (!call || !mode || !date) {
+      return '';
+    }
+
+    return `${call}|${mode}|${date}`;
+  }
+
   getSpotMatchKey(spot) {
     if (!spot) {
       return '';
@@ -477,6 +503,24 @@ class PotaSpotsManager {
     }
 
     return `${call}|${band}|${mode}|${date}`;
+  }
+
+  getSpotFallbackMatchKey(spot) {
+    if (!spot) {
+      return '';
+    }
+
+    const call = String(spot.activator || '')
+      .trim()
+      .toUpperCase();
+    const mode = this.getModeMatchKey(spot.mode, '');
+    const date = this.getIsoDatePart(spot.spotTime);
+
+    if (!call || !mode || !date) {
+      return '';
+    }
+
+    return `${call}|${mode}|${date}`;
   }
 
   getActivatorCallsign(spot) {
@@ -802,7 +846,17 @@ class PotaSpotsManager {
 
   isWorkedSpot(spot) {
     const spotKey = this.getSpotMatchKey(spot);
-    return Boolean(spotKey) && this.workedQsoKeys.has(spotKey);
+    if (Boolean(spotKey) && this.workedQsoKeys.has(spotKey)) {
+      return true;
+    }
+
+    const isCqSynthetic = String(spot?.source || '') === 'cq-pota';
+    if (!isCqSynthetic) {
+      return false;
+    }
+
+    const fallbackKey = this.getSpotFallbackMatchKey(spot);
+    return Boolean(fallbackKey) && this.workedQsoFallbackKeys.has(fallbackKey);
   }
 
   applyFilters() {
