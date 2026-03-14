@@ -5,6 +5,7 @@ const importQsosBtn = document.getElementById('importQsosBtn');
 const exportQsosBtn = document.getElementById('exportQsosBtn');
 const resendAllQsosBtn = document.getElementById('resendAllQsosBtn');
 const setMyParkBtn = document.getElementById('setMyParkBtn');
+const addBlankQsoBtn = document.getElementById('addBlankQsoBtn');
 const rawDataModal = document.getElementById('rawDataModal');
 const rawDataModalContent = document.getElementById('rawDataModalContent');
 const closeRawDataModalBtn = document.getElementById('closeRawDataModalBtn');
@@ -44,6 +45,9 @@ function setupEventListeners() {
   exportQsosBtn.addEventListener('click', handleExportQsos);
   resendAllQsosBtn.addEventListener('click', handleResendAllQsos);
   setMyParkBtn.addEventListener('click', handleSetMyPark);
+  if (addBlankQsoBtn) {
+    addBlankQsoBtn.addEventListener('click', handleAddBlankQso);
+  }
   if (closeRawDataModalBtn) {
     closeRawDataModalBtn.addEventListener('click', closeRawDataModal);
   }
@@ -287,6 +291,46 @@ function handleDeleteQso(e) {
       }
     });
     changedQsos = updatedChangedQsos;
+  }
+}
+
+function createBlankQso() {
+  const blankQso = {};
+
+  Object.keys(qsoFields).forEach((fieldName) => {
+    blankQso[fieldName] = '';
+  });
+
+  blankQso.start = new Date().toISOString();
+  normalizeCalculatedFields(blankQso);
+  return blankQso;
+}
+
+function handleAddBlankQso() {
+  const blankQso = createBlankQso();
+  qsos.push(blankQso);
+
+  const newIndex = qsos.length - 1;
+  changedQsos.add(newIndex);
+  hasUnsavedChanges = true;
+
+  renderQsoList();
+
+  const newCard = qsoListContainer.querySelector(`.qso-editor-card[data-index="${newIndex}"]`);
+  if (newCard) {
+    newCard.classList.add('changed');
+    const firstEditableField = newCard.querySelector(
+      '.qso-field:not([readonly]):not([disabled])[data-field="call"]',
+    ) || newCard.querySelector('.qso-field:not([readonly]):not([disabled])');
+
+    if (firstEditableField) {
+      firstEditableField.focus();
+      if (typeof firstEditableField.select === 'function') {
+        firstEditableField.select();
+      }
+    }
+
+    newCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 }
 
