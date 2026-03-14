@@ -28,6 +28,10 @@ const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const INTERNET_CHECK_TIMEOUT_MS = 3000;
 const POTA_SPOTS_URL = 'https://api.pota.app/spot/activator';
 const POTA_REQUEST_TIMEOUT_MS = 5000;
+const SETTINGS_WINDOW_DEFAULT_WIDTH = 1100;
+const SETTINGS_WINDOW_DEFAULT_HEIGHT = 760;
+const SETTINGS_WINDOW_MIN_WIDTH = 980;
+const SETTINGS_WINDOW_MIN_HEIGHT = 620;
 const APP_ICON_PATH = path.join(
   __dirname,
   process.platform === 'win32' ? '../assets/icon.ico' : '../assets/icon.png',
@@ -92,7 +96,10 @@ const store = new Store({
     ],
     theme: 'light',
     windowBounds: { width: 1200, height: 800 },
-    settingsWindowBounds: { width: 600, height: 500 },
+    settingsWindowBounds: {
+      width: SETTINGS_WINDOW_DEFAULT_WIDTH,
+      height: SETTINGS_WINDOW_DEFAULT_HEIGHT,
+    },
     qsoEditorWindowBounds: { width: 1000, height: 700 },
     potaSpotsWindowBounds: { width: 1400, height: 700 },
     potaSpotsFilters: { modeFilter: '', bandFilter: '', regionFilter: '' },
@@ -565,11 +572,18 @@ function createSettingsWindow() {
     return;
   }
 
-  const bounds = store.get('settingsWindowBounds', { width: 600, height: 500 });
+  const bounds = store.get('settingsWindowBounds', {
+    width: SETTINGS_WINDOW_DEFAULT_WIDTH,
+    height: SETTINGS_WINDOW_DEFAULT_HEIGHT,
+  });
+  const width = Math.max(bounds.width || SETTINGS_WINDOW_DEFAULT_WIDTH, SETTINGS_WINDOW_MIN_WIDTH);
+  const height = Math.max(bounds.height || SETTINGS_WINDOW_DEFAULT_HEIGHT, SETTINGS_WINDOW_MIN_HEIGHT);
 
   const windowOptions = {
-    width: bounds.width,
-    height: bounds.height,
+    width,
+    height,
+    minWidth: SETTINGS_WINDOW_MIN_WIDTH,
+    minHeight: SETTINGS_WINDOW_MIN_HEIGHT,
     parent: mainWindow,
     modal: true,
     show: false,
@@ -604,6 +618,20 @@ function createSettingsWindow() {
   settingsWindow.on('close', () => {
     const currentBounds = settingsWindow.getBounds();
     store.set('settingsWindowBounds', currentBounds);
+  });
+
+  settingsWindow.on('resize', () => {
+    if (!settingsWindow) {
+      return;
+    }
+
+    const [currentWidth, currentHeight] = settingsWindow.getSize();
+    const clampedWidth = Math.max(currentWidth, SETTINGS_WINDOW_MIN_WIDTH);
+    const clampedHeight = Math.max(currentHeight, SETTINGS_WINDOW_MIN_HEIGHT);
+
+    if (currentWidth !== clampedWidth || currentHeight !== clampedHeight) {
+      settingsWindow.setSize(clampedWidth, clampedHeight);
+    }
   });
 
   settingsWindow.once('ready-to-show', () => {
