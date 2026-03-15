@@ -1855,6 +1855,16 @@ body.dark-theme .pota-spot-row.pota-spot-tx-enabled:hover td {
   color: #ffffff;
 }
 
+.pota-spot-row.pota-spot-self td {
+  background-color: var(--green);
+  color: #ffffff;
+}
+
+.pota-spot-row.pota-spot-self:hover td {
+  background-color: color-mix(in srgb, var(--green) 78%, #000000);
+  color: #ffffff;
+}
+
 .pota-no-spots {
   display: flex;
   align-items: center;

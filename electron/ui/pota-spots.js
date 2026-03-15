@@ -22,6 +22,7 @@ class PotaSpotsManager {
       txEnabled: false,
       transmitting: false,
     };
+    this.stationCallsign = '';
     this.persistedFilters = {
       modeFilter: '',
       bandFilter: '',
@@ -1228,11 +1229,15 @@ class PotaSpotsManager {
       .toUpperCase();
     const nextTxEnabled = Boolean(statusData?.txEnabled);
     const nextTransmitting = Boolean(statusData?.transmitting);
+    const nextStationCallsign = String(statusData?.deCall || statusData?.decall || '')
+      .trim()
+      .toUpperCase();
 
     const hasChanges =
       nextDxCall !== this.currentTxStatus.dxCall ||
       nextTxEnabled !== this.currentTxStatus.txEnabled ||
-      nextTransmitting !== this.currentTxStatus.transmitting;
+      nextTransmitting !== this.currentTxStatus.transmitting ||
+      nextStationCallsign !== this.stationCallsign;
 
     if (!hasChanges) {
       return;
@@ -1243,8 +1248,17 @@ class PotaSpotsManager {
       txEnabled: nextTxEnabled,
       transmitting: nextTransmitting,
     };
+    this.stationCallsign = nextStationCallsign;
 
     this.render();
+  }
+
+  isSelfSpot(spot) {
+    if (!this.stationCallsign) {
+      return false;
+    }
+
+    return this.getActivatorCallsign(spot) === this.stationCallsign;
   }
 
   render() {
@@ -1271,14 +1285,18 @@ class PotaSpotsManager {
         const activator = this.escapeHtml(spot.activator || '');
         const useManualAction = this.shouldUseManualAction(spot);
         const hasReplySnr = Number.isFinite(Number(decodeSighting?.snr));
+        const isSelfSpot = this.isSelfSpot(spot);
         const replyDisabled = !useManualAction && (isWorked || !hasReplySnr);
+        const actionDisabled = isSelfSpot || replyDisabled;
         const actionLabel = useManualAction ? 'Manual' : 'Reply';
-        const actionDisabledAttr = replyDisabled ? ' disabled' : '';
-        const actionTitle = replyDisabled
-          ? isWorked
-            ? 'Reply unavailable for worked spots'
-            : 'Reply requires a decode with valid SNR'
-          : '';
+        const actionDisabledAttr = actionDisabled ? ' disabled' : '';
+        const actionTitle = isSelfSpot
+          ? 'Actions disabled for your own callsign spot'
+          : replyDisabled
+            ? isWorked
+              ? 'Reply unavailable for worked spots'
+              : 'Reply requires a decode with valid SNR'
+            : '';
         const actionTitleAttr = actionTitle ? ` title="${this.escapeHtml(actionTitle)}"` : '';
         const workedBadge = isWorked ? '<span class="pota-worked-badge">Worked</span>' : '';
         const decodeBadge = isSeenInDecode
@@ -1296,7 +1314,9 @@ class PotaSpotsManager {
         if (isWorked) {
           rowClassNames.push('pota-spot-worked');
         }
-        if (isTransmittingTarget) {
+        if (isSelfSpot) {
+          rowClassNames.push('pota-spot-self');
+        } else if (isTransmittingTarget) {
           rowClassNames.push('pota-spot-transmitting');
         } else if (isTxEnabledTarget) {
           rowClassNames.push('pota-spot-tx-enabled');
