@@ -1,6 +1,7 @@
 // POTA Spots window management
 class PotaSpotsManager {
   constructor() {
+    this.decodeSightingsStorageKey = 'wsjtxRelay.pota.decodeSightings.v1';
     this.spots = [];
     this.filteredSpots = [];
     this.loggedQsos = [];
@@ -30,6 +31,7 @@ class PotaSpotsManager {
     this.setupEventListeners();
     this.setupThemeListener();
     await this.loadDecodeSightingSettings();
+    this.loadPersistedDecodeSightings();
     await this.loadFilterState();
     this.applyPersistedRegionFilter();
     this.fetchSpots();
@@ -145,7 +147,85 @@ class PotaSpotsManager {
     const prunedDecode = this.pruneExpiredDecodeSightings();
     const prunedCqPota = this.pruneExpiredCqPotaSightings();
     if (prunedDecode || prunedCqPota) {
+      this.savePersistedDecodeSightings();
       this.applyFilters();
+    }
+  }
+
+  loadPersistedDecodeSightings() {
+    if (!window.sessionStorage) {
+      return;
+    }
+
+    try {
+      const raw = window.sessionStorage.getItem(this.decodeSightingsStorageKey);
+      if (!raw) {
+        return;
+      }
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.sightings)) {
+        return;
+      }
+
+      this.decodeSightingsByActivator = new Map();
+      parsed.sightings.forEach((entry) => {
+        if (!entry || typeof entry !== 'object') {
+          return;
+        }
+
+        const activator = String(entry.activator || '')
+          .trim()
+          .toUpperCase();
+        const seenAt = Number(entry.seenAt);
+        if (!activator || !Number.isFinite(seenAt)) {
+          return;
+        }
+
+        const snrValue = Number(entry.snr);
+        const decodePacket = entry.decodePacket && typeof entry.decodePacket === 'object' ? entry.decodePacket : null;
+
+        this.decodeSightingsByActivator.set(activator, {
+          snr: Number.isFinite(snrValue) ? snrValue : null,
+          seenAt,
+          decodePacket,
+        });
+      });
+
+      if (this.pruneExpiredDecodeSightings()) {
+        this.savePersistedDecodeSightings();
+      }
+    } catch (error) {
+      console.error('Error loading persisted decode sightings:', error);
+    }
+  }
+
+  savePersistedDecodeSightings() {
+    if (!window.sessionStorage) {
+      return;
+    }
+
+    try {
+      if (this.decodeSightingsByActivator.size === 0) {
+        window.sessionStorage.removeItem(this.decodeSightingsStorageKey);
+        return;
+      }
+
+      const sightings = Array.from(this.decodeSightingsByActivator.entries()).map(
+        ([activator, sighting]) => ({
+          activator,
+          snr: Number.isFinite(Number(sighting?.snr)) ? Number(sighting.snr) : null,
+          seenAt: Number(sighting?.seenAt),
+          decodePacket:
+            sighting?.decodePacket && typeof sighting.decodePacket === 'object'
+              ? sighting.decodePacket
+              : null,
+        }),
+      );
+
+      window.sessionStorage.setItem(this.decodeSightingsStorageKey, JSON.stringify({ sightings }));
+    } catch (error) {
+      console.error('Error saving persisted decode sightings:', error);
     }
   }
 
@@ -564,6 +644,7 @@ class PotaSpotsManager {
 
     if (this.isDecodeSightingExpired(sighting)) {
       this.decodeSightingsByActivator.delete(activator);
+      this.savePersistedDecodeSightings();
       return null;
     }
 
@@ -607,6 +688,10 @@ class PotaSpotsManager {
         removedCount += 1;
       }
     });
+
+    if (removedCount > 0) {
+      this.savePersistedDecodeSightings();
+    }
 
     return removedCount > 0;
   }
@@ -857,6 +942,7 @@ class PotaSpotsManager {
     if (didUpdateSighting) {
       this.pruneExpiredDecodeSightings();
       this.pruneExpiredCqPotaSightings();
+      this.savePersistedDecodeSightings();
       this.applyFilters();
     }
   }
@@ -978,6 +1064,37 @@ class PotaSpotsManager {
       if (this.sortField === 'age') {
         aVal = this.getSpotAgeMinutes(this.getEffectiveSpotTime(a));
         bVal = this.getSpotAgeMinutes(this.getEffectiveSpotTime(b));
+      }
+
+      if (this.sortField === 'status') {
+        const aSighting = this.getActivatorDecodeSighting(a);
+        const bSighting = this.getActivatorDecodeSighting(b);
+        const aSnr = Number(aSighting?.snr);
+        const bSnr = Number(bSighting?.snr);
+        const aHasSnr = Number.isFinite(aSnr);
+        const bHasSnr = Number.isFinite(bSnr);
+
+        if (!aHasSnr && !bHasSnr) {
+          return 0;
+        }
+
+        if (!aHasSnr) {
+          return 1;
+        }
+
+        if (!bHasSnr) {
+          return -1;
+        }
+
+        if (aSnr < bSnr) {
+          return this.sortDescending ? 1 : -1;
+        }
+
+        if (aSnr > bSnr) {
+          return this.sortDescending ? -1 : 1;
+        }
+
+        return 0;
       }
 
       // Handle datetime
@@ -1131,14 +1248,12 @@ class PotaSpotsManager {
         const decodeBadge = isSeenInDecode
           ? `<span class="pota-decode-badge">SNR ${this.formatDecodeSnr(decodeSighting?.snr)}</span>`
           : '';
-        const decodeIndicator = isSeenInDecode
-          ? '<span class="pota-decode-indicator" title="Activator seen in decode packets"></span>'
-          : '';
         row.className = isWorked ? 'pota-spot-row pota-spot-worked' : 'pota-spot-row';
         row.setAttribute('data-spot-index', String(index));
         row.title = isWorked ? 'Already worked today' : '';
         row.innerHTML = `
-          <td class="pota-activator-cell">${decodeIndicator}<span>${activator}</span>${workedBadge}${decodeBadge}</td>
+          <td><div class="pota-activator-cell"><span class="pota-activator-text">${this.escapeHtml(activator)}</span></div></td>
+          <td><div class="pota-status-cell">${workedBadge}${decodeBadge}</div></td>
           <td>${this.formatFrequency(spot.frequency)}</td>
           <td>${this.formatOffset(offsetHz)}</td>
           <td>${this.escapeHtml(spot.mode || '')}</td>

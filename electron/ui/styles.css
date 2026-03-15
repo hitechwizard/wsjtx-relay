@@ -1625,7 +1625,7 @@ body.dark-theme .qso-pota-icon {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .pota-spots-table thead {
@@ -1693,71 +1693,93 @@ body.dark-theme .qso-pota-icon {
 }
 
 /* Keep key columns stable so long location lists do not distort the grid */
-.pota-spots-table th:nth-child(1),
-.pota-spots-table td:nth-child(1) {
-  width: 220px;
-}
-
-.pota-spots-table th:nth-child(2),
-.pota-spots-table td:nth-child(2),
-.pota-spots-table th:nth-child(5),
-.pota-spots-table td:nth-child(5),
-.pota-spots-table th:nth-child(8),
-.pota-spots-table td:nth-child(8) {
+.pota-col-activator {
   width: 100px;
 }
 
-.pota-spots-table th:nth-child(3),
-.pota-spots-table td:nth-child(3),
-.pota-spots-table th:nth-child(4),
-.pota-spots-table td:nth-child(4),
-.pota-spots-table th:nth-child(9),
-.pota-spots-table td:nth-child(9) {
+.pota-col-status {
+  width: 1%;
+}
+
+.pota-col-frequency,
+.pota-col-reference,
+.pota-col-spot-time {
+  width: 100px;
+}
+
+.pota-col-offset,
+.pota-col-mode,
+.pota-col-age {
   width: 75px;
 }
 
+.pota-col-location {
+  width: 150px;
+}
 
-.pota-spots-table th:nth-child(2),
-.pota-spots-table td:nth-child(2),
+.pota-col-action {
+  width: 50px;
+}
+
 .pota-spots-table th:nth-child(3),
 .pota-spots-table td:nth-child(3),
 .pota-spots-table th:nth-child(4),
 .pota-spots-table td:nth-child(4),
 .pota-spots-table th:nth-child(5),
 .pota-spots-table td:nth-child(5),
-.pota-spots-table th:nth-child(8),
-.pota-spots-table td:nth-child(8),
+.pota-spots-table th:nth-child(6),
+.pota-spots-table td:nth-child(6),
 .pota-spots-table th:nth-child(9),
 .pota-spots-table td:nth-child(9),
 .pota-spots-table th:nth-child(10),
-.pota-spots-table td:nth-child(10) {
+.pota-spots-table td:nth-child(10),
+.pota-spots-table th:nth-child(11),
+.pota-spots-table td:nth-child(11) {
   white-space: nowrap;
-}
-
-.pota-spots-table th:nth-child(10),
-.pota-spots-table td:nth-child(10) {
-  width: 90px;
-  text-align: center;
 }
 
 /* Location column should not force expansion; keep it clipped in-cell */
-.pota-spots-table th:nth-child(7),
-.pota-spots-table td:nth-child(7) {
-  width: 150px;
+.pota-spots-table th:nth-child(8),
+.pota-spots-table td:nth-child(8) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.pota-spots-table th:nth-child(11),
+.pota-spots-table td:nth-child(11) {
+  text-align: center;
 }
 
 .pota-activator-cell {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+.pota-activator-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pota-status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .pota-worked-badge {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 11px;
@@ -1768,18 +1790,10 @@ body.dark-theme .qso-pota-icon {
   text-decoration: none;
 }
 
-.pota-decode-indicator {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background-color: var(--green);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--green) 40%, var(--border-color));
-  flex-shrink: 0;
-}
-
 .pota-decode-badge {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 11px;

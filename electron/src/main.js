@@ -1395,6 +1395,14 @@ app.on('activate', () => {
     return;
   }
 
+  const knownWindows = [mainWindow, settingsWindow, qsoEditorWindow, examplesWindow, potaSpotsWindow]
+    .filter((windowRef) => windowRef && !windowRef.isDestroyed());
+
+  const hasVisibleWindow = knownWindows.some((windowRef) => windowRef.isVisible());
+  if (hasVisibleWindow) {
+    return;
+  }
+
   bringWindowToFront(mainWindow);
 });
 
