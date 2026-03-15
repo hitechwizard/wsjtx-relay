@@ -1832,6 +1832,29 @@ body.dark-theme .qso-pota-icon {
   background-color: var(--blue-light);
 }
 
+.pota-spot-row.pota-spot-tx-enabled td {
+  background-color: var(--yellow);
+}
+
+.pota-spot-row.pota-spot-tx-enabled:hover td {
+  background-color: var(--yellow-dark);
+}
+
+body.dark-theme .pota-spot-row.pota-spot-tx-enabled td,
+body.dark-theme .pota-spot-row.pota-spot-tx-enabled:hover td {
+  color: #000000;
+}
+
+.pota-spot-row.pota-spot-transmitting td {
+  background-color: var(--red);
+  color: #ffffff;
+}
+
+.pota-spot-row.pota-spot-transmitting:hover td {
+  background-color: var(--red-dark);
+  color: #ffffff;
+}
+
 .pota-no-spots {
   display: flex;
   align-items: center;

@@ -903,7 +903,11 @@ ipcMain.handle('start-relay', () => {
     });
 
     relay.on('status-update', (statusData) => {
-      mainWindow && mainWindow.webContents.send('relay-status-update', statusData);
+      [mainWindow, potaSpotsWindow].forEach((win) => {
+        if (win && win.webContents) {
+          win.webContents.send('relay-status-update', statusData);
+        }
+      });
     });
 
     relay.on('qso-logged', (qso) => {
@@ -1256,7 +1260,11 @@ app.on('ready', () => {
       });
 
       relay.on('status-update', (statusData) => {
-        mainWindow && mainWindow.webContents.send('relay-status-update', statusData);
+        [mainWindow, potaSpotsWindow].forEach((win) => {
+          if (win && win.webContents) {
+            win.webContents.send('relay-status-update', statusData);
+          }
+        });
       });
 
       relay.on('qso-logged', (qso) => {

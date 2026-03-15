@@ -17,6 +17,11 @@ class PotaSpotsManager {
     this.lastFetchTime = 0;
     this.autoRefreshTimer = null;
     this.decodeSightingCleanupTimer = null;
+    this.currentTxStatus = {
+      dxCall: '',
+      txEnabled: false,
+      transmitting: false,
+    };
     this.persistedFilters = {
       modeFilter: '',
       bandFilter: '',
@@ -115,6 +120,12 @@ class PotaSpotsManager {
     if (window.electron && typeof window.electron.onSettingsChanged === 'function') {
       window.electron.onSettingsChanged((settings) => {
         this.applyDecodeSightingSettings(settings);
+      });
+    }
+
+    if (window.electron && typeof window.electron.onRelayStatusUpdate === 'function') {
+      window.electron.onRelayStatusUpdate((statusData) => {
+        this.handleRelayStatusUpdate(statusData);
       });
     }
 
@@ -1211,6 +1222,31 @@ class PotaSpotsManager {
     return `${this.getSpotAgeMinutes(timeStr)}m`;
   }
 
+  handleRelayStatusUpdate(statusData) {
+    const nextDxCall = String(statusData?.dxcall || statusData?.dxCall || '')
+      .trim()
+      .toUpperCase();
+    const nextTxEnabled = Boolean(statusData?.txEnabled);
+    const nextTransmitting = Boolean(statusData?.transmitting);
+
+    const hasChanges =
+      nextDxCall !== this.currentTxStatus.dxCall ||
+      nextTxEnabled !== this.currentTxStatus.txEnabled ||
+      nextTransmitting !== this.currentTxStatus.transmitting;
+
+    if (!hasChanges) {
+      return;
+    }
+
+    this.currentTxStatus = {
+      dxCall: nextDxCall,
+      txEnabled: nextTxEnabled,
+      transmitting: nextTransmitting,
+    };
+
+    this.render();
+  }
+
   render() {
     this.pruneExpiredDecodeSightings();
 
@@ -1248,7 +1284,25 @@ class PotaSpotsManager {
         const decodeBadge = isSeenInDecode
           ? `<span class="pota-decode-badge">SNR ${this.formatDecodeSnr(decodeSighting?.snr)}</span>`
           : '';
-        row.className = isWorked ? 'pota-spot-row pota-spot-worked' : 'pota-spot-row';
+        const normalizedActivator = String(spot.activator || '')
+          .trim()
+          .toUpperCase();
+        const isTxTarget =
+          Boolean(this.currentTxStatus.dxCall) && this.currentTxStatus.dxCall === normalizedActivator;
+        const isTxEnabledTarget = isTxTarget && this.currentTxStatus.txEnabled;
+        const isTransmittingTarget = isTxEnabledTarget && this.currentTxStatus.transmitting;
+
+        const rowClassNames = ['pota-spot-row'];
+        if (isWorked) {
+          rowClassNames.push('pota-spot-worked');
+        }
+        if (isTransmittingTarget) {
+          rowClassNames.push('pota-spot-transmitting');
+        } else if (isTxEnabledTarget) {
+          rowClassNames.push('pota-spot-tx-enabled');
+        }
+
+        row.className = rowClassNames.join(' ');
         row.setAttribute('data-spot-index', String(index));
         row.title = isWorked ? 'Already worked today' : '';
         row.innerHTML = `
