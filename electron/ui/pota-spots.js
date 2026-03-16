@@ -16,6 +16,7 @@ class PotaSpotsManager {
     this.minUpdateIntervalMs = 60 * 1000; // 1 minute
     this.lastFetchTime = 0;
     this.autoRefreshTimer = null;
+    this.utcClockTimer = null;
     this.decodeSightingCleanupTimer = null;
     this.subscriptionDisposers = [];
     this.currentTxStatus = {
@@ -37,6 +38,7 @@ class PotaSpotsManager {
   async init() {
     this.setupEventListeners();
     this.setupThemeListener();
+    this.startUtcClock();
     await this.loadDecodeSightingSettings();
     this.loadPersistedDecodeSightings();
     await this.loadFilterState();
@@ -130,10 +132,56 @@ class PotaSpotsManager {
     }
 
     window.addEventListener('beforeunload', () => {
+      this.stopUtcClock();
       this.stopAutoRefresh();
       this.stopDecodeSightingCleanupTimer();
       this.disposeSubscriptions();
     });
+  }
+
+  startUtcClock() {
+    this.stopUtcClock();
+    this.updateUtcClockDisplay();
+    this.utcClockTimer = setInterval(() => {
+      this.updateUtcClockDisplay();
+    }, 1000);
+  }
+
+  stopUtcClock() {
+    if (this.utcClockTimer) {
+      clearInterval(this.utcClockTimer);
+      this.utcClockTimer = null;
+    }
+  }
+
+  formatHms(totalSeconds) {
+    const numericSeconds = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+    const hours = Math.floor(numericSeconds / 3600);
+    const minutes = Math.floor((numericSeconds % 3600) / 60);
+    const seconds = numericSeconds % 60;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  updateUtcClockDisplay() {
+    const utcNowEl = document.getElementById('utcClockTime');
+    const utcRemainingEl = document.getElementById('utcDayRemaining');
+    if (!utcNowEl && !utcRemainingEl) {
+      return;
+    }
+
+    const now = new Date();
+    const utcNowSeconds =
+      now.getUTCHours() * 3600 + now.getUTCMinutes() * 60 + now.getUTCSeconds();
+    const utcDaySeconds = 24 * 3600;
+    const remainingSeconds = utcDaySeconds - utcNowSeconds;
+
+    if (utcNowEl) {
+      utcNowEl.textContent = this.formatHms(utcNowSeconds);
+    }
+
+    if (utcRemainingEl) {
+      utcRemainingEl.textContent = this.formatHms(remainingSeconds);
+    }
   }
 
   addSubscriptionDisposer(disposer) {

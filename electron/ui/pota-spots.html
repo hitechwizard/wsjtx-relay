@@ -14,6 +14,16 @@
     <div class="pota-spots-wrapper">
       <div class="pota-spots-header">
         <h1>POTA Spots</h1>
+        <div class="pota-spots-clocks" aria-label="UTC clocks">
+          <div class="pota-clock-card pota-clock-card-current">
+            <div class="pota-clock-label">UTC NOW</div>
+            <div id="utcClockTime" class="pota-clock-value" aria-live="polite">--:--:--</div>
+          </div>
+          <div class="pota-clock-card pota-clock-card-remaining">
+            <div class="pota-clock-label">UTC DAY LEFT</div>
+            <div id="utcDayRemaining" class="pota-clock-value" aria-live="polite">--:--:--</div>
+          </div>
+        </div>
         <div class="pota-spots-controls">
           <div class="pota-filter-group">
             <label for="modeFilter">Mode:</label>
