@@ -17,6 +17,7 @@ class PotaSpotsManager {
     this.lastFetchTime = 0;
     this.autoRefreshTimer = null;
     this.decodeSightingCleanupTimer = null;
+    this.subscriptionDisposers = [];
     this.currentTxStatus = {
       dxCall: '',
       txEnabled: false,
@@ -69,11 +70,9 @@ class PotaSpotsManager {
     document.querySelectorAll('.pota-spots-table thead th').forEach((th) => {
       const field = th.getAttribute('data-field');
       if (!field) {
-        th.style.cursor = 'default';
         return;
       }
 
-      th.style.cursor = 'pointer';
       th.addEventListener('click', (e) => {
         const nextField = e.target.getAttribute('data-field');
         if (!nextField) {
@@ -106,34 +105,52 @@ class PotaSpotsManager {
     }
 
     if (window.electron && typeof window.electron.onQsoDataRefresh === 'function') {
-      window.electron.onQsoDataRefresh(async () => {
+      this.addSubscriptionDisposer(window.electron.onQsoDataRefresh(async () => {
         await this.loadLoggedQsos();
         this.applyFilters();
-      });
+      }));
     }
 
     if (window.electron && typeof window.electron.onRelayDecodePacket === 'function') {
-      window.electron.onRelayDecodePacket((packet) => {
+      this.addSubscriptionDisposer(window.electron.onRelayDecodePacket((packet) => {
         this.recordDecodePacket(packet);
-      });
+      }));
     }
 
     if (window.electron && typeof window.electron.onSettingsChanged === 'function') {
-      window.electron.onSettingsChanged((settings) => {
+      this.addSubscriptionDisposer(window.electron.onSettingsChanged((settings) => {
         this.applyDecodeSightingSettings(settings);
-      });
+      }));
     }
 
     if (window.electron && typeof window.electron.onRelayStatusUpdate === 'function') {
-      window.electron.onRelayStatusUpdate((statusData) => {
+      this.addSubscriptionDisposer(window.electron.onRelayStatusUpdate((statusData) => {
         this.handleRelayStatusUpdate(statusData);
-      });
+      }));
     }
 
     window.addEventListener('beforeunload', () => {
       this.stopAutoRefresh();
       this.stopDecodeSightingCleanupTimer();
+      this.disposeSubscriptions();
     });
+  }
+
+  addSubscriptionDisposer(disposer) {
+    if (typeof disposer === 'function') {
+      this.subscriptionDisposers.push(disposer);
+    }
+  }
+
+  disposeSubscriptions() {
+    while (this.subscriptionDisposers.length > 0) {
+      const disposer = this.subscriptionDisposers.pop();
+      try {
+        disposer();
+      } catch (error) {
+        console.error('Failed to dispose POTA listener:', error);
+      }
+    }
   }
 
   async loadDecodeSightingSettings() {
@@ -243,9 +260,9 @@ class PotaSpotsManager {
 
   setupThemeListener() {
     if (window.electron && window.electron.onThemeChanged) {
-      window.electron.onThemeChanged((theme) => {
+      this.addSubscriptionDisposer(window.electron.onThemeChanged((theme) => {
         document.body.className = theme === 'dark' ? 'dark-theme' : '';
-      });
+      }));
     }
 
     // Get initial theme
@@ -1269,11 +1286,11 @@ class PotaSpotsManager {
 
     if (this.filteredSpots.length === 0) {
       tbody.innerHTML = '';
-      noSpotsMsg.style.display = 'block';
+      noSpotsMsg.hidden = false;
       return;
     }
 
-    noSpotsMsg.style.display = 'none';
+    noSpotsMsg.hidden = true;
     tbody.innerHTML = this.filteredSpots
       .map((spot, index) => {
         const row = document.createElement('tr');

@@ -48,6 +48,24 @@ let selectedActivityPacketTypes = new Set();
 let isBulkQsoRender = false;
 let activityPacketFilterSaveTimer = null;
 let activityRxBlinkTimer = null;
+const subscriptionDisposers = [];
+
+function addSubscriptionDisposer(disposer) {
+  if (typeof disposer === 'function') {
+    subscriptionDisposers.push(disposer);
+  }
+}
+
+function disposeSubscriptions() {
+  while (subscriptionDisposers.length > 0) {
+    const disposer = subscriptionDisposers.pop();
+    try {
+      disposer();
+    } catch (error) {
+      console.error('Failed to dispose renderer subscription:', error);
+    }
+  }
+}
 
 const LOG_PACKET_TYPES = ['Heartbeat', 'Status', 'Decode', 'QSO Logged', 'Logged ADIF'];
 const DEFAULT_ACTIVITY_PACKET_FILTERS = [...LOG_PACKET_TYPES, 'SYSTEM'];
@@ -190,56 +208,56 @@ function setupEventListeners() {
   setupManualFieldValidation();
 
   // Theme change listener
-  window.electron.onThemeChanged((theme) => {
+  addSubscriptionDisposer(window.electron.onThemeChanged((theme) => {
     applyTheme(theme);
-  });
+  }));
 
-  window.electron.onUpdateBadgeState((state) => {
+  addSubscriptionDisposer(window.electron.onUpdateBadgeState((state) => {
     applyUpdateBadgeState(state);
-  });
+  }));
 
-  window.electron.onSettingsChanged((settings) => {
+  addSubscriptionDisposer(window.electron.onSettingsChanged((settings) => {
     applySettingsToStatusIndicators(settings);
     if (settings && settings.theme) {
       applyTheme(settings.theme);
     }
-  });
+  }));
 
   // QSO data refresh listener
-  window.electron.onQsoDataRefresh(() => {
+  addSubscriptionDisposer(window.electron.onQsoDataRefresh(() => {
     refreshQsoLog();
-  });
+  }));
 
-  window.electron.onPotaSpotSelected((spotData) => {
+  addSubscriptionDisposer(window.electron.onPotaSpotSelected((spotData) => {
     applySelectedPotaSpotToManualQso(spotData);
-  });
+  }));
 
   // Relay events
-  window.electron.onRelayLog((msg) => {
+  addSubscriptionDisposer(window.electron.onRelayLog((msg) => {
     blinkActivityRxIndicator();
     if (!shouldLogPacketMessage(msg)) {
       return;
     }
     addLogEntry(msg, 'normal');
-  });
+  }));
 
-  window.electron.onRelayStatus((status) => {
+  addSubscriptionDisposer(window.electron.onRelayStatus((status) => {
     updateStatus(status);
-  });
+  }));
 
-  window.electron.onRelayError((msg) => {
+  addSubscriptionDisposer(window.electron.onRelayError((msg) => {
     addLogEntry(`ERROR: ${msg}`, 'error');
-  });
+  }));
 
-  window.electron.onRelayDecode((msg) => {
+  addSubscriptionDisposer(window.electron.onRelayDecode((msg) => {
     addLogEntry(msg, 'normal');
-  });
+  }));
 
-  window.electron.onRelayStatusUpdate((statusData) => {
+  addSubscriptionDisposer(window.electron.onRelayStatusUpdate((statusData) => {
     updateStatusIndicators(statusData);
-  });
+  }));
 
-  window.electron.onRelayQsoLogged(async (qso) => {
+  addSubscriptionDisposer(window.electron.onRelayQsoLogged(async (qso) => {
     applyManualMyParkToLoggedQso(qso);
     normalizeCalculatedFields(qso);
     // Save QSO from relay to persistent storage
@@ -254,6 +272,10 @@ function setupEventListeners() {
     }
     normalizeCalculatedFields(persistedQso);
     addQsoEntry(persistedQso, 'normal');
+  }));
+
+  window.addEventListener('beforeunload', () => {
+    disposeSubscriptions();
   });
 
   // Update time-based QSO counters every minute
@@ -1096,9 +1118,8 @@ function clearLog() {
 
 function showSharedConfigWarning() {
   const banner = document.createElement('div');
+  banner.className = 'shared-config-warning';
   banner.textContent = 'Warning: shared QSO field config failed to load (qso-fields.js).';
-  banner.style.cssText =
-    'background: var(--danger-color); color: white; padding: 8px 12px; text-align: center; font-size: 12px;';
   document.body.insertBefore(banner, document.body.firstChild);
 }
 

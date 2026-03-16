@@ -1,5 +1,38 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+function createIpcSubscription(channel, transform = (event, payload) => payload) {
+  return (callback) => {
+    if (typeof callback !== 'function') {
+      return () => {};
+    }
+
+    const listener = (event, ...args) => {
+      callback(transform(event, ...args));
+    };
+
+    ipcRenderer.on(channel, listener);
+    return () => {
+      ipcRenderer.removeListener(channel, listener);
+    };
+  };
+}
+
+const onThemeChanged = createIpcSubscription('theme-changed', (event, theme) => theme);
+const onRelayLog = createIpcSubscription('relay-log', (event, msg) => msg);
+const onRelayStatus = createIpcSubscription('relay-status', (event, status) => status);
+const onRelayError = createIpcSubscription('relay-error', (event, msg) => msg);
+const onRelayDecode = createIpcSubscription('relay-decode', (event, msg) => msg);
+const onRelayDecodePacket = createIpcSubscription('relay-decode-packet', (event, packet) => packet);
+const onRelayStatusUpdate = createIpcSubscription(
+  'relay-status-update',
+  (event, statusData) => statusData,
+);
+const onRelayQsoLogged = createIpcSubscription('relay-qso-logged', (event, qsoData) => qsoData);
+const onUpdateBadgeState = createIpcSubscription('update-badge-state', (event, state) => state);
+const onSettingsChanged = createIpcSubscription('settings-changed', (event, settings) => settings);
+const onQsoDataRefresh = createIpcSubscription('qso-data-refresh', () => undefined);
+const onPotaSpotSelected = createIpcSubscription('pota-spot-selected', (event, spotData) => spotData);
+
 contextBridge.exposeInMainWorld('electron', {
   // Settings API
   getSettings: () => ipcRenderer.invoke('get-settings'),
@@ -8,7 +41,7 @@ contextBridge.exposeInMainWorld('electron', {
 
   // Theme API
   getTheme: () => ipcRenderer.invoke('get-theme'),
-  onThemeChanged: (callback) => ipcRenderer.on('theme-changed', (event, theme) => callback(theme)),
+  onThemeChanged,
 
   // Relay control API
   startRelay: () => ipcRenderer.invoke('start-relay'),
@@ -46,22 +79,16 @@ contextBridge.exposeInMainWorld('electron', {
   selectPotaSpot: (spot) => ipcRenderer.invoke('select-pota-spot', spot),
 
   // Events from relay
-  onRelayLog: (callback) => ipcRenderer.on('relay-log', (event, msg) => callback(msg)),
-  onRelayStatus: (callback) => ipcRenderer.on('relay-status', (event, status) => callback(status)),
-  onRelayError: (callback) => ipcRenderer.on('relay-error', (event, msg) => callback(msg)),
-  onRelayDecode: (callback) => ipcRenderer.on('relay-decode', (event, msg) => callback(msg)),
-  onRelayDecodePacket: (callback) =>
-    ipcRenderer.on('relay-decode-packet', (event, packet) => callback(packet)),
-  onRelayStatusUpdate: (callback) =>
-    ipcRenderer.on('relay-status-update', (event, statusData) => callback(statusData)),
-  onRelayQsoLogged: (callback) =>
-    ipcRenderer.on('relay-qso-logged', (event, qsoData) => callback(qsoData)),
-  onUpdateBadgeState: (callback) =>
-    ipcRenderer.on('update-badge-state', (event, state) => callback(state)),
-  onSettingsChanged: (callback) =>
-    ipcRenderer.on('settings-changed', (event, settings) => callback(settings)),
-  onQsoDataRefresh: (callback) => ipcRenderer.on('qso-data-refresh', () => callback()),
-  onPotaSpotSelected: (callback) =>
-    ipcRenderer.on('pota-spot-selected', (event, spotData) => callback(spotData)),
+  onRelayLog,
+  onRelayStatus,
+  onRelayError,
+  onRelayDecode,
+  onRelayDecodePacket,
+  onRelayStatusUpdate,
+  onRelayQsoLogged,
+  onUpdateBadgeState,
+  onSettingsChanged,
+  onQsoDataRefresh,
+  onPotaSpotSelected,
   notifyQsoDataChanged: () => ipcRenderer.send('qso-data-changed'),
 });

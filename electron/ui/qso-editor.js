@@ -31,6 +31,24 @@ if (
 let qsos = [];
 let changedQsos = new Set();
 let hasUnsavedChanges = false;
+const subscriptionDisposers = [];
+
+function addSubscriptionDisposer(disposer) {
+  if (typeof disposer === 'function') {
+    subscriptionDisposers.push(disposer);
+  }
+}
+
+function disposeSubscriptions() {
+  while (subscriptionDisposers.length > 0) {
+    const disposer = subscriptionDisposers.pop();
+    try {
+      disposer();
+    } catch (error) {
+      console.error('Failed to dispose QSO editor subscription:', error);
+    }
+  }
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   await loadTheme();
@@ -91,8 +109,12 @@ function setupEventListeners() {
   });
 
   // Theme change listener
-  window.electron.onThemeChanged((theme) => {
+  addSubscriptionDisposer(window.electron.onThemeChanged((theme) => {
     applyTheme(theme);
+  }));
+
+  window.addEventListener('beforeunload', () => {
+    disposeSubscriptions();
   });
 }
 
@@ -132,7 +154,7 @@ function renderQsoList() {
 
   if (qsos.length === 0) {
     qsoListContainer.innerHTML =
-      '<p style="grid-column: 1/-1; color: var(--text-secondary); text-align: center; padding: 20px;">No QSO records found</p>';
+      '<p class="qso-editor-empty-state">No QSO records found</p>';
     return;
   }
 
@@ -146,7 +168,7 @@ function renderQsoList() {
     headerDiv.innerHTML = `
       <div>
         <strong>${qso.call || '—'}</strong> on <strong>${qso.band || '—'}</strong>
-        <div style="font-size: 12px; color: var(--text-secondary);">${formatDateTime(qso.start || qso.end)}</div>
+        <div class="qso-card-meta">${formatDateTime(qso.start || qso.end)}</div>
       </div>
       <div class="qso-card-actions">
         <button class="btn btn-secondary btn-sm btn-raw-data" data-index="${index}">Raw Data</button>
@@ -500,9 +522,8 @@ function addErrorMessage(msg) {
 
 function showSharedConfigWarning() {
   const banner = document.createElement('div');
+  banner.className = 'shared-config-warning';
   banner.textContent = 'Warning: shared QSO field config failed to load (qso-fields.js).';
-  banner.style.cssText =
-    'background: var(--danger-color); color: white; padding: 8px 12px; text-align: center; font-size: 12px;';
   document.body.insertBefore(banner, document.body.firstChild);
 }
 

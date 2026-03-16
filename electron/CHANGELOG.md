@@ -9,6 +9,9 @@
   - `Manual` for `SSB`/`CW`
   - `Reply` for other modes
 - Added support for creating blank QSOs directly in QSO Editor via `Add Blank QSO`.
+- Added major Electron main-process modularization into focused updater, relay, POTA, lifecycle, window, and IPC components.
+- Added centralized runtime app state management for window, relay, and updater references.
+- Added shared main-process configuration/default helpers for constants, UI paths, icon resolution, and store defaults.
 
 ### Changed
 
@@ -18,6 +21,10 @@
 - Updated POTA location filtering to correctly match comma-separated API location lists (e.g. `US-LA,US-TX`).
 - Reduced POTA header vertical footprint and moved filters onto the same row where space permits.
 - Updated QSO ordering so full-log sorting by timestamp occurs when saving edited QSOs (`update-qsos`).
+- Refactored the Electron main entrypoint from a monolith into orchestration wiring over extracted modules.
+- Consolidated preload IPC subscription handling with reusable wrappers that support listener disposal.
+- Updated renderer windows to register and dispose IPC subscriptions on unload.
+- Replaced multiple inline UI styles with shared stylesheet classes for maintainability.
 
 ### Fixed
 
@@ -25,6 +32,8 @@
 - Fixed POTA row focus behavior so selecting an action does not hide the POTA window behind the main window.
 - Fixed WSJT-X reply packet construction/routing to use exact decode-derived values and endpoint context.
 - Disabled `Reply` action when a row has no valid decode SNR or is already worked.
+- Hardened renderer pages with explicit Content Security Policy (CSP) meta tags.
+- Strengthened IPC payload validation and sanitization for settings, QSO, and POTA flows.
 
 ## 1.0.5 - 03/12/2026
 

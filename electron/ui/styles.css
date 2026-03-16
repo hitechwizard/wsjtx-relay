@@ -212,6 +212,12 @@ body {
   align-self: flex-end;
 }
 
+.header-controls-inline {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -399,6 +405,16 @@ body {
   gap: 5px;
 }
 
+.qso-log-contact-wrap {
+  margin-left: 25px;
+  margin-top: 50px;
+}
+
+.qso-log-contact-btn {
+  height: 50px;
+  width: 125px;
+}
+
 .qso-field {
   display: flex;
   flex-direction: column;
@@ -501,6 +517,11 @@ body {
   gap: 8px;
 }
 
+.transmit-message {
+  margin-left: 8px;
+  font-size: 12px;
+}
+
 /* ============================================================================
    8. QSO LOG DISPLAY
    ============================================================================ */
@@ -547,6 +568,12 @@ body {
   font-size: 16px;
   margin-bottom: 15px;
   color: var(--header-color);
+}
+
+.log-panel-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .qso-log-tools {
@@ -650,6 +677,24 @@ body {
   gap: 10px;
   margin-top: 10px;
   flex-shrink: 0;
+}
+
+.log-panel-footer-btn {
+  text-align: center;
+  width: 150px;
+}
+
+.qso-log-count-meta {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
+.shared-config-warning {
+  background: var(--red);
+  color: #ffffff;
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 12px;
 }
 
 .log-entry {
@@ -1207,6 +1252,68 @@ body.dark-theme .qso-pota-icon {
   background-color: var(--bg-primary);
 }
 
+.qso-editor-footer-group {
+  display: flex;
+  gap: 10px;
+}
+
+.qso-editor-empty-state {
+  grid-column: 1 / -1;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 20px;
+}
+
+.qso-card-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.set-park-modal-dialog {
+  max-width: 500px;
+}
+
+.set-park-modal-content {
+  padding: 20px;
+}
+
+.set-park-help-text {
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.set-park-input {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  text-transform: uppercase;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.set-park-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px var(--blue-light);
+}
+
+.set-park-error {
+  margin: 8px 0 0;
+  color: var(--red);
+  font-size: 12px;
+  min-height: 16px;
+}
+
+.set-park-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
 .qso-raw-modal {
   position: fixed;
   inset: 0;
@@ -1641,10 +1748,14 @@ body.dark-theme .qso-pota-icon {
   border-bottom: 2px solid var(--border-color);
   font-weight: 600;
   color: var(--header-color);
-  cursor: pointer;
+  cursor: default;
   user-select: none;
   white-space: nowrap;
   position: relative;
+}
+
+.pota-spots-table thead th[data-field] {
+  cursor: pointer;
 }
 
 .pota-spots-table thead th:hover {
@@ -1874,4 +1985,8 @@ body.dark-theme .pota-spot-row.pota-spot-tx-enabled:hover td {
   font-size: 16px;
   text-align: center;
   padding: 20px;
+}
+
+.pota-no-spots[hidden] {
+  display: none !important;
 }
