@@ -995,7 +995,7 @@ function addQsoEntry(qso, type = 'normal') {
   if (clublogSubmission && clublogSubmission.success === true) {
     const clublogBadge = document.createElement('span');
     clublogBadge.className = 'qso-app-badge qso-app-badge-clublog';
-    clublogBadge.textContent = 'CLUBLOG';
+    clublogBadge.textContent = 'CLUB';
     const submittedAt = String(clublogSubmission.submittedAt || '').trim();
     if (submittedAt) {
       clublogBadge.title = `Submitted to Clublog: ${submittedAt}`;

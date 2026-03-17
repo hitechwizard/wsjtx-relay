@@ -51,7 +51,7 @@ async function submitQsoToClublog({
     body.set('api', normalizedApiKey);
   }
   const requestBody = body.toString();
-
+  /*
   console.log('[Clublog] Request', {
     url: CLUBLOG_API_URL,
     method: 'POST',
@@ -64,7 +64,7 @@ async function submitQsoToClublog({
       adif,
     },
   });
-
+  */
   const controller = new AbortController();
   const timeoutHandle = setTimeout(() => {
     controller.abort();
@@ -89,11 +89,12 @@ async function submitQsoToClublog({
       responseText = '';
     }
 
-    console.log('[Clublog] Response', {
+    /*console.log('[Clublog] Response', {
       status: response.status,
       ok: response.ok,
       body: responseText,
     });
+    */
   } catch (error) {
     const message = error && error.message ? error.message : 'Unknown Clublog request error';
     return { success: false, error: message };

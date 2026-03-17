@@ -8,6 +8,15 @@
 - Added explicit `Action` column in POTA Spots with per-row actions:
   - `Manual` for `SSB`/`CW`
   - `Reply` for other modes
+- Added QRZ reporting integration for saved QSOs:
+  - submits ADIF via QRZ Logbook API when enabled
+  - persists provider submission metadata in per-QSO `logSubmissions`
+  - displays a `QRZ` badge in the QSO log when submission succeeds
+- Added Clublog reporting integration for saved QSOs:
+  - submits ADIF via Clublog realtime API when enabled
+  - persists provider submission metadata in per-QSO `logSubmissions`
+  - displays a `CLUBLOG` badge in the QSO log when submission succeeds
+- Added publish-time Clublog API key injection using `CLUBLOG_API_KEY` (not committed to repository).
 - Added support for creating blank QSOs directly in QSO Editor via `Add Blank QSO`.
 - Added major Electron main-process modularization into focused updater, relay, POTA, lifecycle, window, and IPC components.
 - Added centralized runtime app state management for window, relay, and updater references.
@@ -19,6 +28,7 @@
 - Updated POTA spot-time behavior so spots seen via decode use the decode timestamp for displayed Spot Time, Age, and related sorting.
 - Expanded POTA Region filter to support full location values (e.g. `US-TX`) and kept input normalized to uppercase.
 - Updated POTA location filtering to correctly match comma-separated API location lists (e.g. `US-LA,US-TX`).
+- Updated logging submission tracking to use provider-scoped `logSubmissions` metadata instead of custom ADIF fields.
 - Reduced POTA header vertical footprint and moved filters onto the same row where space permits.
 - Updated QSO ordering so full-log sorting by timestamp occurs when saving edited QSOs (`update-qsos`).
 - Refactored the Electron main entrypoint from a monolith into orchestration wiring over extracted modules.
