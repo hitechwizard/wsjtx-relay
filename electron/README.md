@@ -75,6 +75,20 @@ npm install --save-dev electron-builder
 npx electron-builder
 ```
 
+### Publishing Releases (GitHub)
+
+Use the project publish script and provide `CLUBLOG_API_KEY` at publish time so the key is injected into build config and not stored in source control.
+
+```bash
+CLUBLOG_API_KEY=your_clublog_api_key npm run publish
+```
+
+For multi-platform publish:
+
+```bash
+CLUBLOG_API_KEY=your_clublog_api_key npm run publish:all
+```
+
 ## Configuration Persistence
 
 Settings are automatically saved to:

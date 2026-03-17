@@ -48,6 +48,35 @@ function registerSettingsHandlers({
       if (typeof payload.usePotaSpotMap === 'boolean') {
         store.set('usePotaSpotMap', payload.usePotaSpotMap);
       }
+      if (typeof payload.qrzLoggingEnabled === 'boolean') {
+        store.set('qrzLoggingEnabled', payload.qrzLoggingEnabled);
+      }
+      if (payload.qrzApiKey !== undefined) {
+        store.set('qrzApiKey', String(payload.qrzApiKey || '').trim());
+      }
+      if (typeof payload.clublogLoggingEnabled === 'boolean') {
+        store.set('clublogLoggingEnabled', payload.clublogLoggingEnabled);
+      }
+      if (payload.clublogCallsign !== undefined || payload.clublogUsername !== undefined) {
+        store.set(
+          'clublogCallsign',
+          String(payload.clublogCallsign || payload.clublogUsername || '')
+            .trim()
+            .toUpperCase(),
+        );
+      }
+      if (payload.clublogPassword !== undefined) {
+        store.set('clublogPassword', String(payload.clublogPassword || '').trim());
+      }
+      if (payload.clublogEmail !== undefined) {
+        const email = String(payload.clublogEmail || '').trim();
+        // Validate email: must be empty or valid email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (email && !emailRegex.test(email)) {
+          return { success: false, error: 'Invalid email address for Clublog' };
+        }
+        store.set('clublogEmail', email);
+      }
       if (forwardDelaySeconds !== null) {
         store.set('forwardDelaySeconds', forwardDelaySeconds);
       }

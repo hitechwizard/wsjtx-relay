@@ -905,6 +905,10 @@ function addQsoEntry(qso, type = 'normal') {
   });
 
   let dupeMatch = null;
+  const indicatorsWrap = document.createElement('span');
+  indicatorsWrap.className = 'qso-indicators-wrap';
+  let hasIndicators = false;
+
   if (isDupe) {
     // find the matching existing entry to show details in tooltip
     dupeMatch = qsoList.find((existing) => {
@@ -947,8 +951,11 @@ function addQsoEntry(qso, type = 'normal') {
       wrap.appendChild(tag);
     }
 
-    entry.appendChild(wrap);
-  } else if (qso.sig_info) {
+    indicatorsWrap.appendChild(wrap);
+    hasIndicators = true;
+  }
+
+  if (qso.sig_info) {
     // Display POTA pine tree icon if sig_info is defined
     const wrap = document.createElement('span');
     wrap.className = 'qso-pota-wrap';
@@ -963,7 +970,44 @@ function addQsoEntry(qso, type = 'normal') {
 
     wrap.appendChild(pota);
     wrap.appendChild(tooltip);
-    entry.appendChild(wrap);
+    indicatorsWrap.appendChild(wrap);
+    hasIndicators = true;
+  }
+
+  const qrzSubmission =
+    qso && qso.logSubmissions && qso.logSubmissions.qrz ? qso.logSubmissions.qrz : null;
+  if (qrzSubmission && qrzSubmission.success === true) {
+    const qrzBadge = document.createElement('span');
+    qrzBadge.className = 'qso-app-badge qso-app-badge-qrz';
+    qrzBadge.textContent = 'QRZ';
+    const submittedAt = String(qrzSubmission.submittedAt || '').trim();
+    if (submittedAt) {
+      qrzBadge.title = `Submitted to QRZ: ${submittedAt}`;
+    } else {
+      qrzBadge.title = 'Submitted to QRZ';
+    }
+    indicatorsWrap.appendChild(qrzBadge);
+    hasIndicators = true;
+  }
+
+  const clublogSubmission =
+    qso && qso.logSubmissions && qso.logSubmissions.clublog ? qso.logSubmissions.clublog : null;
+  if (clublogSubmission && clublogSubmission.success === true) {
+    const clublogBadge = document.createElement('span');
+    clublogBadge.className = 'qso-app-badge qso-app-badge-clublog';
+    clublogBadge.textContent = 'CLUBLOG';
+    const submittedAt = String(clublogSubmission.submittedAt || '').trim();
+    if (submittedAt) {
+      clublogBadge.title = `Submitted to Clublog: ${submittedAt}`;
+    } else {
+      clublogBadge.title = 'Submitted to Clublog';
+    }
+    indicatorsWrap.appendChild(clublogBadge);
+    hasIndicators = true;
+  }
+
+  if (hasIndicators) {
+    entry.appendChild(indicatorsWrap);
   }
 
   qsoContainer.appendChild(entry);

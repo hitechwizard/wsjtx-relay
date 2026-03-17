@@ -9,6 +9,14 @@ const themeLightInput = document.getElementById('themeLight');
 const themeDarkInput = document.getElementById('themeDark');
 const autoStartRelayInput = document.getElementById('autoStartRelay');
 const usePotaSpotMapInput = document.getElementById('usePotaSpotMap');
+const qrzLoggingEnabledInput = document.getElementById('qrzLoggingEnabled');
+const qrzApiKeyInput = document.getElementById('qrzApiKey');
+const toggleQrzApiKeyBtn = document.getElementById('toggleQrzApiKeyBtn');
+const clublogLoggingEnabledInput = document.getElementById('clublogLoggingEnabled');
+const clublogCallsignInput = document.getElementById('clublogCallsign');
+const clublogPasswordInput = document.getElementById('clublogPassword');
+const toggleClublogPasswordBtn = document.getElementById('toggleClublogPasswordBtn');
+const clublogEmailInput = document.getElementById('clublogEmail');
 const decodeSightingExpirationMinutesInput = document.getElementById(
   'decodeSightingExpirationMinutes',
 );
@@ -31,6 +39,16 @@ function setupEventListeners() {
   });
   settingsForm.addEventListener('submit', saveSettings);
   cancelBtn.addEventListener('click', closeWindow);
+  toggleQrzApiKeyBtn.addEventListener('click', () => {
+    togglePasswordVisibility(qrzApiKeyInput, toggleQrzApiKeyBtn);
+  });
+  toggleClublogPasswordBtn.addEventListener('click', () => {
+    togglePasswordVisibility(clublogPasswordInput, toggleClublogPasswordBtn);
+  });
+  // Auto-uppercase Clublog callsign as user types
+  clublogCallsignInput.addEventListener('input', (e) => {
+    e.target.value = e.target.value.toUpperCase();
+  });
 }
 
 async function loadSettings() {
@@ -38,6 +56,12 @@ async function loadSettings() {
   listenPortInput.value = settings.listenPort;
   autoStartRelayInput.checked = Boolean(settings.autoStartRelay);
   usePotaSpotMapInput.checked = Boolean(settings.usePotaSpotMap);
+  qrzLoggingEnabledInput.checked = Boolean(settings.qrzLoggingEnabled);
+  qrzApiKeyInput.value = String(settings.qrzApiKey || '');
+  clublogLoggingEnabledInput.checked = Boolean(settings.clublogLoggingEnabled);
+  clublogCallsignInput.value = String(settings.clublogCallsign || '');
+  clublogPasswordInput.value = String(settings.clublogPassword || '');
+  clublogEmailInput.value = String(settings.clublogEmail || '');
   forwardDelaySecondsInput.value = settings.forwardDelaySeconds ?? 0.5;
   decodeSightingExpirationMinutesInput.value =
     settings.decodeSightingExpirationMinutes ?? 5;
@@ -56,6 +80,12 @@ async function loadSettings() {
   }
 
   renderForwardsList();
+}
+
+function togglePasswordVisibility(input, button) {
+  const isPassword = input.type === 'password';
+  input.type = isPassword ? 'text' : 'password';
+  button.textContent = isPassword ? 'Hide' : 'Reveal';
 }
 
 function renderForwardsList() {
@@ -194,6 +224,12 @@ async function saveSettings(e) {
   const listenPort = parseInt(listenPortInput.value);
   const autoStartRelay = Boolean(autoStartRelayInput.checked);
   const usePotaSpotMap = Boolean(usePotaSpotMapInput.checked);
+  const qrzLoggingEnabled = Boolean(qrzLoggingEnabledInput.checked);
+  const qrzApiKey = String(qrzApiKeyInput.value || '').trim();
+  const clublogLoggingEnabled = Boolean(clublogLoggingEnabledInput.checked);
+  const clublogCallsign = String(clublogCallsignInput.value || '').trim();
+  const clublogPassword = String(clublogPasswordInput.value || '').trim();
+  const clublogEmail = String(clublogEmailInput.value || '').trim();
   const forwardDelaySeconds = parseFloat(forwardDelaySecondsInput.value);
   const decodeSightingExpirationMinutes = parseInt(decodeSightingExpirationMinutesInput.value, 10);
   const theme = themeDarkInput.checked ? 'dark' : 'light';
@@ -218,16 +254,34 @@ async function saveSettings(e) {
     return;
   }
 
+  // Validate Clublog email if provided
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (clublogEmail && !emailRegex.test(clublogEmail)) {
+    alert('Invalid email address for Clublog (or leave empty)');
+    return;
+  }
+
   try {
-    await window.electron.saveSettings({
+    const result = await window.electron.saveSettings({
       listenPort,
       forwards: forwardsData,
       autoStartRelay,
       usePotaSpotMap,
+      qrzLoggingEnabled,
+      qrzApiKey,
+      clublogLoggingEnabled,
+      clublogCallsign: clublogCallsign.toUpperCase(),
+      clublogPassword,
+      clublogEmail,
       forwardDelaySeconds,
       decodeSightingExpirationMinutes,
       theme,
     });
+
+    if (!result || result.success === false) {
+      throw new Error(result?.error || 'Settings save failed');
+    }
+
     closeWindow();
   } catch (error) {
     alert(`Error saving settings: ${error.message}`);

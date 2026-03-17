@@ -23,6 +23,7 @@ const onRelayStatus = createIpcSubscription('relay-status', (event, status) => s
 const onRelayError = createIpcSubscription('relay-error', (event, msg) => msg);
 const onRelayDecode = createIpcSubscription('relay-decode', (event, msg) => msg);
 const onRelayDecodePacket = createIpcSubscription('relay-decode-packet', (event, packet) => packet);
+const onRelayClearPacket = createIpcSubscription('relay-clear-packet', () => undefined);
 const onRelayStatusUpdate = createIpcSubscription(
   'relay-status-update',
   (event, statusData) => statusData,
@@ -84,6 +85,7 @@ contextBridge.exposeInMainWorld('electron', {
   onRelayError,
   onRelayDecode,
   onRelayDecodePacket,
+  onRelayClearPacket,
   onRelayStatusUpdate,
   onRelayQsoLogged,
   onUpdateBadgeState,

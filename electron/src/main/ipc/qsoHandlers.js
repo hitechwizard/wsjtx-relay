@@ -2,6 +2,7 @@ function registerQsoHandlers({
   ipcMain,
   store,
   getRelay,
+  fetchImpl,
   isPlainObject,
   sanitizeQsoArray,
   sortQsosForStorage,
@@ -13,22 +14,83 @@ function registerQsoHandlers({
   deleteQsoAtIndex,
   resendViaRelay,
 }) {
+  const { submitQsoToQrz } = require('../qrzLoggingService');
+  const { submitQsoToClublog } = require('../clublogLoggingService');
+  const {
+    hasLoggingSubmissionSuccess,
+    markLoggingSubmissionSuccess,
+  } = require('../qsoLoggingUtils');
+
   ipcMain.handle('save-qso', async (event, qso) => {
     if (!isPlainObject(qso)) {
       return { success: false, error: 'Invalid QSO payload' };
     }
 
-    const enrichedQso = await maybeEnrichQsoWithPotaMap({
+    let nextQso = await maybeEnrichQsoWithPotaMap({
       qso,
       usePotaSpotMap: store.get('usePotaSpotMap', false),
       fetchPotaSpots,
       enrichQsoWithPotaSpot,
       onPotaRequestFailure: logPotaRequestFailure,
     });
+
+    const qrzLoggingEnabled = store.get('qrzLoggingEnabled', false);
+    const qrzApiKey = String(store.get('qrzApiKey', '') || '').trim();
+    const shouldSubmitToQrz =
+      qrzLoggingEnabled &&
+      Boolean(qrzApiKey) &&
+      !hasLoggingSubmissionSuccess(nextQso, 'qrz');
+
+    if (shouldSubmitToQrz) {
+      const qrzResult = await submitQsoToQrz({
+        fetchImpl,
+        apiKey: qrzApiKey,
+        qso: nextQso,
+      });
+
+      if (qrzResult.success) {
+        const qrzLogId = String(qrzResult.logId || '').trim();
+        nextQso = markLoggingSubmissionSuccess(nextQso, 'qrz', {
+          logId: qrzLogId,
+        });
+      } else {
+        const failureMessage = String(qrzResult.error || 'Unknown QRZ logging failure').trim();
+        console.warn(`QRZ logging failed: ${failureMessage}`);
+      }
+    }
+
+    const clublogLoggingEnabled = store.get('clublogLoggingEnabled', false);
+    const clublogCallsign = String(store.get('clublogCallsign', '') || '').trim();
+    const clublogPassword = String(store.get('clublogPassword', '') || '').trim();
+    const clublogEmail = String(store.get('clublogEmail', '') || '').trim();
+    const shouldSubmitToClublog =
+      clublogLoggingEnabled &&
+      Boolean(clublogCallsign) &&
+      Boolean(clublogPassword) &&
+      Boolean(clublogEmail) &&
+      !hasLoggingSubmissionSuccess(nextQso, 'clublog');
+
+    if (shouldSubmitToClublog) {
+      const clublogResult = await submitQsoToClublog({
+        fetchImpl,
+        callsign: clublogCallsign,
+        password: clublogPassword,
+        email: clublogEmail,
+        qso: nextQso,
+      });
+
+      if (clublogResult.success) {
+        nextQso = markLoggingSubmissionSuccess(nextQso, 'clublog');
+      } else {
+        const failureMessage = String(clublogResult.error || 'Unknown Clublog logging failure').trim();
+        console.warn(`Clublog logging failed: ${failureMessage}`);
+      }
+    }
+
     const qsos = store.get('qsos', []);
-    qsos.push(enrichedQso);
+    qsos.push(nextQso);
     store.set('qsos', qsos);
-    return { success: true, qso: enrichedQso };
+    return { success: true, qso: nextQso };
   });
 
   ipcMain.handle('clear-qsos', () => {

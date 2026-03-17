@@ -23,6 +23,10 @@ function bindRelayEventForwarding({ relayInstance, getMainWindow, getPotaSpotsWi
     sendToWindows([getMainWindow(), getPotaSpotsWindow()], 'relay-decode-packet', packet);
   });
 
+  relayInstance.on('clear-packet', () => {
+    sendToWindows([getPotaSpotsWindow()], 'relay-clear-packet');
+  });
+
   relayInstance.on('status-update', (statusData) => {
     sendToWindows([getMainWindow(), getPotaSpotsWindow()], 'relay-status-update', statusData);
   });

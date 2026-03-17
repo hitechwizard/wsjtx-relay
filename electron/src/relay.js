@@ -358,6 +358,9 @@ class WSJTXRelay extends EventEmitter {
             lowConfidence: Boolean(parsed.lowconfidence),
             modifiers: Number(parsed.offair),
           });
+        } else if (parsed.type === 3) {
+          // Clear — all pending decode data is now invalid
+          this.emit('clear-packet');
         } else if (parsed.type === 4) {
           // Reply
           message += ` ${parsed.mode}`;

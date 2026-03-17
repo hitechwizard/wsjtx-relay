@@ -728,7 +728,7 @@ body {
 
 .qso-log-entry {
   display: grid;
-  grid-template-columns: 3fr 3fr 1fr 2fr 1fr 1fr 50px;
+  grid-template-columns: 3fr 3fr 1fr 2fr 1fr 1fr 90px;
   grid-column-gap: 5px;
   grid-row-gap: 0px;
   align-items: center;
@@ -755,6 +755,14 @@ body {
 
 .qso-row-odd {
   background-color: var(--bg-secondary);
+}
+
+.qso-indicators-wrap {
+  grid-column: 7;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* Duplicate QSO Indicator */
@@ -827,6 +835,32 @@ body.dark-theme .qso-pota-icon {
   filter: saturate(1.2) brightness(1.5);
 }
 
+.qso-app-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  cursor: default;
+}
+
+.qso-app-badge-qrz {
+  background-color: var(--blue);
+  border-color: var(--blue-dark);
+  color: #ffffff;
+}
+
+.qso-app-badge-clublog {
+  background-color: #e67e22;
+  border-color: #d35400;
+  color: #ffffff;
+}
+
 /* ============================================================================
    9. FORM STYLES (SETTINGS & GENERAL)
    ============================================================================ */
@@ -893,8 +927,42 @@ body.dark-theme .qso-pota-icon {
   color: var(--header-color);
 }
 
+.settings-toggle-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.settings-toggle-title {
+  display: block;
+  font-weight: 600;
+  color: var(--header-color);
+}
+
+.settings-toggle-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.settings-toggle-control input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--blue);
+  cursor: pointer;
+}
+
 .form-group input[type='number'],
 .form-group input[type='text'],
+.form-group input[type='password'],
 .form-group select {
   width: 100%;
   padding: 10px;
@@ -909,6 +977,7 @@ body.dark-theme .qso-pota-icon {
 
 .form-group input[type='number']:focus,
 .form-group input[type='text']:focus,
+.form-group input[type='password']:focus,
 .form-group select:focus {
   outline: none;
   border-color: var(--blue);
@@ -920,6 +989,37 @@ body.dark-theme .qso-pota-icon {
   margin-top: 6px;
   color: var(--text-tertiary);
   font-size: 12px;
+}
+
+.settings-inline-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.settings-inline-fields-clublog {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+}
+
+.settings-inline-field {
+  min-width: 0;
+}
+
+.password-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.password-input-group input {
+  flex: 1;
+}
+
+.password-input-group .btn {
+  flex: 0 0 auto;
+  min-width: 80px;
+  padding: 8px 10px;
 }
 
 .form-actions {
@@ -991,7 +1091,7 @@ body.dark-theme .qso-pota-icon {
   gap: 12px;
 }
 
-.forward-enabled-label {
+.forward-item-controls .forward-enabled-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1024,6 +1124,16 @@ body.dark-theme .qso-pota-icon {
 @media (max-width: 1200px) {
   .settings-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .settings-inline-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-inline-fields-clublog {
+    grid-template-columns: 1fr;
   }
 }
 

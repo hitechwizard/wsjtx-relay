@@ -47,18 +47,24 @@
           </div>
 
           <div class="form-group">
-            <label class="forward-enabled-label" for="autoStartRelay">
-              <input type="checkbox" id="autoStartRelay" name="autoStartRelay" />
-              <span>Auto Start Relay</span>
-            </label>
+            <div class="settings-toggle-header">
+              <span class="settings-toggle-title">Auto Start Relay</span>
+              <label class="settings-toggle-control" for="autoStartRelay">
+                <input type="checkbox" id="autoStartRelay" name="autoStartRelay" />
+                <span>Enabled</span>
+              </label>
+            </div>
             <small>Automatically start the relay when the app opens</small>
           </div>
 
           <div class="form-group">
-            <label class="forward-enabled-label" for="usePotaSpotMap">
-              <input type="checkbox" id="usePotaSpotMap" name="usePotaSpotMap" />
-              <span>Use POTA Spot Map</span>
-            </label>
+            <div class="settings-toggle-header">
+              <span class="settings-toggle-title">Use POTA Spot Map</span>
+              <label class="settings-toggle-control" for="usePotaSpotMap">
+                <input type="checkbox" id="usePotaSpotMap" name="usePotaSpotMap" />
+                <span>Enabled</span>
+              </label>
+            </div>
             <small>
               On QSO save, query POTA activator spots and auto-fill DX grid/sig fields when
               callsign matches
@@ -94,6 +100,62 @@
               required
             />
             <small>Delay between each QSO when resending an entire log (default: 0.5)</small>
+          </div>
+
+          <div class="form-group">
+            <div class="settings-toggle-header">
+              <span class="settings-toggle-title">QRZ Logging</span>
+              <label class="settings-toggle-control" for="qrzLoggingEnabled">
+                <input type="checkbox" id="qrzLoggingEnabled" name="qrzLoggingEnabled" />
+                <span>Enabled</span>
+              </label>
+            </div>
+            <label for="qrzApiKey">API Key:</label>
+            <div class="password-input-group">
+              <input type="password" id="qrzApiKey" name="qrzApiKey" autocomplete="off" />
+              <button type="button" id="toggleQrzApiKeyBtn" class="btn btn-secondary">Reveal</button>
+            </div>
+            <small>Enable QRZ log submission and provide your QRZ API key</small>
+          </div>
+
+          <div class="form-group">
+            <div class="settings-toggle-header">
+              <span class="settings-toggle-title">Clublog Logging</span>
+              <label class="settings-toggle-control" for="clublogLoggingEnabled">
+                <input
+                  type="checkbox"
+                  id="clublogLoggingEnabled"
+                  name="clublogLoggingEnabled"
+                />
+                <span>Enabled</span>
+              </label>
+            </div>
+            <div class="settings-inline-fields settings-inline-fields-clublog">
+              <div class="settings-inline-field">
+                <label for="clublogCallsign">Callsign:</label>
+                <input
+                  type="text"
+                  id="clublogCallsign"
+                  name="clublogCallsign"
+                  autocomplete="username"
+                />
+              </div>
+              <div class="settings-inline-field">
+                <label for="clublogPassword">Password:</label>
+                <div class="password-input-group">
+                  <input
+                    type="password"
+                    id="clublogPassword"
+                    name="clublogPassword"
+                    autocomplete="current-password"
+                  />
+                  <button type="button" id="toggleClublogPasswordBtn" class="btn btn-secondary">Reveal</button>
+                </div>
+              </div>
+            </div>
+            <label for="clublogEmail">Email:</label>
+            <input type="text" id="clublogEmail" name="clublogEmail" autocomplete="email" />
+            <small>Enable Clublog log submission and provide account credentials</small>
           </div>
 
           <div class="form-group form-group-forwards">

@@ -3,7 +3,22 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const distDir = path.join(__dirname, '..', 'dist');
+const publishRuntimeConfigPath = path.join(__dirname, '..', 'src', 'main', 'publishRuntimeConfig.js');
 const metadataFileNames = ['latest.yml', 'latest-mac.yml', 'latest-linux.yml'];
+
+function writePublishRuntimeConfig() {
+  const clublogApiKey = String(process.env.CLUBLOG_API_KEY || '').trim();
+  const fileContents = `module.exports = Object.freeze({\n  clublogApiKey: ${JSON.stringify(clublogApiKey)},\n});\n`;
+  fs.writeFileSync(publishRuntimeConfigPath, fileContents, 'utf8');
+
+  if (clublogApiKey) {
+    console.log('Publish runtime config generated with CLUBLOG_API_KEY.');
+  } else {
+    console.warn(
+      'Publish runtime config generated without CLUBLOG_API_KEY. Set CLUBLOG_API_KEY during publish once Clublog provides it.',
+    );
+  }
+}
 
 function resolveGhCommand() {
   if (process.env.GH_CLI_PATH && fs.existsSync(process.env.GH_CLI_PATH)) {
@@ -256,6 +271,7 @@ if (!token) {
   process.exit(1);
 }
 
+writePublishRuntimeConfig();
 clearExistingMetadataFiles();
 
 const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';

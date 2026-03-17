@@ -119,6 +119,12 @@ class PotaSpotsManager {
       }));
     }
 
+    if (window.electron && typeof window.electron.onRelayClearPacket === 'function') {
+      this.addSubscriptionDisposer(window.electron.onRelayClearPacket(() => {
+        this.handleClearPacket();
+      }));
+    }
+
     if (window.electron && typeof window.electron.onSettingsChanged === 'function') {
       this.addSubscriptionDisposer(window.electron.onSettingsChanged((settings) => {
         this.applyDecodeSightingSettings(settings);
@@ -600,8 +606,13 @@ class PotaSpotsManager {
       return `${rawValue.slice(0, 4)}-${rawValue.slice(4, 6)}-${rawValue.slice(6, 8)}`;
     }
 
-    if (/^\d{4}-\d{2}-\d{2}/.test(rawValue)) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(rawValue)) {
       return rawValue.slice(0, 10);
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}T/.test(rawValue)) {
+      const parsedDate = this.parseSpotTime(rawValue) || new Date(rawValue);
+      return Number.isNaN(parsedDate.getTime()) ? '' : parsedDate.toISOString().slice(0, 10);
     }
 
     const parsedDate = this.parseSpotTime(rawValue) || new Date(rawValue);
@@ -944,6 +955,17 @@ class PotaSpotsManager {
     }
 
     return mode;
+  }
+
+  handleClearPacket() {
+    if (this.decodeSightingsByActivator.size === 0 && this.cqPotaSightings.size === 0) {
+      return;
+    }
+
+    this.decodeSightingsByActivator.clear();
+    this.cqPotaSightings.clear();
+    this.savePersistedDecodeSightings();
+    this.applyFilters();
   }
 
   recordDecodePacket(packet) {

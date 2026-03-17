@@ -244,6 +244,7 @@ registerAllIpcHandlers(
     ipcMain,
     store,
     getRelay: appState.getRelay,
+    fetchImpl: fetch,
     isPlainObject,
     toClampedInteger,
     toNonNegativeNumber,
