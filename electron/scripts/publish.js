@@ -150,7 +150,8 @@ function getReleaseArtifactFiles() {
       return true;
     }
 
-    if (!fileName.startsWith('wsjtx-relay-')) {
+    const tag = getReleaseTag();
+    if (!fileName.startsWith(`wsjtx-relay-${tag}`)) {
       return false;
     }
 
