@@ -1,5 +1,50 @@
 # Changelog
 
+## 1.0.6 - 03/13/2026
+
+### Added
+
+- Added `Offset` column to POTA Spots (placed between Frequency and Mode), populated from matched decode `delta_freq`.
+- Added explicit `Action` column in POTA Spots with per-row actions:
+  - `Manual` for `SSB`/`CW`
+  - `Reply` for other modes
+- Added QRZ reporting integration for saved QSOs:
+  - submits ADIF via QRZ Logbook API when enabled
+  - persists provider submission metadata in per-QSO `logSubmissions`
+  - displays a `QRZ` badge in the QSO log when submission succeeds
+- Added Clublog reporting integration for saved QSOs:
+  - submits ADIF via Clublog realtime API when enabled
+  - persists provider submission metadata in per-QSO `logSubmissions`
+  - displays a `CLUBLOG` badge in the QSO log when submission succeeds
+- Added publish-time Clublog API key injection using `CLUBLOG_API_KEY` (not committed to repository).
+- Added support for creating blank QSOs directly in QSO Editor via `Add Blank QSO`.
+- Added major Electron main-process modularization into focused updater, relay, POTA, lifecycle, window, and IPC components.
+- Added centralized runtime app state management for window, relay, and updater references.
+- Added shared main-process configuration/default helpers for constants, UI paths, icon resolution, and store defaults.
+
+### Changed
+
+- Replaced hidden POTA row double-click behavior with explicit action buttons.
+- Updated POTA spot-time behavior so spots seen via decode use the decode timestamp for displayed Spot Time, Age, and related sorting.
+- Expanded POTA Region filter to support full location values (e.g. `US-TX`) and kept input normalized to uppercase.
+- Updated POTA location filtering to correctly match comma-separated API location lists (e.g. `US-LA,US-TX`).
+- Updated logging submission tracking to use provider-scoped `logSubmissions` metadata instead of custom ADIF fields.
+- Reduced POTA header vertical footprint and moved filters onto the same row where space permits.
+- Updated QSO ordering so full-log sorting by timestamp occurs when saving edited QSOs (`update-qsos`).
+- Refactored the Electron main entrypoint from a monolith into orchestration wiring over extracted modules.
+- Consolidated preload IPC subscription handling with reusable wrappers that support listener disposal.
+- Updated renderer windows to register and dispose IPC subscriptions on unload.
+- Replaced multiple inline UI styles with shared stylesheet classes for maintainability.
+
+### Fixed
+
+- Fixed synthesized CQ POTA spots not being marked as worked immediately after logging (before API promotion).
+- Fixed POTA row focus behavior so selecting an action does not hide the POTA window behind the main window.
+- Fixed WSJT-X reply packet construction/routing to use exact decode-derived values and endpoint context.
+- Disabled `Reply` action when a row has no valid decode SNR or is already worked.
+- Hardened renderer pages with explicit Content Security Policy (CSP) meta tags.
+- Strengthened IPC payload validation and sanitization for settings, QSO, and POTA flows.
+
 ## 1.0.5 - 03/12/2026
 
 ### Added

@@ -1,0 +1,47 @@
+function buildUpdateControllerConfig({
+  app,
+  autoUpdater,
+  dialog,
+  dns,
+  getMainWindow,
+  hasInternetConnectivity,
+  hasNewerUpdateAvailable,
+  getUpdateBadgeState,
+  showInstallDownloadedUpdatePrompt,
+  showDownloadAvailableUpdatePrompt,
+  showUpdateDownloadNoInternet,
+  showUpdateDownloadFailed,
+  showCheckForUpdatesCurrentVersion,
+  showCheckForUpdatesPackagedOnly,
+  showCheckForUpdatesInProgress,
+  showCheckForUpdatesNoInternet,
+  showCheckForUpdatesFailed,
+  updateCheckIntervalMs,
+  internetCheckTimeoutMs,
+}) {
+  return {
+    appModule: app,
+    autoUpdaterModule: autoUpdater,
+    dialogModule: dialog,
+    dnsModule: dns,
+    getMainWindow,
+    hasInternetConnectivity,
+    hasNewerUpdateAvailable,
+    getUpdateBadgeState,
+    showInstallDownloadedUpdatePrompt,
+    showDownloadAvailableUpdatePrompt,
+    showUpdateDownloadNoInternet,
+    showUpdateDownloadFailed,
+    showCheckForUpdatesCurrentVersion,
+    showCheckForUpdatesPackagedOnly,
+    showCheckForUpdatesInProgress,
+    showCheckForUpdatesNoInternet,
+    showCheckForUpdatesFailed,
+    updateCheckIntervalMs,
+    internetCheckTimeoutMs,
+  };
+}
+
+module.exports = {
+  buildUpdateControllerConfig,
+};

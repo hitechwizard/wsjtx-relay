@@ -3,13 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.pota.app; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+    />
     <title>POTA Spots</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="pota-spots-wrapper">
       <div class="pota-spots-header">
-        <h1>POTA Spots <span id="lastUpdateTime" class="pota-last-update"></span></h1>
+        <h1>POTA Spots</h1>
+        <div class="pota-spots-clocks" aria-label="UTC clocks">
+          <div class="pota-clock-card pota-clock-card-current">
+            <div class="pota-clock-label">UTC NOW</div>
+            <div id="utcClockTime" class="pota-clock-value" aria-live="polite">--:--:--</div>
+          </div>
+          <div class="pota-clock-card pota-clock-card-remaining">
+            <div class="pota-clock-label">UTC DAY LEFT</div>
+            <div id="utcDayRemaining" class="pota-clock-value" aria-live="polite">--:--:--</div>
+          </div>
+        </div>
         <div class="pota-spots-controls">
           <div class="pota-filter-group">
             <label for="modeFilter">Mode:</label>
@@ -24,13 +38,12 @@
             </select>
           </div>
           <div class="pota-filter-group">
-            <label for="regionFilter">Region (First 2 chars):</label>
+            <label for="regionFilter">Region/Location:</label>
             <input
               type="text"
               id="regionFilter"
               class="pota-filter-input"
-              placeholder="e.g., US, EU"
-              maxlength="2"
+              placeholder="e.g., US, US-TX"
             />
           </div>
           <label for="hideWorkedFilter" class="pota-filter-checkbox-group">
@@ -43,23 +56,39 @@
       <div class="pota-spots-content">
         <div id="spotsTableContainer" class="pota-spots-table-container">
           <table class="pota-spots-table">
+            <colgroup>
+              <col class="pota-col-activator" />
+              <col class="pota-col-status" />
+              <col class="pota-col-frequency" />
+              <col class="pota-col-offset" />
+              <col class="pota-col-mode" />
+              <col class="pota-col-reference" />
+              <col class="pota-col-name" />
+              <col class="pota-col-location" />
+              <col class="pota-col-spot-time" />
+              <col class="pota-col-age" />
+              <col class="pota-col-action" />
+            </colgroup>
             <thead>
               <tr>
                 <th data-field="activator">Activator</th>
+                <th data-field="status">Status</th>
                 <th data-field="frequency">Frequency</th>
+                <th data-field="offset">Offset</th>
                 <th data-field="mode">Mode</th>
                 <th data-field="reference">Reference</th>
                 <th data-field="name">Name</th>
                 <th data-field="locationDesc">Location</th>
                 <th data-field="spotTime">Spot Time</th>
                 <th data-field="age">Age</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody id="spotsTableBody">
               <!-- Spots will be inserted here -->
             </tbody>
           </table>
-          <div id="noSpotsMessage" class="pota-no-spots" style="display: none">
+          <div id="noSpotsMessage" class="pota-no-spots" hidden>
             No spots found.
           </div>
         </div>

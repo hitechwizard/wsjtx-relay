@@ -1,4 +1,21 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  const subscriptionDisposers = [];
+  const addSubscriptionDisposer = (disposer) => {
+    if (typeof disposer === 'function') {
+      subscriptionDisposers.push(disposer);
+    }
+  };
+  const disposeSubscriptions = () => {
+    while (subscriptionDisposers.length > 0) {
+      const disposer = subscriptionDisposers.pop();
+      try {
+        disposer();
+      } catch (error) {
+        console.error('Failed to dispose examples subscription:', error);
+      }
+    }
+  };
+
   setupExampleImageModal();
 
   try {
@@ -8,8 +25,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Failed to load theme for examples page:', err);
   }
 
-  window.electron.onThemeChanged((theme) => {
+  addSubscriptionDisposer(window.electron.onThemeChanged((theme) => {
     applyTheme(theme);
+  }));
+
+  window.addEventListener('beforeunload', () => {
+    disposeSubscriptions();
   });
 });
 

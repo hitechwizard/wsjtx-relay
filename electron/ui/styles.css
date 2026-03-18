@@ -2,6 +2,12 @@
    WSJT-X Relay Styles
    ============================================================================ */
 
+@font-face {
+  font-family: 'Seven Segment';
+  src: url('./fonts/7segment.ttf') format('truetype');
+  font-display: swap;
+}
+
 /* ============================================================================
    1. THEME VARIABLES
    ============================================================================ */
@@ -212,6 +218,12 @@ body {
   align-self: flex-end;
 }
 
+.header-controls-inline {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -399,6 +411,16 @@ body {
   gap: 5px;
 }
 
+.qso-log-contact-wrap {
+  margin-left: 25px;
+  margin-top: 50px;
+}
+
+.qso-log-contact-btn {
+  height: 50px;
+  width: 125px;
+}
+
 .qso-field {
   display: flex;
   flex-direction: column;
@@ -501,6 +523,11 @@ body {
   gap: 8px;
 }
 
+.transmit-message {
+  margin-left: 8px;
+  font-size: 12px;
+}
+
 /* ============================================================================
    8. QSO LOG DISPLAY
    ============================================================================ */
@@ -547,6 +574,12 @@ body {
   font-size: 16px;
   margin-bottom: 15px;
   color: var(--header-color);
+}
+
+.log-panel-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .qso-log-tools {
@@ -652,6 +685,24 @@ body {
   flex-shrink: 0;
 }
 
+.log-panel-footer-btn {
+  text-align: center;
+  width: 150px;
+}
+
+.qso-log-count-meta {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
+.shared-config-warning {
+  background: var(--red);
+  color: #ffffff;
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 12px;
+}
+
 .log-entry {
   padding: 4px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
@@ -677,7 +728,7 @@ body {
 
 .qso-log-entry {
   display: grid;
-  grid-template-columns: 3fr 3fr 1fr 2fr 1fr 1fr 50px;
+  grid-template-columns: 3fr 3fr 1fr 2fr 1fr 1fr 90px;
   grid-column-gap: 5px;
   grid-row-gap: 0px;
   align-items: center;
@@ -704,6 +755,14 @@ body {
 
 .qso-row-odd {
   background-color: var(--bg-secondary);
+}
+
+.qso-indicators-wrap {
+  grid-column: 7;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* Duplicate QSO Indicator */
@@ -776,20 +835,89 @@ body.dark-theme .qso-pota-icon {
   filter: saturate(1.2) brightness(1.5);
 }
 
+.qso-app-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  cursor: default;
+}
+
+.qso-app-badge-qrz {
+  background-color: var(--blue);
+  border-color: var(--blue-dark);
+  color: #ffffff;
+}
+
+.qso-app-badge-clublog {
+  background-color: #e67e22;
+  border-color: #d35400;
+  color: #ffffff;
+}
+
 /* ============================================================================
    9. FORM STYLES (SETTINGS & GENERAL)
    ============================================================================ */
 
 .settings-container {
-  max-width: 600px;
+  max-width: none;
+  width: 100%;
+  min-width: 980px;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.settings-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+.settings-header h1 {
+  margin: 0;
+}
+
+.settings-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.settings-grid {
+  flex: 1;
+  min-width: 940px;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .form-group {
-  margin-bottom: 25px;
+  margin-bottom: 0;
   padding: 15px;
   background-color: var(--bg-secondary);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.settings-grid .form-group-forwards {
+  grid-column: 1 / -1;
 }
 
 .form-group label {
@@ -799,8 +927,42 @@ body.dark-theme .qso-pota-icon {
   color: var(--header-color);
 }
 
+.settings-toggle-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.settings-toggle-title {
+  display: block;
+  font-weight: 600;
+  color: var(--header-color);
+}
+
+.settings-toggle-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.settings-toggle-control input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--blue);
+  cursor: pointer;
+}
+
 .form-group input[type='number'],
 .form-group input[type='text'],
+.form-group input[type='password'],
 .form-group select {
   width: 100%;
   padding: 10px;
@@ -815,6 +977,7 @@ body.dark-theme .qso-pota-icon {
 
 .form-group input[type='number']:focus,
 .form-group input[type='text']:focus,
+.form-group input[type='password']:focus,
 .form-group select:focus {
   outline: none;
   border-color: var(--blue);
@@ -828,14 +991,54 @@ body.dark-theme .qso-pota-icon {
   font-size: 12px;
 }
 
+.settings-inline-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.settings-inline-fields-clublog {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+}
+
+.settings-inline-field {
+  min-width: 0;
+}
+
+.password-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.password-input-group input {
+  flex: 1;
+}
+
+.password-input-group .btn {
+  flex: 0 0 auto;
+  min-width: 80px;
+  padding: 8px 10px;
+}
+
 .form-actions {
   display: flex;
   gap: 10px;
-  margin-top: 25px;
+  margin-top: 0;
 }
 
 .form-actions .btn {
   flex: 1;
+}
+
+.settings-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-primary);
 }
 
 /* ============================================================================
@@ -844,6 +1047,10 @@ body.dark-theme .qso-pota-icon {
 
 .forwards-editor {
   margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 220px;
 }
 
 .forwards-list {
@@ -851,6 +1058,10 @@ body.dark-theme .qso-pota-icon {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1;
+  min-height: 120px;
+  max-height: 320px;
+  overflow: auto;
 }
 
 .forward-item {
@@ -880,7 +1091,7 @@ body.dark-theme .qso-pota-icon {
   gap: 12px;
 }
 
-.forward-enabled-label {
+.forward-item-controls .forward-enabled-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -908,6 +1119,22 @@ body.dark-theme .qso-pota-icon {
 .forwards-add {
   display: flex;
   gap: 8px;
+}
+
+@media (max-width: 1200px) {
+  .settings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .settings-inline-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-inline-fields-clublog {
+    grid-template-columns: 1fr;
+  }
 }
 
 .forwards-add input {
@@ -1139,6 +1366,68 @@ body.dark-theme .qso-pota-icon {
   border-top: 1px solid var(--border-color);
   flex-shrink: 0;
   background-color: var(--bg-primary);
+}
+
+.qso-editor-footer-group {
+  display: flex;
+  gap: 10px;
+}
+
+.qso-editor-empty-state {
+  grid-column: 1 / -1;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 20px;
+}
+
+.qso-card-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.set-park-modal-dialog {
+  max-width: 500px;
+}
+
+.set-park-modal-content {
+  padding: 20px;
+}
+
+.set-park-help-text {
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.set-park-input {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  text-transform: uppercase;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.set-park-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px var(--blue-light);
+}
+
+.set-park-error {
+  margin: 8px 0 0;
+  color: var(--red);
+  font-size: 12px;
+  min-height: 16px;
+}
+
+.set-park-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: flex-end;
 }
 
 .qso-raw-modal {
@@ -1452,21 +1741,79 @@ body.dark-theme .qso-pota-icon {
 .pota-spots-header {
   background-color: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
-  padding: 15px 20px;
+  padding: 8px 20px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
 .pota-spots-header h1 {
-  margin: 0 0 15px 0;
-  font-size: 24px;
+  margin: 0;
+  font-size: 22px;
   color: var(--header-color);
+  white-space: nowrap;
+}
+
+.pota-spots-clocks {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 10px;
+  row-gap: 4px;
+  flex-wrap: wrap;
+}
+
+.pota-clock-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  padding: 1px 8px 1px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-tertiary);
+  min-width: 152px;
+}
+
+.pota-clock-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.pota-clock-value {
+  display: inline-block;
+  width: 8ch;
+  text-align: left;
+  font-size: 34px;
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: 0.03em;
+  font-family: 'Seven Segment', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  margin-right: 0;
+}
+
+.pota-clock-card-current .pota-clock-value {
+  color: var(--green);
+}
+
+.pota-clock-card-remaining .pota-clock-value {
+  color: var(--red);
 }
 
 .pota-spots-controls {
   display: flex;
-  gap: 15px;
+  gap: 12px;
   flex-wrap: wrap;
   align-items: center;
+  margin-left: auto;
 }
 
 .pota-filter-group {
@@ -1552,6 +1899,7 @@ body.dark-theme .qso-pota-icon {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  table-layout: auto;
 }
 
 .pota-spots-table thead {
@@ -1567,10 +1915,14 @@ body.dark-theme .qso-pota-icon {
   border-bottom: 2px solid var(--border-color);
   font-weight: 600;
   color: var(--header-color);
-  cursor: pointer;
+  cursor: default;
   user-select: none;
   white-space: nowrap;
   position: relative;
+}
+
+.pota-spots-table thead th[data-field] {
+  cursor: pointer;
 }
 
 .pota-spots-table thead th:hover {
@@ -1609,7 +1961,7 @@ body.dark-theme .qso-pota-icon {
 }
 
 .pota-spot-row {
-  cursor: pointer;
+  cursor: default;
 }
 
 .pota-spot-row td {
@@ -1618,15 +1970,94 @@ body.dark-theme .qso-pota-icon {
   word-break: break-word;
 }
 
+/* Keep key columns stable so long location lists do not distort the grid */
+.pota-col-activator {
+  width: 100px;
+}
+
+.pota-col-status {
+  width: 1%;
+}
+
+.pota-col-frequency,
+.pota-col-reference,
+.pota-col-spot-time {
+  width: 100px;
+}
+
+.pota-col-offset,
+.pota-col-mode,
+.pota-col-age {
+  width: 75px;
+}
+
+.pota-col-location {
+  width: 150px;
+}
+
+.pota-col-action {
+  width: 50px;
+}
+
+.pota-spots-table th:nth-child(3),
+.pota-spots-table td:nth-child(3),
+.pota-spots-table th:nth-child(4),
+.pota-spots-table td:nth-child(4),
+.pota-spots-table th:nth-child(5),
+.pota-spots-table td:nth-child(5),
+.pota-spots-table th:nth-child(6),
+.pota-spots-table td:nth-child(6),
+.pota-spots-table th:nth-child(9),
+.pota-spots-table td:nth-child(9),
+.pota-spots-table th:nth-child(10),
+.pota-spots-table td:nth-child(10),
+.pota-spots-table th:nth-child(11),
+.pota-spots-table td:nth-child(11) {
+  white-space: nowrap;
+}
+
+/* Location column should not force expansion; keep it clipped in-cell */
+.pota-spots-table th:nth-child(8),
+.pota-spots-table td:nth-child(8) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pota-spots-table th:nth-child(11),
+.pota-spots-table td:nth-child(11) {
+  text-align: center;
+}
+
 .pota-activator-cell {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+.pota-activator-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pota-status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .pota-worked-badge {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 11px;
@@ -1634,6 +2065,20 @@ body.dark-theme .qso-pota-icon {
   color: var(--blue);
   background-color: color-mix(in srgb, var(--blue-light) 80%, var(--bg-secondary));
   border: 1px solid color-mix(in srgb, var(--blue) 28%, var(--border-color));
+  text-decoration: none;
+}
+
+.pota-decode-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--green);
+  background-color: color-mix(in srgb, var(--green) 16%, var(--bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--green) 32%, var(--border-color));
   text-decoration: none;
 }
 
@@ -1665,6 +2110,39 @@ body.dark-theme .qso-pota-icon {
   background-color: var(--blue-light);
 }
 
+.pota-spot-row.pota-spot-tx-enabled td {
+  background-color: var(--yellow);
+}
+
+.pota-spot-row.pota-spot-tx-enabled:hover td {
+  background-color: var(--yellow-dark);
+}
+
+body.dark-theme .pota-spot-row.pota-spot-tx-enabled td,
+body.dark-theme .pota-spot-row.pota-spot-tx-enabled:hover td {
+  color: #000000;
+}
+
+.pota-spot-row.pota-spot-transmitting td {
+  background-color: var(--red);
+  color: #ffffff;
+}
+
+.pota-spot-row.pota-spot-transmitting:hover td {
+  background-color: var(--red-dark);
+  color: #ffffff;
+}
+
+.pota-spot-row.pota-spot-self td {
+  background-color: var(--green);
+  color: #ffffff;
+}
+
+.pota-spot-row.pota-spot-self:hover td {
+  background-color: color-mix(in srgb, var(--green) 78%, #000000);
+  color: #ffffff;
+}
+
 .pota-no-spots {
   display: flex;
   align-items: center;
@@ -1674,4 +2152,8 @@ body.dark-theme .qso-pota-icon {
   font-size: 16px;
   text-align: center;
   padding: 20px;
+}
+
+.pota-no-spots[hidden] {
+  display: none !important;
 }

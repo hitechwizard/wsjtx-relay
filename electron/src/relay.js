@@ -21,6 +21,7 @@ class WSJTXRelay extends EventEmitter {
     this.forwardHostAddressMap = new Map(); // host -> Set of resolved IPv4 addresses
     this.pendingHostLookups = new Set();
     this.cleanupInterval = null;
+    this.lastStatusSnapshot = null;
   }
 
   start() {
@@ -135,7 +136,7 @@ class WSJTXRelay extends EventEmitter {
             }
           });
         });
-        logMsg += this.decodePayload(data);
+        logMsg += this.decodePayload(data, rinfo);
         this.emit('log', logMsg);
       } else {
         this.emit('log', `${srcAddr} -> <no-mapping> (dropped) (${data.length} bytes)`);
@@ -165,11 +166,11 @@ class WSJTXRelay extends EventEmitter {
           this.mapping.get(fwdKey).set(srcKey, Date.now());
         }
       });
+      logMsg += this.decodePayload(data, rinfo);
       if (activeForwards.length === 0) {
         this.emit('log', `${srcAddr} -> <no-enabled-forwards> (dropped) (${data.length} bytes)`);
         return;
       }
-      logMsg += this.decodePayload(data);
       this.emit('log', logMsg);
     }
   }
@@ -307,7 +308,7 @@ class WSJTXRelay extends EventEmitter {
     forwardsToDelete.forEach((fa) => this.mapping.delete(fa));
   }
 
-  decodePayload(data) {
+  decodePayload(data, rinfo = null) {
     let message = `Not decoded`;
     try {
       const parsed = new WsjtxUdpParser(data);
@@ -326,8 +327,40 @@ class WSJTXRelay extends EventEmitter {
             message += ` Transmitting ${parsed.txMessage}`;
           }
 
+          this.lastStatusSnapshot = {
+            mode: String(parsed.mode || ''),
+            dialFrequency: Number(parsed.dialFrequency),
+          };
+
           // Emit status update for UI indicators
           this.emit('status-update', parsed);
+        } else if (parsed.type === 2) {
+          // Decode
+          const decodeMode = String(parsed.mode || '').trim();
+          const fallbackMode = String(this.lastStatusSnapshot?.mode || '').trim();
+          const resolvedMode = decodeMode && decodeMode !== '~' && decodeMode !== '+'
+            ? decodeMode
+            : fallbackMode;
+
+          this.emit('decode-packet', {
+            time: Number(parsed.time),
+            message: String(parsed.message || ''),
+            snr: Number(parsed.snr),
+            deltaTime: Number(parsed.delta_time),
+            mode: resolvedMode,
+            rawMode: decodeMode,
+            utcTime: String(parsed.time_utc || ''),
+            deltaFreq: Number(parsed.delta_freq),
+            dialFrequency: Number(this.lastStatusSnapshot?.dialFrequency),
+            wsjtxId: String(parsed.id || ''),
+            sourceHost: String(rinfo?.address || ''),
+            sourcePort: Number(rinfo?.port),
+            lowConfidence: Boolean(parsed.lowconfidence),
+            modifiers: Number(parsed.offair),
+          });
+        } else if (parsed.type === 3) {
+          // Clear — all pending decode data is now invalid
+          this.emit('clear-packet');
         } else if (parsed.type === 4) {
           // Reply
           message += ` ${parsed.mode}`;
@@ -678,6 +711,148 @@ class WSJTXRelay extends EventEmitter {
 
     const packet = Buffer.concat([magicBytes, version, type, id, ...fields]);
     return packet;
+  }
+
+  createReplyPacket(decodePacket) {
+    const magicBytes = Buffer.from([0xad, 0xbc, 0xcb, 0xda]);
+    const versionBytes = Buffer.from([0x00, 0x00, 0x00, 0x02]);
+    const typeBytes = Buffer.from([0x00, 0x00, 0x00, 0x04]);
+    const idText = String(decodePacket?.wsjtxId || 'WSJT-X');
+    const idBuffer = Buffer.from(idText, 'utf8');
+    const idLength = Buffer.alloc(4);
+    idLength.writeUInt32BE(idBuffer.length);
+    const id = Buffer.concat([idLength, idBuffer]);
+
+    function encodeString(str) {
+      const value = String(str || '');
+      const buf = Buffer.from(value, 'utf8');
+      const len = Buffer.alloc(4);
+      len.writeUInt32BE(buf.length);
+      return Buffer.concat([len, buf]);
+    }
+
+    function encodeUint32(val) {
+      const buf = Buffer.alloc(4);
+      buf.writeUInt32BE(Number.isFinite(val) ? Math.max(0, Math.trunc(val)) : 0);
+      return buf;
+    }
+
+    function encodeInt32(val) {
+      const buf = Buffer.alloc(4);
+      buf.writeInt32BE(Number.isFinite(val) ? Math.trunc(val) : 0);
+      return buf;
+    }
+
+    function encodeDouble(val) {
+      const buf = Buffer.alloc(8);
+      buf.writeDoubleBE(Number.isFinite(val) ? val : 0);
+      return buf;
+    }
+
+    function encodeBool(val) {
+      const buf = Buffer.alloc(1);
+      buf.writeUInt8(val ? 1 : 0);
+      return buf;
+    }
+
+    function encodeUint8(val) {
+      const buf = Buffer.alloc(1);
+      buf.writeUInt8(Number.isFinite(val) ? Math.max(0, Math.trunc(val)) & 0xff : 0);
+      return buf;
+    }
+
+    const rawMode = String(decodePacket?.rawMode || '').trim();
+    const replyMode = rawMode || String(decodePacket?.mode || '');
+
+    const fields = [
+      encodeUint32(Number(decodePacket?.time)),
+      encodeInt32(Number(decodePacket?.snr)),
+      encodeDouble(Number(decodePacket?.deltaTime)),
+      encodeUint32(Number(decodePacket?.deltaFreq)),
+      encodeString(replyMode),
+      encodeString(decodePacket?.message),
+      encodeBool(Boolean(decodePacket?.lowConfidence)),
+      encodeUint8(Number(decodePacket?.modifiers)),
+    ];
+
+    return Buffer.concat([magicBytes, versionBytes, typeBytes, id, ...fields]);
+  }
+
+  sendPacketUpstream(packet) {
+    if (!this.running || !this.socket) {
+      throw new Error('Relay not running');
+    }
+
+    const destinations = new Set();
+    this.mapping.forEach((clients) => {
+      clients.forEach((timestamp, clientAddr) => {
+        destinations.add(clientAddr);
+      });
+    });
+
+    if (destinations.size === 0) {
+      throw new Error('No upstream WSJT-X clients have been seen');
+    }
+
+    return Promise.all(
+      Array.from(destinations).map(
+        (clientAddr) =>
+          new Promise((resolve, reject) => {
+            const [clientHost, clientPort] = String(clientAddr).split('|');
+            this.socket.send(packet, Number(clientPort), clientHost, (err) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+              resolve();
+            });
+          }),
+      ),
+    );
+  }
+
+  sendPacketToEndpoint(packet, host, port) {
+    if (!this.running || !this.socket) {
+      throw new Error('Relay not running');
+    }
+
+    const targetHost = String(host || '').trim();
+    const targetPort = Number(port);
+
+    if (!targetHost || !Number.isInteger(targetPort) || targetPort <= 0 || targetPort > 65535) {
+      throw new Error('Invalid upstream endpoint');
+    }
+
+    return new Promise((resolve, reject) => {
+      this.socket.send(packet, targetPort, targetHost, (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      });
+    });
+  }
+
+  async sendReplyPacket(decodePacket) {
+    const packet = this.createReplyPacket(decodePacket);
+    const sourceHost = String(decodePacket?.sourceHost || '').trim();
+    const sourcePort = Number(decodePacket?.sourcePort);
+
+    if (sourceHost && Number.isInteger(sourcePort) && sourcePort > 0 && sourcePort <= 65535) {
+      await this.sendPacketToEndpoint(packet, sourceHost, sourcePort);
+      this.emit(
+        'log',
+        `Reply packet sent upstream to ${sourceHost}:${sourcePort} for ${String(decodePacket?.message || '').trim() || '<empty decode>'}`,
+      );
+      return;
+    }
+
+    await this.sendPacketUpstream(packet);
+    this.emit(
+      'log',
+      `Reply packet sent upstream for ${String(decodePacket?.message || '').trim() || '<empty decode>'}`,
+    );
   }
 }
 

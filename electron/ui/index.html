@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.pota.app; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+    />
     <title>WSJT-X Relay</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -24,7 +28,7 @@
             <h3 id="deGrid" class="station-badge-value"></h3>
           </div>
         </div>
-        <div class="header-controls" style="display: flex; gap: 15px; align-items: center">
+        <div class="header-controls header-controls-inline">
           <button id="startBtn" class="btn btn-primary">Start</button>
           <button id="stopBtn" class="btn btn-danger" disabled>Stop</button>
           <button id="settingsBtn" class="btn btn-secondary">Settings</button>
@@ -106,13 +110,8 @@
             <label>Their Park:</label>
             <span class="qso-value"><input type="text" id="qso-siginfo" /></span>
           </div>
-          <div style="margin-left: 25px; margin-top: 50px">
-            <button
-              id="qsoLogContact"
-              class="btn btn-primary"
-              style="height: 50px; width: 125px"
-              disabled
-            >
+          <div class="qso-log-contact-wrap">
+            <button id="qsoLogContact" class="btn btn-primary qso-log-contact-btn" disabled>
               Log Contact
             </button>
           </div>
@@ -143,7 +142,7 @@
             <label>Transmitting:</label>
             <div class="indicator-content">
               <span id="transmittingValue" class="indicator-value indicator-off">—</span>
-              <span id="transmitMessage" style="margin-left: 8px; font-size: 12px"></span>
+              <span id="transmitMessage" class="transmit-message"></span>
             </div>
           </div>
           <div class="indicator">
@@ -159,7 +158,7 @@
 
       <div class="log-section">
         <div class="log-panel">
-          <h2 style="display: flex; justify-content: space-between; align-items: center">
+          <h2 class="log-panel-title-row">
             <span>Activity Log</span>
             <div class="activity-log-tools">
               <span
@@ -229,17 +228,13 @@
           </h2>
           <div class="log-container" id="logContainer"></div>
           <div class="log-panel-footer">
-            <button
-              id="clearLogBtn"
-              class="btn btn-danger"
-              style="text-align: center; width: 150px"
-            >
+            <button id="clearLogBtn" class="btn btn-danger log-panel-footer-btn">
               Clear Log
             </button>
           </div>
         </div>
         <div class="log-panel">
-          <h2 style="display: flex; justify-content: space-between; align-items: center">
+          <h2 class="log-panel-title-row">
             <span>QSO Log <span id="qsoCount">(0)</span></span>
             <div class="qso-log-tools">
               <input
@@ -248,12 +243,8 @@
                 placeholder="Filter by call"
                 aria-label="Filter QSOs by call"
               />
-              <span id="qsoTodayUtc" style="font-size: 0.85em; color: var(--text-secondary)"
-                >Today: 0</span
-              >
-              <span id="qsoLastHour" style="font-size: 0.85em; color: var(--text-secondary)"
-                >Last Hour: 0</span
-              >
+              <span id="qsoTodayUtc" class="qso-log-count-meta">Today: 0</span>
+              <span id="qsoLastHour" class="qso-log-count-meta">Last Hour: 0</span>
             </div>
           </h2>
           <div class="log-container" id="qsoContainer">
@@ -267,18 +258,10 @@
             </div>
           </div>
           <div class="log-panel-footer">
-            <button
-              id="clearQsoBtn"
-              class="btn btn-danger"
-              style="text-align: center; width: 150px"
-            >
+            <button id="clearQsoBtn" class="btn btn-danger log-panel-footer-btn">
               Clear Log
             </button>
-            <button
-              id="qsoEditorBtn"
-              class="btn btn-secondary"
-              style="text-align: center; width: 150px"
-            >
+            <button id="qsoEditorBtn" class="btn btn-secondary log-panel-footer-btn">
               QSO Editor
             </button>
           </div>
