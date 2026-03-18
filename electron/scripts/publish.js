@@ -8,16 +8,14 @@ const metadataFileNames = ['latest.yml', 'latest-mac.yml', 'latest-linux.yml'];
 
 function writePublishRuntimeConfig() {
   const clublogApiKey = String(process.env.CLUBLOG_API_KEY || '').trim();
-  const fileContents = `module.exports = Object.freeze({\n  clublogApiKey: ${JSON.stringify(clublogApiKey)},\n});\n`;
-  fs.writeFileSync(publishRuntimeConfigPath, fileContents, 'utf8');
-
   if (clublogApiKey) {
     console.log('Publish runtime config generated with CLUBLOG_API_KEY.');
   } else {
-    console.warn(
-      'Publish runtime config generated without CLUBLOG_API_KEY. Set CLUBLOG_API_KEY during publish once Clublog provides it.',
-    );
+    console.error('No CLUBLOG_API_KEY found in the environment.');
+    process.exit(1);
   }
+  const fileContents = `module.exports = Object.freeze({\n  clublogApiKey: ${JSON.stringify(clublogApiKey)},\n});\n`;
+  fs.writeFileSync(publishRuntimeConfigPath, fileContents, 'utf8');
 }
 
 function resolveGhCommand() {
@@ -144,14 +142,16 @@ function getReleaseArtifactFiles() {
     .filter((entry) => entry.isFile())
     .map((entry) => path.join(distDir, entry.name));
 
+  const version = getPackageVersion();
+  const prefix = `wsjtx-relay-${version}`;
+
   return allFiles.filter((filePath) => {
     const fileName = path.basename(filePath);
     if (/^latest(?:-mac|-linux)?\.yml$/i.test(fileName)) {
       return true;
     }
 
-    const tag = getReleaseTag();
-    if (!fileName.startsWith(`wsjtx-relay-${tag}`)) {
+    if (!fileName.startsWith(prefix)) {
       return false;
     }
 

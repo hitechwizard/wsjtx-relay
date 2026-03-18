@@ -57,7 +57,8 @@
       "icon": "assets/icon.png"
     },
     "linux": {
-      "artifactName": "wsjtx-relay-${version}-${os}-${arch}.${ext}"
+      "artifactName": "wsjtx-relay-${version}-${os}-${arch}.${ext}",
+      "icon": "assets/icon.png"
     },
     "publish": [
       {
