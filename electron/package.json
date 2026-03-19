@@ -1,6 +1,6 @@
 {
   "name": "wsjtx-relay",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "WSJT-X Relay runs as a middle-man between WSJT-X and applications that consume WSJT-X UDP packets. It also has a fairly extensive QSO Editor allowing the user to import/export ADIF files. This simplifies operating during a POTA Activation and creating logs for upload.",
   "license": "BSD-3-Clause",
   "main": "src/main.js",
@@ -52,8 +52,8 @@
       "target": ["default"],
       "type": "distribution",
       "hardenedRuntime": true,
-      "entitlements": "assets/entitlements.mac.plist",
-      "entitlementsInherit": "assets/entitlements.mac.plist",
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
       "icon": "assets/icon.png"
     },
     "linux": {

@@ -166,6 +166,7 @@ function setupEventListeners() {
         .trim()
         .toUpperCase();
       applyQsoCallFilter();
+      scrollQsoLogToBottom();
     });
   }
   if (activityPacketFilters.length > 0) {

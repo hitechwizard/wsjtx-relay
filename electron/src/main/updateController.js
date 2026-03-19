@@ -1,3 +1,5 @@
+const { createActivityLogSender } = require('./potaRequestUtils');
+
 function createUpdateController({
   appModule,
   autoUpdaterModule,
@@ -25,6 +27,9 @@ function createUpdateController({
   let isUpdateDownloadInProgress = false;
   let availableUpdateInfo = null;
   let updateReadyToInstall = false;
+
+  // Activity log sender for warnings
+  const logToActivityLog = createActivityLogSender(getMainWindow);
 
   function sendUpdateBadgeState() {
     const mainWindow = getMainWindow();
@@ -125,6 +130,7 @@ function createUpdateController({
     } catch (err) {
       const message = err && err.message ? err.message : String(err);
       console.warn(`Update check failed: ${message}`);
+      logToActivityLog(`Update check failed: ${message}`);
       if (interactive && mainWindow) {
         await showCheckForUpdatesFailed(dialogModule, mainWindow, message);
       }
@@ -198,6 +204,7 @@ function createUpdateController({
     autoUpdaterModule.on('error', async (err) => {
       const message = err && err.message ? err.message : String(err);
       console.warn(`Update check failed: ${message}`);
+      logToActivityLog(`Update check failed: ${message}`);
 
       if (message.includes('latest-mac.yml')) {
         availableUpdateInfo = null;
