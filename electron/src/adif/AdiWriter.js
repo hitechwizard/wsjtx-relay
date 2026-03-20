@@ -42,6 +42,11 @@ class AdiWriter {
   }
 
   writeProperty(key, value) {
+    const ignoredFields = [ "logSubmissions" ];
+    if (key in ignoredFields) {
+      return;
+    }
+
     let outKey = key;
     if (key === '_id') outKey = 'app_cloudshack_id';
     else if (key === '_rev') outKey = 'app_cloudshack_rev';
