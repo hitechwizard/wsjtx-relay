@@ -831,6 +831,68 @@ function scrollQsoLogToBottom() {
   });
 }
 
+function escapeHtml(text) {
+  return String(text)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function normalizeBandKey(band) {
+  return String(band || '').trim().toLowerCase();
+}
+
+function renderBandBadge(band) {
+  const label = String(band || '').trim();
+  const span = document.createElement('span');
+  span.innerHTML = '-';
+  if (!label || label === '-') {
+    return span;
+  }
+  const bandKey = normalizeBandKey(label);
+  span.className = 'band-badge';
+  span.setAttribute('data-band', escapeHtml(bandKey));
+  span.innerHTML = escapeHtml(label);
+  return span;
+}
+
+function parsePowerWatts(value) {
+  const text = String(value ?? '').trim();
+  if (!text || text === '-') {
+    return Number.NaN;
+  }
+  const match = text.match(/-?\d+(\.\d+)?/);
+  if (!match) {
+    return Number.NaN;
+  }
+  return Number(match[0]);
+}
+
+function renderPowerBadge(powerText) {
+  const label = String(powerText ?? '').trim();
+  const span = document.createElement('span');
+  span.innerHTML = '-'
+  if (!label || label === '-') {
+    return span;
+  }
+
+  span.innerHTML = escapeHtml(label);
+  span.className = 'pwr-badge';
+  const watts = parsePowerWatts(label);
+  if (!Number.isFinite(watts)) {
+    return span;
+  }
+
+  const clamped = Math.max(0, Math.min(100, watts));
+  const pwrLevel = Math.floor(clamped / 10);
+
+  span.setAttribute('data-pwr', pwrLevel);
+  return span;
+  
+}
+
 function addQsoEntry(qso, type = 'normal') {
   const entry = document.createElement('div');
   entry.className = `log-entry ${type} qso-log-entry`;
@@ -864,9 +926,7 @@ function addQsoEntry(qso, type = 'normal') {
     display.start,
     display.call,
     display.mode,
-    display.freq,
-    display.band,
-    display.tx_pwr,
+    display.freq
   ];
 
   columns.forEach((col) => {
@@ -874,6 +934,9 @@ function addQsoEntry(qso, type = 'normal') {
     span.textContent = col;
     entry.appendChild(span);
   });
+
+  entry.appendChild(renderBandBadge(display.band));
+  entry.appendChild(renderPowerBadge(display.tx_pwr));
 
   // Duplicate detection: match on call, band, and start date (YYYY-MM-DD)
   const modeMatchKey = (item) => {

@@ -1041,6 +1041,64 @@ body.dark-theme .qso-pota-icon {
   background: var(--bg-primary);
 }
 
+/* Band badges */
+.band-badge {
+  display: inline-block;
+  min-width: 3.2em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.band-badge[data-band='160m'] { background: #7f1d1d; color: #ffffff; }
+.band-badge[data-band='80m'] { background: #dc2626; color: #ffffff; }
+.band-badge[data-band='40m'] { background: #ea580c; color: #ffffff; }
+.band-badge[data-band='30m'] { background: #facc15; color: #111827; }
+.band-badge[data-band='20m'] { background: #16a34a; color: #ffffff; }
+.band-badge[data-band='17m'] { background: #86efac; color: #111827; }
+.band-badge[data-band='15m'] { background: #2563eb; color: #ffffff; }
+.band-badge[data-band='12m'] { background: #7dd3fc; color: #111827; }
+.band-badge[data-band='10m'] { background: #9333ea; color: #ffffff; }
+.band-badge[data-band='6m'] { background: #7dd3fc; color: #111827; }
+.band-badge[data-band='2m'] { background: #581c87; color: #ffffff; }
+.band-badge[data-band='70cm'] { background: #dc2626; color: #ffffff; }
+.band-badge[data-band='30m'],
+.band-badge[data-band='17m'],
+.band-badge[data-band='12m'],
+.band-badge[data-band='6m'] {
+  border: 1px solid rgba(17, 24, 39, 0.28);
+}
+
+.pwr-badge {
+  display: inline-block;
+  min-width: 2.8em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 400;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  filter: brightness(1.25);
+  border-color: var(--text);
+}
+
+.pwr-badge[data-pwr='0'] { background: #0000ff; color: #ffffff; }
+.pwr-badge[data-pwr='1'] { background: #2f00df; color: #ffffff; }
+.pwr-badge[data-pwr='2'] { background: #4f00bf; color: #ffffff; }
+.pwr-badge[data-pwr='3'] { background: #6f009f; color: #ffffff; }
+.pwr-badge[data-pwr='4'] { background: #700070; color: #ffffff; }
+.pwr-badge[data-pwr='5'] { background: #7f007f; color: #ffffff; }
+.pwr-badge[data-pwr='6'] { background: #900070; color: #ffffff; }
+.pwr-badge[data-pwr='7'] { background: #af005f; color: #ffffff; }
+.pwr-badge[data-pwr='8'] { background: #bf004f; color: #ffffff; }
+.pwr-badge[data-pwr='9'] { background: #df002f; color: #ffffff; }
+.pwr-badge[data-pwr='10'] { background: #ff0000; color: #ffffff; }
+
 /* ============================================================================
    10. FORWARDS EDITOR
    ============================================================================ */
@@ -2029,13 +2087,6 @@ body.dark-theme .qso-pota-icon {
   overflow: visible;
   text-overflow: unset;
   white-space: normal;
-}
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  white-space: nowrap;
-  flex-wrap: nowrap;
 }
 
 .pota-activator-text {
