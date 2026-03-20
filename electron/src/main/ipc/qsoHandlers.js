@@ -20,6 +20,7 @@ function registerQsoHandlers({
   const {
     hasLoggingSubmissionSuccess,
     markLoggingSubmissionSuccess,
+    markLoggingSubmissionFailure,
   } = require('../qsoLoggingUtils');
 
   ipcMain.handle('save-qso', async (event, qso) => {
@@ -93,6 +94,7 @@ function registerQsoHandlers({
         logToActivityLog(`QRZ accepted QSO as entry #${qrzLogId}`);
       } else {
         const failureMessage = String(qrzResult.error || 'Unknown QRZ logging failure').trim();
+        nextQso = markLoggingSubmissionFailure(nextQso, 'qrz', failureMessage);
         console.warn(`QRZ logging failed: ${failureMessage}`);
         logToActivityLog(`QRZ submission failed: ${failureMessage}`);
       }
@@ -123,6 +125,7 @@ function registerQsoHandlers({
         logToActivityLog(`Clublog submission succeeded`);
       } else {
         const failureMessage = String(clublogResult.error || 'Unknown Clublog logging failure').trim();
+        nextQso = markLoggingSubmissionFailure(nextQso, 'qrz', failureMessage);
         console.warn(`Clublog logging failed: ${failureMessage}`);
         logToActivityLog(`Clublog submission failed: ${failureMessage}`);
       }
