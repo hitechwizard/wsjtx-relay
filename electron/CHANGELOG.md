@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.0.8 - 03/26/2026
+
+### Added
+
+- Added per-QSO show/hide toggle controls in QSO Editor card headers.
+- Added a callsign filter field in QSO Editor for live filtering of displayed QSO cards.
+- Added upstream WSJT-X `Highlight Call` packet support (type `13`) in the relay.
+- Added automatic upstream highlight sending for recognized POTA activator decodes when SNR is captured.
+
+### Changed
+
+
+### Fixed
+
+
+## 1.0.7 - 03/14/2026
+
+### Fixed
+
+- Correct Clublog publishing issue
+
 ## 1.0.6 - 03/13/2026
 
 ### Added

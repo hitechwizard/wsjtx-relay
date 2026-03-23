@@ -1051,7 +1051,14 @@ class PotaSpotsManager {
         decodePacket: decodePacketData,
       });
       didUpdateSighting = true;
-      if (Number.isFinite(snrValue)) {
+
+      const cqSyntheticSpot = this.getSyntheticSpotFromCqPotaSighting(cqPotaActivator, {
+        mode: this.normalizeDecodeModeForDisplay(packet?.mode),
+        frequencyKHz,
+        spotTime: Number(packet?.time),
+      });
+
+      if (Number.isFinite(snrValue) && !this.isWorkedSpot(cqSyntheticSpot)) {
         highlightActivators.add(cqPotaActivator);
       }
     }
@@ -1070,7 +1077,8 @@ class PotaSpotsManager {
         decodePacket: decodePacketData,
       });
       didUpdateSighting = true;
-      if (Number.isFinite(snrValue)) {
+
+      if (Number.isFinite(snrValue) && !this.isWorkedSpot(spot)) {
         highlightActivators.add(activator);
       }
     });

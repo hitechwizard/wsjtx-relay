@@ -43,7 +43,7 @@ class AdiWriter {
 
   writeProperty(key, value) {
     const ignoredFields = [ "logSubmissions" ];
-    if (key in ignoredFields) {
+    if (ignoredFields.includes(key)) {
       return;
     }
 
