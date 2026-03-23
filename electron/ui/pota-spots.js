@@ -968,6 +968,33 @@ class PotaSpotsManager {
     this.applyFilters();
   }
 
+  async sendHighlightForActivator(activator, decodePacket) {
+    if (
+      !window.electron ||
+      typeof window.electron.sendPotaHighlight !== 'function' ||
+      !activator
+    ) {
+      return;
+    }
+
+    try {
+      const response = await window.electron.sendPotaHighlight({
+        callsign: String(activator || '')
+          .trim()
+          .toUpperCase(),
+        decodePacket: decodePacket && typeof decodePacket === 'object' ? decodePacket : null,
+      });
+      if (response && response.success === false) {
+        console.error(
+          `Failed to send POTA highlight packet for ${activator}:`,
+          response.error || 'Unknown error',
+        );
+      }
+    } catch (error) {
+      console.error(`Failed to send POTA highlight packet for ${activator}:`, error);
+    }
+  }
+
   recordDecodePacket(packet) {
     const message = String(packet?.message || '');
     if (!message) {
@@ -977,6 +1004,7 @@ class PotaSpotsManager {
     const seenAt = Date.now();
     const snrValue = Number(packet?.snr);
     let didUpdateSighting = false;
+    const highlightActivators = new Set();
 
     const buildDecodePacket = () => ({
       time: Number(packet?.time),
@@ -995,6 +1023,7 @@ class PotaSpotsManager {
 
     const cqPotaActivator = this.parseCqPotaActivator(message);
     if (cqPotaActivator && !this.isOfficialPotaActivator(cqPotaActivator)) {
+      const decodePacketData = buildDecodePacket();
       const dialFrequencyHz = Number(packet?.dialFrequency);
       const deltaFrequencyHz = Number(packet?.deltaFreq);
       let frequencyKHz = null;
@@ -1014,14 +1043,17 @@ class PotaSpotsManager {
         frequencyKHz,
         snr: Number.isFinite(snrValue) ? snrValue : null,
         message,
-        decodePacket: buildDecodePacket(),
+        decodePacket: decodePacketData,
       });
       this.decodeSightingsByActivator.set(cqPotaActivator, {
         snr: Number.isFinite(snrValue) ? snrValue : null,
         seenAt,
-        decodePacket: buildDecodePacket(),
+        decodePacket: decodePacketData,
       });
       didUpdateSighting = true;
+      if (Number.isFinite(snrValue)) {
+        highlightActivators.add(cqPotaActivator);
+      }
     }
 
     // Check if any officially-spotted activator appears in this decode
@@ -1030,12 +1062,17 @@ class PotaSpotsManager {
       if (!this.doesDecodeMessageContainActivator(message, activator)) {
         return;
       }
+
+      const decodePacketData = buildDecodePacket();
       this.decodeSightingsByActivator.set(activator, {
         snr: Number.isFinite(snrValue) ? snrValue : null,
         seenAt,
-        decodePacket: buildDecodePacket(),
+        decodePacket: decodePacketData,
       });
       didUpdateSighting = true;
+      if (Number.isFinite(snrValue)) {
+        highlightActivators.add(activator);
+      }
     });
 
     if (didUpdateSighting) {
@@ -1043,6 +1080,11 @@ class PotaSpotsManager {
       this.pruneExpiredCqPotaSightings();
       this.savePersistedDecodeSightings();
       this.applyFilters();
+
+      const decodePacketData = buildDecodePacket();
+      highlightActivators.forEach((activator) => {
+        this.sendHighlightForActivator(activator, decodePacketData);
+      });
     }
   }
 
