@@ -1291,12 +1291,45 @@ body.dark-theme .qso-pota-icon {
   padding: 20px;
   border-bottom: 2px solid var(--border-color);
   flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
 }
 
 .qso-editor-header h1 {
   color: var(--header-color);
   margin: 0;
   font-size: 24px;
+}
+
+.qso-editor-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 250px;
+}
+
+.qso-filter-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.qso-filter-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px var(--blue-light);
+}
+
+.qso-filter-input::placeholder {
+  color: var(--text-tertiary);
 }
 
 .qso-editor-content {
@@ -1441,6 +1474,17 @@ body.dark-theme .qso-pota-icon {
 .qso-card-meta {
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+.btn-toggle-qso {
+  min-width: 32px;
+  font-size: 12px;
+  padding: 6px 8px;
+  line-height: 1;
+}
+
+.qso-editor-fields.hidden {
+  display: none;
 }
 
 .set-park-modal-dialog {
