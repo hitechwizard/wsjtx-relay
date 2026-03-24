@@ -1423,16 +1423,19 @@ class PotaSpotsManager {
         const useManualAction = this.shouldUseManualAction(spot);
         const hasReplySnr = Number.isFinite(Number(decodeSighting?.snr));
         const isSelfSpot = this.isSelfSpot(spot);
-        const replyDisabled = !useManualAction && (isWorked || !hasReplySnr);
+        const isRadioTransmitting = Boolean(this.currentTxStatus.transmitting);
+        const replyDisabled = !useManualAction && (isWorked || !hasReplySnr || isRadioTransmitting);
         const actionDisabled = isSelfSpot || replyDisabled;
         const actionLabel = useManualAction ? 'Manual' : 'Reply';
         const actionDisabledAttr = actionDisabled ? ' disabled' : '';
         const actionTitle = isSelfSpot
           ? 'Actions disabled for your own callsign spot'
           : replyDisabled
-            ? isWorked
-              ? 'Reply unavailable for worked spots'
-              : 'Reply requires a decode with valid SNR'
+            ? isRadioTransmitting
+              ? 'Reply unavailable while transmitting'
+              : isWorked
+                ? 'Reply unavailable for worked spots'
+                : 'Reply requires a decode with valid SNR'
             : '';
         const actionTitleAttr = actionTitle ? ` title="${this.escapeHtml(actionTitle)}"` : '';
         const workedBadge = isWorked ? '<span class="pota-worked-badge">Worked</span>' : '';
