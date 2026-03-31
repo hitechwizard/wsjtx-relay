@@ -80,6 +80,53 @@ function registerPotaHandlers({
 
     return { success: true };
   });
+
+  ipcMain.handle('send-pota-highlight', async (event, payload) => {
+    const highlightPayload = isPlainObject(payload) ? payload : {};
+    const decodePacket = isPlainObject(highlightPayload.decodePacket)
+      ? highlightPayload.decodePacket
+      : null;
+    const callsign = String(highlightPayload.callsign || '')
+      .trim()
+      .toUpperCase();
+
+    if (!callsign) {
+      return { success: false, error: 'Missing callsign for highlight packet' };
+    }
+
+    const relay = getRelay();
+    if (!relay || !relay.running || typeof relay.sendHighlightPacket !== 'function') {
+      return { success: false, error: 'Relay is not running' };
+    }
+
+    try {
+      await relay.sendHighlightPacket({
+        decodePacket,
+        callsign,
+        bgColor: {
+          spec: 1,
+          alpha: 65535,
+          red: 0,
+          green: 25700,
+          blue: 0,
+        },
+        fgColor: {
+          spec: 1,
+          alpha: 65535,
+          red: 65535,
+          green: 65535,
+          blue: 0,
+        },
+        highlightLast: true,
+      });
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error && error.message ? error.message : String(error),
+      };
+    }
+  });
 }
 
 module.exports = {

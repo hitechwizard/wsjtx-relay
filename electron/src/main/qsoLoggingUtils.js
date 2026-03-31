@@ -41,6 +41,31 @@ function markLoggingSubmissionSuccess(qso, appId, details = {}) {
   return nextQso;
 }
 
+function markLoggingSubmissionFailure(qso, appId, errorMessage) {
+  const appKey = String(appId || '').trim();
+  if (!appKey) {
+    return qso;
+  }
+
+  const nextQso = { ...(qso || {}) };
+  const currentSubmissions =
+    nextQso.logSubmissions && typeof nextQso.logSubmissions === 'object'
+      ? nextQso.logSubmissions
+      : {};
+
+  nextQso.logSubmissions = {
+    ...currentSubmissions,
+    [appKey]: {
+      ...(currentSubmissions[appKey] || {}),
+      errorMessage: errorMessage,
+      success: false,
+      submittedAt: new Date().toISOString(),
+    },
+  };
+
+  return nextQso;
+}
+
 /**
  * Returns a shallow copy of the QSO with State and POTA park appended to the
  * comment field, matching the format used by manual QSO entry.  Fields already
@@ -82,5 +107,6 @@ function enrichQsoComment(qso) {
 module.exports = {
   hasLoggingSubmissionSuccess,
   markLoggingSubmissionSuccess,
+  markLoggingSubmissionFailure,
   enrichQsoComment,
 };

@@ -10,6 +10,7 @@ function registerQsoHandlers({
   fetchPotaSpots,
   enrichQsoWithPotaSpot,
   logPotaRequestFailure,
+  logToActivityLog,
   updateQsoAtIndex,
   deleteQsoAtIndex,
   resendViaRelay,
@@ -19,6 +20,7 @@ function registerQsoHandlers({
   const {
     hasLoggingSubmissionSuccess,
     markLoggingSubmissionSuccess,
+    markLoggingSubmissionFailure,
   } = require('../qsoLoggingUtils');
 
   ipcMain.handle('save-qso', async (event, qso) => {
@@ -33,6 +35,42 @@ function registerQsoHandlers({
       enrichQsoWithPotaSpot,
       onPotaRequestFailure: logPotaRequestFailure,
     });
+
+    // Send POTA spot if sig_info present and Use POTA Spot Map enabled
+    const usePotaSpotMap = store.get('usePotaSpotMap', false);
+    if (
+      usePotaSpotMap &&
+      nextQso.sig_info &&
+      typeof nextQso.sig_info === 'string' &&
+      nextQso.sig_info.trim() !== ''
+    ) {
+      try {
+        const reportMode = nextQso.submode ? nextQso.submode : nextQso.mode;
+        const spotPayload = {
+          activator: nextQso.call,
+          spotter: nextQso.station_callsign,
+          frequency: nextQso.freq,
+          reference: nextQso.sig_info,
+          mode: reportMode,
+          source: 'WSJTX-RELAY',
+          comments: `${reportMode} Sent: ${nextQso.rst_sent} Rcvd: ${nextQso.rst_rcvd}`,
+          activatorGrid: nextQso.gridsquare,
+          spotterGrid: nextQso.my_gridsquare,
+        };
+        const response = await fetchImpl('https://api.pota.app/spot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(spotPayload),
+        });
+        if (!response.ok) {
+          logToActivityLog(`POTA spot POST failed: ${response.status} ${response.statusText}`);
+        } else {
+          logToActivityLog('POTA spot POST succeeded');
+        }
+      } catch (err) {
+        logToActivityLog(`POTA spot POST error: ${err.message || err}`);
+      }
+    }
 
     const qrzLoggingEnabled = store.get('qrzLoggingEnabled', false);
     const qrzApiKey = String(store.get('qrzApiKey', '') || '').trim();
@@ -53,9 +91,12 @@ function registerQsoHandlers({
         nextQso = markLoggingSubmissionSuccess(nextQso, 'qrz', {
           logId: qrzLogId,
         });
+        logToActivityLog(`QRZ accepted QSO as entry #${qrzLogId}`);
       } else {
         const failureMessage = String(qrzResult.error || 'Unknown QRZ logging failure').trim();
+        nextQso = markLoggingSubmissionFailure(nextQso, 'qrz', failureMessage);
         console.warn(`QRZ logging failed: ${failureMessage}`);
+        logToActivityLog(`QRZ submission failed: ${failureMessage}`);
       }
     }
 
@@ -81,9 +122,12 @@ function registerQsoHandlers({
 
       if (clublogResult.success) {
         nextQso = markLoggingSubmissionSuccess(nextQso, 'clublog');
+        logToActivityLog(`Clublog submission succeeded`);
       } else {
         const failureMessage = String(clublogResult.error || 'Unknown Clublog logging failure').trim();
+        nextQso = markLoggingSubmissionFailure(nextQso, 'qrz', failureMessage);
         console.warn(`Clublog logging failed: ${failureMessage}`);
+        logToActivityLog(`Clublog submission failed: ${failureMessage}`);
       }
     }
 

@@ -542,7 +542,7 @@ body {
 .main-container .log-section {
   flex: 1;
   min-height: 0;
-  grid-template-columns: minmax(0, 1fr) 600px;
+  grid-template-columns: minmax(0, 1fr) 660px;
 }
 
 .log-panel {
@@ -566,8 +566,8 @@ body {
 }
 
 .main-container .log-panel:last-child {
-  width: 600px;
-  max-width: 600px;
+  width: 660px;
+  max-width: 660px;
 }
 
 .log-panel h2 {
@@ -728,7 +728,7 @@ body {
 
 .qso-log-entry {
   display: grid;
-  grid-template-columns: 3fr 3fr 1fr 2fr 1fr 1fr 90px;
+  grid-template-columns: 3fr 3fr 1fr 2fr 1fr 1fr 150px;
   grid-column-gap: 5px;
   grid-row-gap: 0px;
   align-items: center;
@@ -777,7 +777,7 @@ body {
 .qso-dupe-tag {
   background-color: var(--red);
   color: white;
-  padding: 2px 6px;
+  padding: 2px 4px;
   border-radius: 4px;
   margin-left: 8px;
   font-size: 12px;
@@ -822,7 +822,7 @@ body {
   line-height: 1;
   display: inline-block;
   cursor: help;
-  margin-left: 8px;
+  margin-left: 4px;
 }
 
 body.dark-theme .qso-pota-icon {
@@ -1041,6 +1041,64 @@ body.dark-theme .qso-pota-icon {
   background: var(--bg-primary);
 }
 
+/* Band badges */
+.band-badge {
+  display: inline-block;
+  min-width: 3.2em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.band-badge[data-band='160m'] { background: #7f1d1d; color: #ffffff; }
+.band-badge[data-band='80m'] { background: #dc2626; color: #ffffff; }
+.band-badge[data-band='40m'] { background: #ea580c; color: #ffffff; }
+.band-badge[data-band='30m'] { background: #facc15; color: #111827; }
+.band-badge[data-band='20m'] { background: #16a34a; color: #ffffff; }
+.band-badge[data-band='17m'] { background: #86efac; color: #111827; }
+.band-badge[data-band='15m'] { background: #2563eb; color: #ffffff; }
+.band-badge[data-band='12m'] { background: #7dd3fc; color: #111827; }
+.band-badge[data-band='10m'] { background: #9333ea; color: #ffffff; }
+.band-badge[data-band='6m'] { background: #7dd3fc; color: #111827; }
+.band-badge[data-band='2m'] { background: #581c87; color: #ffffff; }
+.band-badge[data-band='70cm'] { background: #dc2626; color: #ffffff; }
+.band-badge[data-band='30m'],
+.band-badge[data-band='17m'],
+.band-badge[data-band='12m'],
+.band-badge[data-band='6m'] {
+  border: 1px solid rgba(17, 24, 39, 0.28);
+}
+
+.pwr-badge {
+  display: inline-block;
+  min-width: 2.8em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 400;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  filter: brightness(1.25);
+  border-color: var(--text);
+}
+
+.pwr-badge[data-pwr='0'] { background: #0000ff; color: #ffffff; }
+.pwr-badge[data-pwr='1'] { background: #2f00df; color: #ffffff; }
+.pwr-badge[data-pwr='2'] { background: #4f00bf; color: #ffffff; }
+.pwr-badge[data-pwr='3'] { background: #6f009f; color: #ffffff; }
+.pwr-badge[data-pwr='4'] { background: #700070; color: #ffffff; }
+.pwr-badge[data-pwr='5'] { background: #7f007f; color: #ffffff; }
+.pwr-badge[data-pwr='6'] { background: #900070; color: #ffffff; }
+.pwr-badge[data-pwr='7'] { background: #af005f; color: #ffffff; }
+.pwr-badge[data-pwr='8'] { background: #bf004f; color: #ffffff; }
+.pwr-badge[data-pwr='9'] { background: #df002f; color: #ffffff; }
+.pwr-badge[data-pwr='10'] { background: #ff0000; color: #ffffff; }
+
 /* ============================================================================
    10. FORWARDS EDITOR
    ============================================================================ */
@@ -1233,12 +1291,45 @@ body.dark-theme .qso-pota-icon {
   padding: 20px;
   border-bottom: 2px solid var(--border-color);
   flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
 }
 
 .qso-editor-header h1 {
   color: var(--header-color);
   margin: 0;
   font-size: 24px;
+}
+
+.qso-editor-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 250px;
+}
+
+.qso-filter-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.qso-filter-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px var(--blue-light);
+}
+
+.qso-filter-input::placeholder {
+  color: var(--text-tertiary);
 }
 
 .qso-editor-content {
@@ -1383,6 +1474,17 @@ body.dark-theme .qso-pota-icon {
 .qso-card-meta {
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+.btn-toggle-qso {
+  min-width: 32px;
+  font-size: 12px;
+  padding: 6px 8px;
+  line-height: 1;
+}
+
+.qso-editor-fields.hidden {
+  display: none;
 }
 
 .set-park-modal-dialog {
@@ -2024,18 +2126,11 @@ body.dark-theme .qso-pota-icon {
   white-space: nowrap;
 }
 
-.pota-spots-table th:nth-child(11),
-.pota-spots-table td:nth-child(11) {
-  text-align: center;
-}
-
-.pota-activator-cell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  white-space: nowrap;
-  flex-wrap: nowrap;
+.pota-spots-table th:nth-child(8),
+.pota-spots-table td:nth-child(8) {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
 }
 
 .pota-activator-text {

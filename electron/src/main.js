@@ -82,7 +82,7 @@ const { registerUiCommandHandlers } = require('./main/ipc/uiCommandHandlers');
 const { registerAllIpcHandlers } = require('./main/ipc/registerAllHandlers');
 const { buildHandlerRegistrationOptions } = require('./main/ipc/buildHandlerRegistrationOptions');
 const { createRelayInstance } = require('./main/relayFactory');
-const { createPotaRequestFailureLogger, createPotaSpotsFetcher } = require('./main/potaRequestUtils');
+const { createActivityLogSender, createPotaRequestFailureLogger, createPotaSpotsFetcher } = require('./main/potaRequestUtils');
 const { createEnsureRelayInitialized } = require('./main/ensureRelayInitializedFactory');
 const {
   createExamplesWindowFactory,
@@ -117,6 +117,7 @@ const store = new Store({
   defaults: getStoreDefaults(DEFAULT_ACTIVITY_PACKET_FILTERS),
 });
 
+const logToActivityLog = createActivityLogSender(appState.getMainWindow);
 const logPotaRequestFailure = createPotaRequestFailureLogger(appState.getMainWindow);
 const ensureRelayInitialized = createEnsureRelayInitialized({
   getRelay: appState.getRelay,
@@ -262,6 +263,7 @@ registerAllIpcHandlers(
     fetchPotaSpots,
     enrichQsoWithPotaSpot,
     logPotaRequestFailure,
+    logToActivityLog,
     updateQsoAtIndex,
     deleteQsoAtIndex,
     resendViaRelay,

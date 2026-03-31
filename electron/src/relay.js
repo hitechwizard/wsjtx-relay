@@ -778,6 +778,64 @@ class WSJTXRelay extends EventEmitter {
     return Buffer.concat([magicBytes, versionBytes, typeBytes, id, ...fields]);
   }
 
+  createHighlightPacket({ decodePacket, callsign, bgColor, fgColor, highlightLast } = {}) {
+    const magicBytes = Buffer.from([0xad, 0xbc, 0xcb, 0xda]);
+    const versionBytes = Buffer.from([0x00, 0x00, 0x00, 0x02]);
+    const typeBytes = Buffer.from([0x00, 0x00, 0x00, 0x0d]);
+    const idText = String(decodePacket?.wsjtxId || 'WSJT-X');
+    const idBuffer = Buffer.from(idText, 'utf8');
+    const idLength = Buffer.alloc(4);
+    idLength.writeUInt32BE(idBuffer.length);
+    const id = Buffer.concat([idLength, idBuffer]);
+
+    function encodeString(str) {
+      const value = String(str || '');
+      const buf = Buffer.from(value, 'utf8');
+      const len = Buffer.alloc(4);
+      len.writeUInt32BE(buf.length);
+      return Buffer.concat([len, buf]);
+    }
+
+    function encodeBool(val) {
+      const buf = Buffer.alloc(1);
+      buf.writeUInt8(val ? 1 : 0);
+      return buf;
+    }
+
+    function encodeQColor(color) {
+      const buffer = Buffer.alloc(11);
+      const colorSpec = Number.isFinite(Number(color?.spec)) ? Number(color.spec) : 1;
+      const alpha = Number.isFinite(Number(color?.alpha)) ? Number(color.alpha) : 65535;
+      const red = Number.isFinite(Number(color?.red)) ? Number(color.red) : 0;
+      const green = Number.isFinite(Number(color?.green)) ? Number(color.green) : 0;
+      const blue = Number.isFinite(Number(color?.blue)) ? Number(color.blue) : 0;
+
+      buffer.writeUInt8(Math.max(0, Math.min(255, Math.trunc(colorSpec))), 0);
+      buffer.writeUInt16BE(Math.max(0, Math.min(65535, Math.trunc(alpha))), 1);
+      buffer.writeUInt16BE(Math.max(0, Math.min(65535, Math.trunc(red))), 3);
+      buffer.writeUInt16BE(Math.max(0, Math.min(65535, Math.trunc(green))), 5);
+      buffer.writeUInt16BE(Math.max(0, Math.min(65535, Math.trunc(blue))), 7);
+      buffer.writeUInt16BE(0, 9);
+      return buffer;
+    }
+
+    const normalizedCallsign = String(callsign || '')
+      .trim()
+      .toUpperCase();
+
+    const defaultBgColor = { spec: 1, alpha: 65535, red: 0, green: 25700, blue: 0 };
+    const defaultFgColor = { spec: 1, alpha: 65535, red: 65535, green: 65535, blue: 0 };
+
+    const fields = [
+      encodeString(normalizedCallsign),
+      encodeQColor(bgColor || defaultBgColor),
+      encodeQColor(fgColor || defaultFgColor),
+      encodeBool(highlightLast !== false),
+    ];
+
+    return Buffer.concat([magicBytes, versionBytes, typeBytes, id, ...fields]);
+  }
+
   sendPacketUpstream(packet) {
     if (!this.running || !this.socket) {
       throw new Error('Relay not running');
@@ -852,6 +910,36 @@ class WSJTXRelay extends EventEmitter {
     this.emit(
       'log',
       `Reply packet sent upstream for ${String(decodePacket?.message || '').trim() || '<empty decode>'}`,
+    );
+  }
+
+  async sendHighlightPacket({ decodePacket, callsign, bgColor, fgColor, highlightLast } = {}) {
+    const packet = this.createHighlightPacket({
+      decodePacket,
+      callsign,
+      bgColor,
+      fgColor,
+      highlightLast,
+    });
+    const sourceHost = String(decodePacket?.sourceHost || '').trim();
+    const sourcePort = Number(decodePacket?.sourcePort);
+    const normalizedCallsign = String(callsign || '')
+      .trim()
+      .toUpperCase();
+
+    if (sourceHost && Number.isInteger(sourcePort) && sourcePort > 0 && sourcePort <= 65535) {
+      await this.sendPacketToEndpoint(packet, sourceHost, sourcePort);
+      this.emit(
+        'log',
+        `Highlight packet sent upstream to ${sourceHost}:${sourcePort} for ${normalizedCallsign || '<empty callsign>'}`,
+      );
+      return;
+    }
+
+    await this.sendPacketUpstream(packet);
+    this.emit(
+      'log',
+      `Highlight packet sent upstream for ${normalizedCallsign || '<empty callsign>'}`,
     );
   }
 }

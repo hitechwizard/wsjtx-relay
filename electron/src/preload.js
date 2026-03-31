@@ -78,6 +78,7 @@ contextBridge.exposeInMainWorld('electron', {
   getPotaSpotsFilters: () => ipcRenderer.invoke('get-pota-spots-filters'),
   savePotaSpotsFilters: (filters) => ipcRenderer.invoke('save-pota-spots-filters', filters),
   selectPotaSpot: (spot) => ipcRenderer.invoke('select-pota-spot', spot),
+  sendPotaHighlight: (payload) => ipcRenderer.invoke('send-pota-highlight', payload),
 
   // Events from relay
   onRelayLog,
