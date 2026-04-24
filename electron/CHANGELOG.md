@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.9 - 04/23/2026
+
+### Fixed
+
+- Fixed automatic `My Park` clearing so configuration-name derived park values are removed when the current WSJT-X configuration no longer uses the `[callsign]@[park id]` format.
+
 ## 1.0.8 - 03/26/2026
 
 ### Added

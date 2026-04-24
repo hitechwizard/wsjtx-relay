@@ -209,71 +209,93 @@ function setupEventListeners() {
   setupManualFieldValidation();
 
   // Theme change listener
-  addSubscriptionDisposer(window.electron.onThemeChanged((theme) => {
-    applyTheme(theme);
-  }));
+  addSubscriptionDisposer(
+    window.electron.onThemeChanged((theme) => {
+      applyTheme(theme);
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onUpdateBadgeState((state) => {
-    applyUpdateBadgeState(state);
-  }));
+  addSubscriptionDisposer(
+    window.electron.onUpdateBadgeState((state) => {
+      applyUpdateBadgeState(state);
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onSettingsChanged((settings) => {
-    applySettingsToStatusIndicators(settings);
-    if (settings && settings.theme) {
-      applyTheme(settings.theme);
-    }
-  }));
+  addSubscriptionDisposer(
+    window.electron.onSettingsChanged((settings) => {
+      applySettingsToStatusIndicators(settings);
+      if (settings && settings.theme) {
+        applyTheme(settings.theme);
+      }
+    }),
+  );
 
   // QSO data refresh listener
-  addSubscriptionDisposer(window.electron.onQsoDataRefresh(() => {
-    refreshQsoLog();
-  }));
+  addSubscriptionDisposer(
+    window.electron.onQsoDataRefresh(() => {
+      refreshQsoLog();
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onPotaSpotSelected((spotData) => {
-    applySelectedPotaSpotToManualQso(spotData);
-  }));
+  addSubscriptionDisposer(
+    window.electron.onPotaSpotSelected((spotData) => {
+      applySelectedPotaSpotToManualQso(spotData);
+    }),
+  );
 
   // Relay events
-  addSubscriptionDisposer(window.electron.onRelayLog((msg) => {
-    blinkActivityRxIndicator();
-    if (!shouldLogPacketMessage(msg)) {
-      return;
-    }
-    addLogEntry(msg, 'normal');
-  }));
+  addSubscriptionDisposer(
+    window.electron.onRelayLog((msg) => {
+      blinkActivityRxIndicator();
+      if (!shouldLogPacketMessage(msg)) {
+        return;
+      }
+      addLogEntry(msg, 'normal');
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onRelayStatus((status) => {
-    updateStatus(status);
-  }));
+  addSubscriptionDisposer(
+    window.electron.onRelayStatus((status) => {
+      updateStatus(status);
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onRelayError((msg) => {
-    addLogEntry(`ERROR: ${msg}`, 'error');
-  }));
+  addSubscriptionDisposer(
+    window.electron.onRelayError((msg) => {
+      addLogEntry(`ERROR: ${msg}`, 'error');
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onRelayDecode((msg) => {
-    addLogEntry(msg, 'normal');
-  }));
+  addSubscriptionDisposer(
+    window.electron.onRelayDecode((msg) => {
+      addLogEntry(msg, 'normal');
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onRelayStatusUpdate((statusData) => {
-    updateStatusIndicators(statusData);
-  }));
+  addSubscriptionDisposer(
+    window.electron.onRelayStatusUpdate((statusData) => {
+      updateStatusIndicators(statusData);
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onRelayQsoLogged(async (qso) => {
-    applyManualMyParkToLoggedQso(qso);
-    normalizeCalculatedFields(qso);
-    // Save QSO from relay to persistent storage
-    const saveResult = await window.electron.saveQso(qso);
-    const persistedQso = saveResult && saveResult.qso ? saveResult.qso : qso;
-    if (
-      saveResult &&
-      saveResult.success &&
-      typeof window.electron.notifyQsoDataChanged === 'function'
-    ) {
-      window.electron.notifyQsoDataChanged();
-    }
-    normalizeCalculatedFields(persistedQso);
-    addQsoEntry(persistedQso, 'normal');
-  }));
+  addSubscriptionDisposer(
+    window.electron.onRelayQsoLogged(async (qso) => {
+      applyManualMyParkToLoggedQso(qso);
+      normalizeCalculatedFields(qso);
+      // Save QSO from relay to persistent storage
+      const saveResult = await window.electron.saveQso(qso);
+      const persistedQso = saveResult && saveResult.qso ? saveResult.qso : qso;
+      if (
+        saveResult &&
+        saveResult.success &&
+        typeof window.electron.notifyQsoDataChanged === 'function'
+      ) {
+        window.electron.notifyQsoDataChanged();
+      }
+      normalizeCalculatedFields(persistedQso);
+      addQsoEntry(persistedQso, 'normal');
+    }),
+  );
 
   window.addEventListener('beforeunload', () => {
     disposeSubscriptions();
@@ -841,7 +863,9 @@ function escapeHtml(text) {
 }
 
 function normalizeBandKey(band) {
-  return String(band || '').trim().toLowerCase();
+  return String(band || '')
+    .trim()
+    .toLowerCase();
 }
 
 function renderBandBadge(band) {
@@ -873,7 +897,7 @@ function parsePowerWatts(value) {
 function renderPowerBadge(powerText) {
   const label = String(powerText ?? '').trim();
   const span = document.createElement('span');
-  span.innerHTML = '-'
+  span.innerHTML = '-';
   if (!label || label === '-') {
     return span;
   }
@@ -890,7 +914,6 @@ function renderPowerBadge(powerText) {
 
   span.setAttribute('data-pwr', pwrLevel);
   return span;
-  
 }
 
 function addQsoEntry(qso, type = 'normal') {
@@ -922,12 +945,7 @@ function addQsoEntry(qso, type = 'normal') {
   }
 
   // Ensure columns are rendered in order
-  const columns = [
-    display.start,
-    display.call,
-    display.mode,
-    display.freq
-  ];
+  const columns = [display.start, display.call, display.mode, display.freq];
 
   columns.forEach((col) => {
     const span = document.createElement('span');
@@ -1188,13 +1206,22 @@ function updateStatusIndicators(statusData) {
 }
 
 function updateMyParkFromConfigurationName(statusData) {
+  const mySigInfoInput = document.getElementById('qso-mysiginfo');
+  if (!mySigInfoInput) {
+    return;
+  }
+
   const configurationName = String(statusData.configurationName || '').trim();
   if (!configurationName || !configurationName.includes('@')) {
+    mySigInfoInput.value = '';
+    mySigInfoInput.setCustomValidity('');
     return;
   }
 
   const [configCall, ...parkParts] = configurationName.split('@');
   if (!configCall || parkParts.length !== 1) {
+    mySigInfoInput.value = '';
+    mySigInfoInput.setCustomValidity('');
     return;
   }
 
@@ -1202,17 +1229,16 @@ function updateMyParkFromConfigurationName(statusData) {
     .trim()
     .toUpperCase();
   if (!statusCall || configCall.trim().toUpperCase() !== statusCall) {
-    return;
-  }
-
-  const mySigInfoInput = document.getElementById('qso-mysiginfo');
-  if (!mySigInfoInput) {
+    mySigInfoInput.value = '';
+    mySigInfoInput.setCustomValidity('');
     return;
   }
 
   const normalizedPark = preprocessManualFieldValue('my_sig_info', parkParts[0]);
   const validationError = validateManualFieldValue('my_sig_info', normalizedPark);
   if (validationError) {
+    mySigInfoInput.value = '';
+    mySigInfoInput.setCustomValidity('');
     return;
   }
 
