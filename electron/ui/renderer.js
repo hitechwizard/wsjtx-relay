@@ -1092,6 +1092,18 @@ function addQsoEntry(qso, type = 'normal') {
     entry.appendChild(indicatorsWrap);
   }
 
+  // Insert a date separator when the UTC date changes between entries
+  if (qsoList.length > 0) {
+    const prevIso = qsoList[qsoList.length - 1].start || qsoList[qsoList.length - 1].end || '';
+    const prevDate = prevIso.split('T')[0] || '';
+    if (prevDate && incomingDate && prevDate !== incomingDate) {
+      const separator = document.createElement('div');
+      separator.className = 'qso-date-separator';
+      separator.dataset.date = incomingDate;
+      qsoContainer.appendChild(separator);
+    }
+  }
+
   qsoContainer.appendChild(entry);
 
   // Maintain in-memory list for future duplicate detection

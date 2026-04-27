@@ -107,34 +107,44 @@ class PotaSpotsManager {
     }
 
     if (window.electron && typeof window.electron.onQsoDataRefresh === 'function') {
-      this.addSubscriptionDisposer(window.electron.onQsoDataRefresh(async () => {
-        await this.loadLoggedQsos();
-        this.applyFilters();
-      }));
+      this.addSubscriptionDisposer(
+        window.electron.onQsoDataRefresh(async () => {
+          await this.loadLoggedQsos();
+          this.applyFilters();
+        }),
+      );
     }
 
     if (window.electron && typeof window.electron.onRelayDecodePacket === 'function') {
-      this.addSubscriptionDisposer(window.electron.onRelayDecodePacket((packet) => {
-        this.recordDecodePacket(packet);
-      }));
+      this.addSubscriptionDisposer(
+        window.electron.onRelayDecodePacket((packet) => {
+          this.recordDecodePacket(packet);
+        }),
+      );
     }
 
     if (window.electron && typeof window.electron.onRelayClearPacket === 'function') {
-      this.addSubscriptionDisposer(window.electron.onRelayClearPacket(() => {
-        this.handleClearPacket();
-      }));
+      this.addSubscriptionDisposer(
+        window.electron.onRelayClearPacket(() => {
+          this.handleClearPacket();
+        }),
+      );
     }
 
     if (window.electron && typeof window.electron.onSettingsChanged === 'function') {
-      this.addSubscriptionDisposer(window.electron.onSettingsChanged((settings) => {
-        this.applyDecodeSightingSettings(settings);
-      }));
+      this.addSubscriptionDisposer(
+        window.electron.onSettingsChanged((settings) => {
+          this.applyDecodeSightingSettings(settings);
+        }),
+      );
     }
 
     if (window.electron && typeof window.electron.onRelayStatusUpdate === 'function') {
-      this.addSubscriptionDisposer(window.electron.onRelayStatusUpdate((statusData) => {
-        this.handleRelayStatusUpdate(statusData);
-      }));
+      this.addSubscriptionDisposer(
+        window.electron.onRelayStatusUpdate((statusData) => {
+          this.handleRelayStatusUpdate(statusData);
+        }),
+      );
     }
 
     window.addEventListener('beforeunload', () => {
@@ -266,7 +276,8 @@ class PotaSpotsManager {
         }
 
         const snrValue = Number(entry.snr);
-        const decodePacket = entry.decodePacket && typeof entry.decodePacket === 'object' ? entry.decodePacket : null;
+        const decodePacket =
+          entry.decodePacket && typeof entry.decodePacket === 'object' ? entry.decodePacket : null;
 
         this.decodeSightingsByActivator.set(activator, {
           snr: Number.isFinite(snrValue) ? snrValue : null,
@@ -314,9 +325,11 @@ class PotaSpotsManager {
 
   setupThemeListener() {
     if (window.electron && window.electron.onThemeChanged) {
-      this.addSubscriptionDisposer(window.electron.onThemeChanged((theme) => {
-        document.body.className = theme === 'dark' ? 'dark-theme' : '';
-      }));
+      this.addSubscriptionDisposer(
+        window.electron.onThemeChanged((theme) => {
+          document.body.className = theme === 'dark' ? 'dark-theme' : '';
+        }),
+      );
     }
 
     // Get initial theme
@@ -740,7 +753,10 @@ class PotaSpotsManager {
   }
 
   getDecodeSightingExpirationMs() {
-    if (!Number.isFinite(this.decodeSightingExpirationMinutes) || this.decodeSightingExpirationMinutes <= 0) {
+    if (
+      !Number.isFinite(this.decodeSightingExpirationMinutes) ||
+      this.decodeSightingExpirationMinutes <= 0
+    ) {
       return 0;
     }
 
@@ -940,7 +956,9 @@ class PotaSpotsManager {
     const officialActivators = new Set(this.spots.map((spot) => this.getActivatorCallsign(spot)));
     const syntheticSpots = Array.from(this.cqPotaSightings.entries())
       .filter(([activator]) => !officialActivators.has(activator))
-      .map(([activator, sighting]) => this.getSyntheticSpotFromCqPotaSighting(activator, sighting));
+      .map(([activator, sighting]) =>
+        this.getSyntheticSpotFromCqPotaSighting(activator, sighting),
+      );
 
     return [...this.spots, ...syntheticSpots];
   }
@@ -1424,7 +1442,8 @@ class PotaSpotsManager {
         const hasReplySnr = Number.isFinite(Number(decodeSighting?.snr));
         const isSelfSpot = this.isSelfSpot(spot);
         const isRadioTransmitting = Boolean(this.currentTxStatus.transmitting);
-        const replyDisabled = !useManualAction && (isWorked || !hasReplySnr || isRadioTransmitting);
+        const replyDisabled =
+          !useManualAction && (isWorked || !hasReplySnr || isRadioTransmitting);
         const actionDisabled = isSelfSpot || replyDisabled;
         const actionLabel = useManualAction ? 'Manual' : 'Reply';
         const actionDisabledAttr = actionDisabled ? ' disabled' : '';
@@ -1446,7 +1465,8 @@ class PotaSpotsManager {
           .trim()
           .toUpperCase();
         const isTxTarget =
-          Boolean(this.currentTxStatus.dxCall) && this.currentTxStatus.dxCall === normalizedActivator;
+          Boolean(this.currentTxStatus.dxCall) &&
+          this.currentTxStatus.dxCall === normalizedActivator;
         const isTxEnabledTarget = isTxTarget && this.currentTxStatus.txEnabled;
         const isTransmittingTarget = isTxEnabledTarget && this.currentTxStatus.transmitting;
 
@@ -1473,6 +1493,7 @@ class PotaSpotsManager {
           <td>${this.escapeHtml(spot.mode || '')}</td>
           <td>${this.escapeHtml(spot.reference || '')}</td>
           <td>${this.escapeHtml(spot.name || '')}</td>
+          <td>${this.escapeHtml(spot.comments || '')}</td>
           <td>${this.escapeHtml(spot.locationDesc || '')}</td>
           <td>${this.formatSpotTime(effectiveSpotTime)}</td>
           <td>${this.formatSpotAge(effectiveSpotTime)}</td>

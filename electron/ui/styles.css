@@ -757,6 +757,12 @@ body {
   background-color: var(--bg-secondary);
 }
 
+.qso-date-separator {
+  width: 100%;
+  border-top: 2px solid var(--red);
+  margin: 2px 0;
+}
+
 .qso-indicators-wrap {
   grid-column: 7;
   justify-self: end;
@@ -1054,18 +1060,54 @@ body.dark-theme .qso-pota-icon {
   white-space: nowrap;
 }
 
-.band-badge[data-band='160m'] { background: #7f1d1d; color: #ffffff; }
-.band-badge[data-band='80m'] { background: #dc2626; color: #ffffff; }
-.band-badge[data-band='40m'] { background: #ea580c; color: #ffffff; }
-.band-badge[data-band='30m'] { background: #facc15; color: #111827; }
-.band-badge[data-band='20m'] { background: #16a34a; color: #ffffff; }
-.band-badge[data-band='17m'] { background: #86efac; color: #111827; }
-.band-badge[data-band='15m'] { background: #2563eb; color: #ffffff; }
-.band-badge[data-band='12m'] { background: #7dd3fc; color: #111827; }
-.band-badge[data-band='10m'] { background: #9333ea; color: #ffffff; }
-.band-badge[data-band='6m'] { background: #7dd3fc; color: #111827; }
-.band-badge[data-band='2m'] { background: #581c87; color: #ffffff; }
-.band-badge[data-band='70cm'] { background: #dc2626; color: #ffffff; }
+.band-badge[data-band='160m'] {
+  background: #7f1d1d;
+  color: #ffffff;
+}
+.band-badge[data-band='80m'] {
+  background: #dc2626;
+  color: #ffffff;
+}
+.band-badge[data-band='40m'] {
+  background: #ea580c;
+  color: #ffffff;
+}
+.band-badge[data-band='30m'] {
+  background: #facc15;
+  color: #111827;
+}
+.band-badge[data-band='20m'] {
+  background: #16a34a;
+  color: #ffffff;
+}
+.band-badge[data-band='17m'] {
+  background: #86efac;
+  color: #111827;
+}
+.band-badge[data-band='15m'] {
+  background: #2563eb;
+  color: #ffffff;
+}
+.band-badge[data-band='12m'] {
+  background: #7dd3fc;
+  color: #111827;
+}
+.band-badge[data-band='10m'] {
+  background: #9333ea;
+  color: #ffffff;
+}
+.band-badge[data-band='6m'] {
+  background: #7dd3fc;
+  color: #111827;
+}
+.band-badge[data-band='2m'] {
+  background: #581c87;
+  color: #ffffff;
+}
+.band-badge[data-band='70cm'] {
+  background: #dc2626;
+  color: #ffffff;
+}
 .band-badge[data-band='30m'],
 .band-badge[data-band='17m'],
 .band-badge[data-band='12m'],
@@ -1087,17 +1129,50 @@ body.dark-theme .qso-pota-icon {
   border-color: var(--text);
 }
 
-.pwr-badge[data-pwr='0'] { background: #0000ff; color: #ffffff; }
-.pwr-badge[data-pwr='1'] { background: #2f00df; color: #ffffff; }
-.pwr-badge[data-pwr='2'] { background: #4f00bf; color: #ffffff; }
-.pwr-badge[data-pwr='3'] { background: #6f009f; color: #ffffff; }
-.pwr-badge[data-pwr='4'] { background: #700070; color: #ffffff; }
-.pwr-badge[data-pwr='5'] { background: #7f007f; color: #ffffff; }
-.pwr-badge[data-pwr='6'] { background: #900070; color: #ffffff; }
-.pwr-badge[data-pwr='7'] { background: #af005f; color: #ffffff; }
-.pwr-badge[data-pwr='8'] { background: #bf004f; color: #ffffff; }
-.pwr-badge[data-pwr='9'] { background: #df002f; color: #ffffff; }
-.pwr-badge[data-pwr='10'] { background: #ff0000; color: #ffffff; }
+.pwr-badge[data-pwr='0'] {
+  background: #0000ff;
+  color: #ffffff;
+}
+.pwr-badge[data-pwr='1'] {
+  background: #2f00df;
+  color: #ffffff;
+}
+.pwr-badge[data-pwr='2'] {
+  background: #4f00bf;
+  color: #ffffff;
+}
+.pwr-badge[data-pwr='3'] {
+  background: #6f009f;
+  color: #ffffff;
+}
+.pwr-badge[data-pwr='4'] {
+  background: #700070;
+  color: #ffffff;
+}
+.pwr-badge[data-pwr='5'] {
+  background: #7f007f;
+  color: #ffffff;
+}
+.pwr-badge[data-pwr='6'] {
+  background: #900070;
+  color: #ffffff;
+}
+.pwr-badge[data-pwr='7'] {
+  background: #af005f;
+  color: #ffffff;
+}
+.pwr-badge[data-pwr='8'] {
+  background: #bf004f;
+  color: #ffffff;
+}
+.pwr-badge[data-pwr='9'] {
+  background: #df002f;
+  color: #ffffff;
+}
+.pwr-badge[data-pwr='10'] {
+  background: #ff0000;
+  color: #ffffff;
+}
 
 /* ============================================================================
    10. FORWARDS EDITOR
@@ -2093,6 +2168,10 @@ body.dark-theme .qso-pota-icon {
   width: 75px;
 }
 
+.pota-col-comments {
+  width: 250px;
+}
+
 .pota-col-location {
   width: 150px;
 }
@@ -2109,25 +2188,20 @@ body.dark-theme .qso-pota-icon {
 .pota-spots-table td:nth-child(5),
 .pota-spots-table th:nth-child(6),
 .pota-spots-table td:nth-child(6),
-.pota-spots-table th:nth-child(9),
-.pota-spots-table td:nth-child(9),
 .pota-spots-table th:nth-child(10),
 .pota-spots-table td:nth-child(10),
 .pota-spots-table th:nth-child(11),
-.pota-spots-table td:nth-child(11) {
+.pota-spots-table td:nth-child(11),
+.pota-spots-table th:nth-child(12),
+.pota-spots-table td:nth-child(12) {
   white-space: nowrap;
 }
 
-/* Location column should not force expansion; keep it clipped in-cell */
+/* Comments and location should wrap without widening the stable numeric columns */
 .pota-spots-table th:nth-child(8),
-.pota-spots-table td:nth-child(8) {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pota-spots-table th:nth-child(8),
-.pota-spots-table td:nth-child(8) {
+.pota-spots-table td:nth-child(8),
+.pota-spots-table th:nth-child(9),
+.pota-spots-table td:nth-child(9) {
   overflow: visible;
   text-overflow: unset;
   white-space: normal;

@@ -2,6 +2,11 @@
 
 ## 1.0.9 - 04/23/2026
 
+### Added
+
+- Added a red date-change separator line in the QSO log between entries that span a UTC date boundary.
+- Added a `Comments` column to POTA Spots between `Name` and `Location`, populated from the POTA spots API `comments` field.
+
 ### Fixed
 
 - Fixed automatic `My Park` clearing so configuration-name derived park values are removed when the current WSJT-X configuration no longer uses the `[callsign]@[park id]` format.
@@ -17,9 +22,7 @@
 
 ### Changed
 
-
 ### Fixed
-
 
 ## 1.0.7 - 03/14/2026
 
