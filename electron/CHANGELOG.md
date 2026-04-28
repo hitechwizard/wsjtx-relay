@@ -6,6 +6,9 @@
 
 - Added a red date-change separator line in the QSO log between entries that span a UTC date boundary.
 - Added a `Comments` column to POTA Spots between `Name` and `Location`, populated from the POTA spots API `comments` field.
+- Added CW RBN status badges in POTA Spots when comments begin with `RBN <db> db <wpm> WPM`, displayed as `<wpm> WPM @ <db> db` next to other status badges.
+- Added QRT status badges in POTA Spots when comments begin with `QRT` (case insensitive)
+- Added `Hide QRT` filter in POTA Spots
 
 ### Fixed
 

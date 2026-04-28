@@ -2251,6 +2251,34 @@ body.dark-theme .qso-pota-icon {
   text-decoration: none;
 }
 
+.pota-rbn-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--yellow-dark);
+  background-color: color-mix(in srgb, var(--yellow) 18%, var(--bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--yellow-dark) 28%, var(--border-color));
+  text-decoration: none;
+}
+
+.pota-qrt-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--red-dark);
+  background-color: color-mix(in srgb, var(--red) 16%, var(--bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--red-dark) 30%, var(--border-color));
+  text-decoration: none;
+}
+
 .pota-spot-worked {
   cursor: not-allowed;
 }

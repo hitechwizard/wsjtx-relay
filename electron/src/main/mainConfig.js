@@ -11,10 +11,7 @@ const SETTINGS_WINDOW_MIN_HEIGHT = 620;
 const ALLOWED_THEMES = new Set(['light', 'dark']);
 
 function getAppIconPath(dirname, platform) {
-  return path.join(
-    dirname,
-    platform === 'win32' ? '../assets/icon.ico' : '../assets/icon.png',
-  );
+  return path.join(dirname, platform === 'win32' ? '../assets/icon.ico' : '../assets/icon.png');
 }
 
 function getUiPaths(dirname) {
@@ -51,7 +48,13 @@ function getStoreDefaults(defaultActivityPacketFilters) {
     },
     qsoEditorWindowBounds: { width: 1000, height: 700 },
     potaSpotsWindowBounds: { width: 1400, height: 700 },
-    potaSpotsFilters: { modeFilter: '', bandFilter: '', regionFilter: '' },
+    potaSpotsFilters: {
+      modeFilter: '',
+      bandFilter: '',
+      regionFilter: '',
+      hideWorked: false,
+      hideQrt: false,
+    },
     qsos: [],
   };
 }

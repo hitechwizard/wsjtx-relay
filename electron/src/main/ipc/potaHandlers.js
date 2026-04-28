@@ -9,6 +9,14 @@ function registerPotaHandlers({
   getRelay,
   restoreAndFocusWindow,
 }) {
+  const normalizePotaSpotFilters = (filters) => ({
+    modeFilter: String(filters?.modeFilter || ''),
+    bandFilter: String(filters?.bandFilter || ''),
+    regionFilter: String(filters?.regionFilter || ''),
+    hideWorked: Boolean(filters?.hideWorked),
+    hideQrt: Boolean(filters?.hideQrt),
+  });
+
   ipcMain.handle('fetch-pota-spots', async () => {
     try {
       const spots = await fetchPotaSpots();
@@ -20,12 +28,17 @@ function registerPotaHandlers({
   });
 
   ipcMain.handle('get-pota-spots-filters', () => {
-    return store.get('potaSpotsFilters', {
+    const storedFilters = store.get('potaSpotsFilters', {
       modeFilter: '',
       bandFilter: '',
       regionFilter: '',
       hideWorked: false,
+      hideQrt: false,
     });
+
+    const normalizedFilters = normalizePotaSpotFilters(storedFilters);
+    store.set('potaSpotsFilters', normalizedFilters);
+    return normalizedFilters;
   });
 
   ipcMain.handle('save-pota-spots-filters', (event, filters) => {
@@ -33,12 +46,7 @@ function registerPotaHandlers({
       return { success: false, error: 'Invalid filter payload' };
     }
 
-    const nextFilters = {
-      modeFilter: String(filters?.modeFilter || ''),
-      bandFilter: String(filters?.bandFilter || ''),
-      regionFilter: String(filters?.regionFilter || ''),
-      hideWorked: Boolean(filters?.hideWorked),
-    };
+    const nextFilters = normalizePotaSpotFilters(filters);
     store.set('potaSpotsFilters', nextFilters);
     return { success: true };
   });
