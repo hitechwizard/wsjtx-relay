@@ -499,6 +499,16 @@ function toggleSectionVisibility(section, toggleButton) {
 }
 
 function setupManualFieldValidation() {
+  if (qsoFrequency) {
+    qsoFrequency.addEventListener('input', () => {
+      const freqMHz = parseFloat(qsoFrequency.value);
+      if (qsoBand) {
+        qsoBand.value = Number.isFinite(freqMHz) ? freqToBand(freqMHz) : '';
+      }
+      updateLogContactButtonState();
+    });
+  }
+
   const manualFieldMap = {
     call: 'qso-dxcall',
     sig_info: 'qso-siginfo',

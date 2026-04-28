@@ -9,6 +9,7 @@
 
 ### Fixed
 
+- Fixed manual QSO entry frequency input not updating the `Band` field when frequency is typed manually.
 - Fixed automatic `My Park` clearing so configuration-name derived park values are removed when the current WSJT-X configuration no longer uses the `[callsign]@[park id]` format.
 
 ## 1.0.8 - 03/26/2026
