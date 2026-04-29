@@ -1,6 +1,7 @@
 function registerQsoHandlers({
   ipcMain,
   store,
+  qsoStore,
   getRelay,
   fetchImpl,
   isPlainObject,
@@ -131,19 +132,19 @@ function registerQsoHandlers({
       }
     }
 
-    const qsos = store.get('qsos', []);
+    const qsos = qsoStore.get('qsos', []);
     qsos.push(nextQso);
-    store.set('qsos', qsos);
+    qsoStore.set('qsos', qsos);
     return { success: true, qso: nextQso };
   });
 
   ipcMain.handle('clear-qsos', () => {
-    store.set('qsos', []);
+    qsoStore.set('qsos', []);
     return { success: true };
   });
 
   ipcMain.handle('get-qsos', () => {
-    return store.get('qsos', []);
+    return qsoStore.get('qsos', []);
   });
 
   ipcMain.handle('update-qsos', async (event, qsos) => {
@@ -154,7 +155,7 @@ function registerQsoHandlers({
 
     const nextQsos = sortQsosForStorage(sanitizedQsos);
 
-    store.set('qsos', nextQsos);
+    qsoStore.set('qsos', nextQsos);
     return { success: true };
   });
 
@@ -163,10 +164,10 @@ function registerQsoHandlers({
       return { success: false, error: 'Invalid update-qso payload' };
     }
 
-    const qsos = store.get('qsos', []);
+    const qsos = qsoStore.get('qsos', []);
     const updateResult = updateQsoAtIndex(qsos, index, qso);
     if (updateResult.success) {
-      store.set('qsos', updateResult.qsos);
+      qsoStore.set('qsos', updateResult.qsos);
       return { success: true };
     }
     return { success: false, error: updateResult.error };
@@ -177,10 +178,10 @@ function registerQsoHandlers({
       return { success: false, error: 'Invalid delete-qso index' };
     }
 
-    const qsos = store.get('qsos', []);
+    const qsos = qsoStore.get('qsos', []);
     const deleteResult = deleteQsoAtIndex(qsos, index);
     if (deleteResult.success) {
-      store.set('qsos', deleteResult.qsos);
+      qsoStore.set('qsos', deleteResult.qsos);
       return { success: true };
     }
     return { success: false, error: deleteResult.error };
@@ -195,7 +196,7 @@ function registerQsoHandlers({
   });
 
   ipcMain.handle('resend-all-qsos', async () => {
-    const qsos = store.get('qsos', []);
+    const qsos = qsoStore.get('qsos', []);
     return resendViaRelay(getRelay(), qsos);
   });
 
@@ -207,7 +208,7 @@ function registerQsoHandlers({
       return { success: false, error: 'Invalid provider' };
     }
 
-    const qsos = store.get('qsos', []);
+    const qsos = qsoStore.get('qsos', []);
     if (index >= qsos.length) {
       return { success: false, error: 'QSO not found' };
     }
@@ -230,8 +231,8 @@ function registerQsoHandlers({
         const msg = String(result.error || 'Unknown QRZ logging failure').trim();
         qso = markLoggingSubmissionFailure(qso, 'qrz', msg);
         logToActivityLog(`QRZ resubmission failed: ${msg}`);
-        const updateResult = updateQsoAtIndex(store.get('qsos', []), index, qso);
-        if (updateResult.success) store.set('qsos', updateResult.qsos);
+        const updateResult = updateQsoAtIndex(qsoStore.get('qsos', []), index, qso);
+        if (updateResult.success) qsoStore.set('qsos', updateResult.qsos);
         return { success: false, error: msg, qso };
       }
     } else {
@@ -257,16 +258,16 @@ function registerQsoHandlers({
         const msg = String(result.error || 'Unknown Clublog logging failure').trim();
         qso = markLoggingSubmissionFailure(qso, 'clublog', msg);
         logToActivityLog(`Clublog resubmission failed: ${msg}`);
-        const updateResult = updateQsoAtIndex(store.get('qsos', []), index, qso);
-        if (updateResult.success) store.set('qsos', updateResult.qsos);
+        const updateResult = updateQsoAtIndex(qsoStore.get('qsos', []), index, qso);
+        if (updateResult.success) qsoStore.set('qsos', updateResult.qsos);
         return { success: false, error: msg, qso };
       }
     }
 
-    const freshQsos = store.get('qsos', []);
+    const freshQsos = qsoStore.get('qsos', []);
     const updateResult = updateQsoAtIndex(freshQsos, index, qso);
     if (updateResult.success) {
-      store.set('qsos', updateResult.qsos);
+      qsoStore.set('qsos', updateResult.qsos);
       return { success: true, qso };
     }
     return { success: false, error: 'Failed to save updated QSO' };

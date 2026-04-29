@@ -55,7 +55,6 @@ function getStoreDefaults(defaultActivityPacketFilters) {
       hideWorked: false,
       hideQrt: false,
     },
-    qsos: [],
   };
 }
 

@@ -7,6 +7,7 @@ function buildHandlerRegistrationOptions({
   registerUiCommandHandlers,
   ipcMain,
   store,
+  qsoStore,
   getRelay,
   fetchImpl,
   isPlainObject,
@@ -57,6 +58,7 @@ function buildHandlerRegistrationOptions({
     settingsDependencies: {
       ipcMain,
       store,
+      qsoStore,
       getRelay,
       isPlainObject,
       toClampedInteger,
@@ -76,7 +78,7 @@ function buildHandlerRegistrationOptions({
     },
     qsoDependencies: {
       ipcMain,
-      store,
+      qsoStore,
       getRelay,
       fetchImpl,
       isPlainObject,
@@ -93,7 +95,7 @@ function buildHandlerRegistrationOptions({
     },
     adifDependencies: {
       ipcMain,
-      store,
+      qsoStore,
       dialog,
       getQsoEditorWindow,
       fsPromises,

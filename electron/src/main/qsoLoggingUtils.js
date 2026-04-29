@@ -1,5 +1,7 @@
 function getLoggingFieldKey(appId, key) {
-  const appKey = String(appId || '').trim().toLowerCase();
+  const appKey = String(appId || '')
+    .trim()
+    .toLowerCase();
   if (!appKey) {
     return null;
   }
@@ -74,9 +76,18 @@ function enrichQsoComment(qso) {
     return qso;
   }
 
-  const state = String(qso.state || '').trim().toUpperCase();
-  const isPotaEnriched = String(qso.sig || '').trim().toUpperCase() === 'POTA';
-  const sigInfo = isPotaEnriched ? String(qso.sig_info || '').trim().toUpperCase() : '';
+  const state = String(qso.state || '')
+    .trim()
+    .toUpperCase();
+  const isPotaEnriched =
+    String(qso.sig || '')
+      .trim()
+      .toUpperCase() === 'POTA';
+  const sigInfo = isPotaEnriched
+    ? String(qso.sig_info || '')
+        .trim()
+        .toUpperCase()
+    : '';
 
   if (!state && !sigInfo) {
     return qso;
