@@ -1066,13 +1066,11 @@ function addQsoEntry(qso, type = 'normal') {
     hasIndicators = true;
   }
 
-  const qrzSubmission =
-    qso && qso.logSubmissions && qso.logSubmissions.qrz ? qso.logSubmissions.qrz : null;
-  if (qrzSubmission && qrzSubmission.success === true) {
+  if (qso && qso.app_qrzlog_success === true) {
     const qrzBadge = document.createElement('span');
     qrzBadge.className = 'qso-app-badge qso-app-badge-qrz';
     qrzBadge.textContent = 'QRZ';
-    const submittedAt = String(qrzSubmission.submittedAt || '').trim();
+    const submittedAt = String(qso.app_qrzlog_submitted_at || '').trim();
     if (submittedAt) {
       qrzBadge.title = `Submitted to QRZ: ${submittedAt}`;
     } else {
@@ -1082,13 +1080,11 @@ function addQsoEntry(qso, type = 'normal') {
     hasIndicators = true;
   }
 
-  const clublogSubmission =
-    qso && qso.logSubmissions && qso.logSubmissions.clublog ? qso.logSubmissions.clublog : null;
-  if (clublogSubmission && clublogSubmission.success === true) {
+  if (qso && qso.app_clublog_success === true) {
     const clublogBadge = document.createElement('span');
     clublogBadge.className = 'qso-app-badge qso-app-badge-clublog';
     clublogBadge.textContent = 'CLUB';
-    const submittedAt = String(clublogSubmission.submittedAt || '').trim();
+    const submittedAt = String(qso.app_clublog_submitted_at || '').trim();
     if (submittedAt) {
       clublogBadge.title = `Submitted to Clublog: ${submittedAt}`;
     } else {

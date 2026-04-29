@@ -199,8 +199,8 @@ function renderQsoList() {
     itemDiv.className = 'qso-editor-card';
     itemDiv.dataset.index = index;
 
-    const qrzSuccess = qso.logSubmissions?.qrz?.success === true;
-    const clublogSuccess = qso.logSubmissions?.clublog?.success === true;
+    const qrzSuccess = qso.app_qrzlog_success === true;
+    const clublogSuccess = qso.app_clublog_success === true;
     const showResubmitQrz = settings?.qrzLoggingEnabled && !qrzSuccess;
     const showResubmitClublog = settings?.clublogLoggingEnabled && !clublogSuccess;
 

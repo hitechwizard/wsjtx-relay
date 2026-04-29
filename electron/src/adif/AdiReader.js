@@ -36,12 +36,12 @@ class AdiReader {
       let value = field[1];
 
       if (name in fields) {
-        if (!value) continue;
+        if (value === null || typeof value === 'undefined' || value === '') continue;
 
         const fieldDef = fields[name];
         value = fieldDef.decode(value);
 
-        if (value) {
+        if (value !== null && typeof value !== 'undefined' && value !== '') {
           contact[name] = value;
         }
       } else if (name === 'eor') {

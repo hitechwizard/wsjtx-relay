@@ -125,7 +125,7 @@ function registerQsoHandlers({
         const failureMessage = String(
           clublogResult.error || 'Unknown Clublog logging failure',
         ).trim();
-        nextQso = markLoggingSubmissionFailure(nextQso, 'qrz', failureMessage);
+        nextQso = markLoggingSubmissionFailure(nextQso, 'clublog', failureMessage);
         console.warn(`Clublog logging failed: ${failureMessage}`);
         logToActivityLog(`Clublog submission failed: ${failureMessage}`);
       }

@@ -15,6 +15,7 @@
 
 - Fixed manual QSO entry frequency input not updating the `Band` field when frequency is typed manually.
 - Fixed automatic `My Park` clearing so configuration-name derived park values are removed when the current WSJT-X configuration no longer uses the `[callsign]@[park id]` format.
+- Fixed ADIF export/import dropping QRZ and Clublog submission metadata by moving QSO log submission state to flattened `app_qrzlog_*` and `app_clublog_*` fields.
 
 ## 1.0.8 - 03/26/2026
 
