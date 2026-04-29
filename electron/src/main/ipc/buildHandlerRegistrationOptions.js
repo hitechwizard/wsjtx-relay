@@ -78,6 +78,7 @@ function buildHandlerRegistrationOptions({
     },
     qsoDependencies: {
       ipcMain,
+      store,
       qsoStore,
       getRelay,
       fetchImpl,
