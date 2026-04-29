@@ -22,7 +22,10 @@ const onRelayLog = createIpcSubscription('relay-log', (event, msg) => msg);
 const onRelayStatus = createIpcSubscription('relay-status', (event, status) => status);
 const onRelayError = createIpcSubscription('relay-error', (event, msg) => msg);
 const onRelayDecode = createIpcSubscription('relay-decode', (event, msg) => msg);
-const onRelayDecodePacket = createIpcSubscription('relay-decode-packet', (event, packet) => packet);
+const onRelayDecodePacket = createIpcSubscription(
+  'relay-decode-packet',
+  (event, packet) => packet,
+);
 const onRelayClearPacket = createIpcSubscription('relay-clear-packet', () => undefined);
 const onRelayStatusUpdate = createIpcSubscription(
   'relay-status-update',
@@ -32,7 +35,10 @@ const onRelayQsoLogged = createIpcSubscription('relay-qso-logged', (event, qsoDa
 const onUpdateBadgeState = createIpcSubscription('update-badge-state', (event, state) => state);
 const onSettingsChanged = createIpcSubscription('settings-changed', (event, settings) => settings);
 const onQsoDataRefresh = createIpcSubscription('qso-data-refresh', () => undefined);
-const onPotaSpotSelected = createIpcSubscription('pota-spot-selected', (event, spotData) => spotData);
+const onPotaSpotSelected = createIpcSubscription(
+  'pota-spot-selected',
+  (event, spotData) => spotData,
+);
 
 contextBridge.exposeInMainWorld('electron', {
   // Settings API
@@ -63,6 +69,7 @@ contextBridge.exposeInMainWorld('electron', {
   importQsosAdif: () => ipcRenderer.invoke('import-qsos-adif'),
   resendQso: (qso) => ipcRenderer.invoke('resend-qso', qso),
   resendAllQsos: () => ipcRenderer.invoke('resend-all-qsos'),
+  resubmitQsoLog: (index, provider) => ipcRenderer.invoke('resubmit-qso-log', index, provider),
 
   // Window control API
   openSettings: () => ipcRenderer.send('open-settings'),

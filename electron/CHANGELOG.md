@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.9 - 04/23/2026
+## 1.0.9 - 05/01/2026
 
 ### Added
 
@@ -9,6 +9,7 @@
 - Added CW RBN status badges in POTA Spots when comments begin with `RBN <db> db <wpm> WPM`, displayed as `<wpm> WPM @ <db> db` next to other status badges.
 - Added QRT status badges in POTA Spots when comments begin with `QRT` (case insensitive)
 - Added `Hide QRT` filter in POTA Spots
+- Added `Resubmit QRZ` and `Resubmit Clublog` buttons in QSO Editor card headers for QSOs that do not have a successful log submission for each enabled provider.
 
 ### Fixed
 
