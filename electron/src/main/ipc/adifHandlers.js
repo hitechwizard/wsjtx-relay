@@ -1,15 +1,9 @@
 const { AdiWriter } = require('../../adif/AdiWriter');
 const AdiReader = require('../../adif/AdiReader');
 
-function registerAdifHandlers({
-  ipcMain,
-  store,
-  dialog,
-  getQsoEditorWindow,
-  fsPromises,
-}) {
+function registerAdifHandlers({ ipcMain, qsoStore, dialog, getQsoEditorWindow, fsPromises }) {
   ipcMain.handle('export-qsos-adif', async () => {
-    const qsos = store.get('qsos', []);
+    const qsos = qsoStore.get('qsos', []);
 
     const { filePath } = await dialog.showSaveDialog(getQsoEditorWindow(), {
       title: 'Export QSOs to ADIF',

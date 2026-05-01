@@ -30,6 +30,7 @@ class PotaSpotsManager {
       bandFilter: '',
       regionFilter: '',
       hideWorked: false,
+      hideQrt: false,
     };
 
     this.init();
@@ -64,6 +65,10 @@ class PotaSpotsManager {
       this.saveFilterState();
     });
     document.getElementById('hideWorkedFilter').addEventListener('change', () => {
+      this.applyFilters();
+      this.saveFilterState();
+    });
+    document.getElementById('hideQrtFilter').addEventListener('change', () => {
       this.applyFilters();
       this.saveFilterState();
     });
@@ -107,37 +112,48 @@ class PotaSpotsManager {
     }
 
     if (window.electron && typeof window.electron.onQsoDataRefresh === 'function') {
-      this.addSubscriptionDisposer(window.electron.onQsoDataRefresh(async () => {
-        await this.loadLoggedQsos();
-        this.applyFilters();
-      }));
+      this.addSubscriptionDisposer(
+        window.electron.onQsoDataRefresh(async () => {
+          await this.loadLoggedQsos();
+          this.applyFilters();
+        }),
+      );
     }
 
     if (window.electron && typeof window.electron.onRelayDecodePacket === 'function') {
-      this.addSubscriptionDisposer(window.electron.onRelayDecodePacket((packet) => {
-        this.recordDecodePacket(packet);
-      }));
+      this.addSubscriptionDisposer(
+        window.electron.onRelayDecodePacket((packet) => {
+          this.recordDecodePacket(packet);
+        }),
+      );
     }
 
     if (window.electron && typeof window.electron.onRelayClearPacket === 'function') {
-      this.addSubscriptionDisposer(window.electron.onRelayClearPacket(() => {
-        this.handleClearPacket();
-      }));
+      this.addSubscriptionDisposer(
+        window.electron.onRelayClearPacket(() => {
+          this.handleClearPacket();
+        }),
+      );
     }
 
     if (window.electron && typeof window.electron.onSettingsChanged === 'function') {
-      this.addSubscriptionDisposer(window.electron.onSettingsChanged((settings) => {
-        this.applyDecodeSightingSettings(settings);
-      }));
+      this.addSubscriptionDisposer(
+        window.electron.onSettingsChanged((settings) => {
+          this.applyDecodeSightingSettings(settings);
+        }),
+      );
     }
 
     if (window.electron && typeof window.electron.onRelayStatusUpdate === 'function') {
-      this.addSubscriptionDisposer(window.electron.onRelayStatusUpdate((statusData) => {
-        this.handleRelayStatusUpdate(statusData);
-      }));
+      this.addSubscriptionDisposer(
+        window.electron.onRelayStatusUpdate((statusData) => {
+          this.handleRelayStatusUpdate(statusData);
+        }),
+      );
     }
 
     window.addEventListener('beforeunload', () => {
+      this.saveFilterState();
       this.stopUtcClock();
       this.stopAutoRefresh();
       this.stopDecodeSightingCleanupTimer();
@@ -266,7 +282,8 @@ class PotaSpotsManager {
         }
 
         const snrValue = Number(entry.snr);
-        const decodePacket = entry.decodePacket && typeof entry.decodePacket === 'object' ? entry.decodePacket : null;
+        const decodePacket =
+          entry.decodePacket && typeof entry.decodePacket === 'object' ? entry.decodePacket : null;
 
         this.decodeSightingsByActivator.set(activator, {
           snr: Number.isFinite(snrValue) ? snrValue : null,
@@ -314,9 +331,11 @@ class PotaSpotsManager {
 
   setupThemeListener() {
     if (window.electron && window.electron.onThemeChanged) {
-      this.addSubscriptionDisposer(window.electron.onThemeChanged((theme) => {
-        document.body.className = theme === 'dark' ? 'dark-theme' : '';
-      }));
+      this.addSubscriptionDisposer(
+        window.electron.onThemeChanged((theme) => {
+          document.body.className = theme === 'dark' ? 'dark-theme' : '';
+        }),
+      );
     }
 
     // Get initial theme
@@ -392,6 +411,7 @@ class PotaSpotsManager {
       bandFilter: document.getElementById('bandFilter').value,
       regionFilter: String(document.getElementById('regionFilter').value || '').toUpperCase(),
       hideWorked: document.getElementById('hideWorkedFilter').checked,
+      hideQrt: document.getElementById('hideQrtFilter').checked,
     };
     this.persistedFilters = { ...state };
     if (window.electron && typeof window.electron.savePotaSpotsFilters === 'function') {
@@ -410,6 +430,7 @@ class PotaSpotsManager {
           bandFilter: String(state?.bandFilter || ''),
           regionFilter: String(state?.regionFilter || '').toUpperCase(),
           hideWorked: Boolean(state?.hideWorked),
+          hideQrt: Boolean(state?.hideQrt),
         };
       }
     } catch (error) {
@@ -426,6 +447,11 @@ class PotaSpotsManager {
     const hideWorkedInput = document.getElementById('hideWorkedFilter');
     if (hideWorkedInput) {
       hideWorkedInput.checked = Boolean(this.persistedFilters.hideWorked);
+    }
+
+    const hideQrtInput = document.getElementById('hideQrtFilter');
+    if (hideQrtInput) {
+      hideQrtInput.checked = Boolean(this.persistedFilters.hideQrt);
     }
   }
 
@@ -740,7 +766,10 @@ class PotaSpotsManager {
   }
 
   getDecodeSightingExpirationMs() {
-    if (!Number.isFinite(this.decodeSightingExpirationMinutes) || this.decodeSightingExpirationMinutes <= 0) {
+    if (
+      !Number.isFinite(this.decodeSightingExpirationMinutes) ||
+      this.decodeSightingExpirationMinutes <= 0
+    ) {
       return 0;
     }
 
@@ -940,7 +969,9 @@ class PotaSpotsManager {
     const officialActivators = new Set(this.spots.map((spot) => this.getActivatorCallsign(spot)));
     const syntheticSpots = Array.from(this.cqPotaSightings.entries())
       .filter(([activator]) => !officialActivators.has(activator))
-      .map(([activator, sighting]) => this.getSyntheticSpotFromCqPotaSighting(activator, sighting));
+      .map(([activator, sighting]) =>
+        this.getSyntheticSpotFromCqPotaSighting(activator, sighting),
+      );
 
     return [...this.spots, ...syntheticSpots];
   }
@@ -1134,11 +1165,16 @@ class PotaSpotsManager {
     const bandFilter = document.getElementById('bandFilter').value;
     const regionFilter = document.getElementById('regionFilter').value.toUpperCase();
     const hideWorked = document.getElementById('hideWorkedFilter').checked;
+    const hideQrt = document.getElementById('hideQrtFilter').checked;
 
     this.filteredSpots = this.getCombinedSpots().filter((spot) => {
       const isCqPotaSpot = String(spot?.source || '') === 'cq-pota';
 
       if (hideWorked && this.isWorkedSpot(spot)) {
+        return false;
+      }
+
+      if (hideQrt && this.hasQrtStatus(spot)) {
         return false;
       }
 
@@ -1216,30 +1252,30 @@ class PotaSpotsManager {
       }
 
       if (this.sortField === 'status') {
-        const aSighting = this.getActivatorDecodeSighting(a);
-        const bSighting = this.getActivatorDecodeSighting(b);
-        const aSnr = Number(aSighting?.snr);
-        const bSnr = Number(bSighting?.snr);
-        const aHasSnr = Number.isFinite(aSnr);
-        const bHasSnr = Number.isFinite(bSnr);
+        const aStatus = this.getSpotStatusSortInfo(a);
+        const bStatus = this.getSpotStatusSortInfo(b);
 
-        if (!aHasSnr && !bHasSnr) {
-          return 0;
-        }
-
-        if (!aHasSnr) {
-          return 1;
-        }
-
-        if (!bHasSnr) {
-          return -1;
-        }
-
-        if (aSnr < bSnr) {
+        if (aStatus.rank < bStatus.rank) {
           return this.sortDescending ? 1 : -1;
         }
 
-        if (aSnr > bSnr) {
+        if (aStatus.rank > bStatus.rank) {
+          return this.sortDescending ? -1 : 1;
+        }
+
+        if (aStatus.value < bStatus.value) {
+          return this.sortDescending ? 1 : -1;
+        }
+
+        if (aStatus.value > bStatus.value) {
+          return this.sortDescending ? -1 : 1;
+        }
+
+        if (aStatus.secondaryValue < bStatus.secondaryValue) {
+          return this.sortDescending ? 1 : -1;
+        }
+
+        if (aStatus.secondaryValue > bStatus.secondaryValue) {
           return this.sortDescending ? -1 : 1;
         }
 
@@ -1421,32 +1457,43 @@ class PotaSpotsManager {
         const offsetHz = Number(decodeSighting?.decodePacket?.deltaFreq);
         const activator = this.escapeHtml(spot.activator || '');
         const useManualAction = this.shouldUseManualAction(spot);
+        const hasQrtStatus = this.hasQrtStatus(spot);
         const hasReplySnr = Number.isFinite(Number(decodeSighting?.snr));
         const isSelfSpot = this.isSelfSpot(spot);
         const isRadioTransmitting = Boolean(this.currentTxStatus.transmitting);
-        const replyDisabled = !useManualAction && (isWorked || !hasReplySnr || isRadioTransmitting);
-        const actionDisabled = isSelfSpot || replyDisabled;
+        const manualQrtDisabled = useManualAction && hasQrtStatus;
+        const replyDisabled =
+          !useManualAction && (isWorked || !hasReplySnr || isRadioTransmitting);
+        const actionDisabled = isSelfSpot || manualQrtDisabled || replyDisabled;
         const actionLabel = useManualAction ? 'Manual' : 'Reply';
         const actionDisabledAttr = actionDisabled ? ' disabled' : '';
         const actionTitle = isSelfSpot
           ? 'Actions disabled for your own callsign spot'
-          : replyDisabled
-            ? isRadioTransmitting
-              ? 'Reply unavailable while transmitting'
-              : isWorked
-                ? 'Reply unavailable for worked spots'
-                : 'Reply requires a decode with valid SNR'
-            : '';
+          : manualQrtDisabled
+            ? 'Manual unavailable for QRT spots'
+            : replyDisabled
+              ? isRadioTransmitting
+                ? 'Reply unavailable while transmitting'
+                : isWorked
+                  ? 'Reply unavailable for worked spots'
+                  : 'Reply requires a decode with valid SNR'
+              : '';
         const actionTitleAttr = actionTitle ? ` title="${this.escapeHtml(actionTitle)}"` : '';
         const workedBadge = isWorked ? '<span class="pota-worked-badge">Worked</span>' : '';
         const decodeBadge = isSeenInDecode
           ? `<span class="pota-decode-badge">SNR ${this.formatDecodeSnr(decodeSighting?.snr)}</span>`
           : '';
+        const qrtBadge = this.hasQrtStatus(spot) ? '<span class="pota-qrt-badge">QRT</span>' : '';
+        const cwRbnStatus = this.getCwRbnStatus(spot);
+        const cwRbnBadge = cwRbnStatus
+          ? `<span class="pota-rbn-badge">${this.escapeHtml(cwRbnStatus)}</span>`
+          : '';
         const normalizedActivator = String(spot.activator || '')
           .trim()
           .toUpperCase();
         const isTxTarget =
-          Boolean(this.currentTxStatus.dxCall) && this.currentTxStatus.dxCall === normalizedActivator;
+          Boolean(this.currentTxStatus.dxCall) &&
+          this.currentTxStatus.dxCall === normalizedActivator;
         const isTxEnabledTarget = isTxTarget && this.currentTxStatus.txEnabled;
         const isTransmittingTarget = isTxEnabledTarget && this.currentTxStatus.transmitting;
 
@@ -1467,12 +1514,13 @@ class PotaSpotsManager {
         row.title = isWorked ? 'Already worked today' : '';
         row.innerHTML = `
           <td><div class="pota-activator-cell"><span class="pota-activator-text">${this.escapeHtml(activator)}</span></div></td>
-          <td><div class="pota-status-cell">${workedBadge}${decodeBadge}</div></td>
+          <td><div class="pota-status-cell">${workedBadge}${decodeBadge}${qrtBadge}${cwRbnBadge}</div></td>
           <td>${this.formatFrequency(spot.frequency)}</td>
           <td>${this.formatOffset(offsetHz)}</td>
           <td>${this.escapeHtml(spot.mode || '')}</td>
           <td>${this.escapeHtml(spot.reference || '')}</td>
           <td>${this.escapeHtml(spot.name || '')}</td>
+          <td>${this.escapeHtml(spot.comments || '')}</td>
           <td>${this.escapeHtml(spot.locationDesc || '')}</td>
           <td>${this.formatSpotTime(effectiveSpotTime)}</td>
           <td>${this.formatSpotAge(effectiveSpotTime)}</td>
@@ -1490,6 +1538,66 @@ class PotaSpotsManager {
     }
 
     return numericSNR > 0 ? `+${numericSNR}` : `${numericSNR}`;
+  }
+
+  getSpotStatusSortInfo(spot) {
+    const decodeSighting = this.getActivatorDecodeSighting(spot);
+    const decodeSnr = Number(decodeSighting?.snr);
+    if (Number.isFinite(decodeSnr)) {
+      return { rank: 4, value: decodeSnr, secondaryValue: 0 };
+    }
+
+    if (this.hasQrtStatus(spot)) {
+      return { rank: 3, value: 0, secondaryValue: 0 };
+    }
+
+    const rbnMetrics = this.getCwRbnMetrics(spot);
+    if (rbnMetrics) {
+      return { rank: 2, value: rbnMetrics.wpm, secondaryValue: rbnMetrics.db };
+    }
+
+    if (this.isWorkedSpot(spot)) {
+      return { rank: 1, value: 0, secondaryValue: 0 };
+    }
+
+    return { rank: 0, value: 0, secondaryValue: 0 };
+  }
+
+  hasQrtStatus(spot) {
+    const comments = String(spot?.comments || '').trim();
+    return /^QRT\b/i.test(comments);
+  }
+
+  getCwRbnMetrics(spot) {
+    const mode = String(spot?.mode || '')
+      .trim()
+      .toUpperCase();
+    if (mode !== 'CW') {
+      return null;
+    }
+
+    const comments = String(spot?.comments || '').trim();
+    const match = comments.match(/^RBN\s+(\d+)\s+db\s+(\d+)\s+WPM/i);
+    if (!match) {
+      return null;
+    }
+
+    const db = Number(match[1]);
+    const wpm = Number(match[2]);
+    if (!Number.isFinite(db) || !Number.isFinite(wpm)) {
+      return null;
+    }
+
+    return { db, wpm };
+  }
+
+  getCwRbnStatus(spot) {
+    const metrics = this.getCwRbnMetrics(spot);
+    if (!metrics) {
+      return '';
+    }
+
+    return `${metrics.wpm} WPM @ ${metrics.db} db`;
   }
 
   updateLastUpdateDisplay() {

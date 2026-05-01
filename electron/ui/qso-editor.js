@@ -30,6 +30,7 @@ if (
 }
 
 let qsos = [];
+let settings = {};
 let changedQsos = new Set();
 let hasUnsavedChanges = false;
 let filterValue = '';
@@ -114,9 +115,11 @@ function setupEventListeners() {
   });
 
   // Theme change listener
-  addSubscriptionDisposer(window.electron.onThemeChanged((theme) => {
-    applyTheme(theme);
-  }));
+  addSubscriptionDisposer(
+    window.electron.onThemeChanged((theme) => {
+      applyTheme(theme);
+    }),
+  );
 
   window.addEventListener('beforeunload', () => {
     disposeSubscriptions();
@@ -138,7 +141,10 @@ function applyTheme(theme) {
 
 async function loadQsos() {
   try {
-    qsos = await window.electron.getQsos();
+    [qsos, settings] = await Promise.all([
+      window.electron.getQsos(),
+      window.electron.getSettings(),
+    ]);
     qsos.forEach(normalizeCalculatedFields);
     renderQsoList();
     // Scroll to bottom of QSO list after rendering
@@ -165,7 +171,11 @@ function getDisplayedQsos() {
   }
   return qsos
     .map((qso, index) => ({ qso, index }))
-    .filter(({ qso }) => String(qso.call || '').toUpperCase().includes(filterValue));
+    .filter(({ qso }) =>
+      String(qso.call || '')
+        .toUpperCase()
+        .includes(filterValue),
+    );
 }
 
 function renderQsoList() {
@@ -174,8 +184,7 @@ function renderQsoList() {
   const displayedQsos = getDisplayedQsos();
 
   if (qsos.length === 0) {
-    qsoListContainer.innerHTML =
-      '<p class="qso-editor-empty-state">No QSO records found</p>';
+    qsoListContainer.innerHTML = '<p class="qso-editor-empty-state">No QSO records found</p>';
     return;
   }
 
@@ -190,6 +199,11 @@ function renderQsoList() {
     itemDiv.className = 'qso-editor-card';
     itemDiv.dataset.index = index;
 
+    const qrzSuccess = qso.app_qrzlog_success === true;
+    const clublogSuccess = qso.app_clublog_success === true;
+    const showResubmitQrz = settings?.qrzLoggingEnabled && !qrzSuccess;
+    const showResubmitClublog = settings?.clublogLoggingEnabled && !clublogSuccess;
+
     const headerDiv = document.createElement('div');
     headerDiv.className = 'qso-editor-card-header';
     headerDiv.innerHTML = `
@@ -200,6 +214,8 @@ function renderQsoList() {
       <div class="qso-card-actions">
         <button class="btn btn-secondary btn-sm btn-raw-data" data-index="${index}">Raw Data</button>
         <button class="btn btn-secondary btn-sm btn-resend" data-index="${index}">Resend</button>
+        ${showResubmitQrz ? `<button class="btn btn-secondary btn-sm btn-resubmit" data-index="${index}" data-provider="qrz" title="Resubmit to QRZ logbook">Resubmit QRZ</button>` : ''}
+        ${showResubmitClublog ? `<button class="btn btn-secondary btn-sm btn-resubmit" data-index="${index}" data-provider="clublog" title="Resubmit to Clublog">Resubmit Clublog</button>` : ''}
         <button class="btn btn-danger btn-sm btn-delete" data-index="${index}">Delete</button>
         <button class="btn btn-secondary btn-sm btn-toggle-qso" data-index="${index}" title="Show/Hide QSO">▼</button>
       </div>
@@ -234,15 +250,19 @@ function renderQsoList() {
   qsoListContainer.querySelectorAll('.btn-raw-data').forEach((btn) => {
     btn.addEventListener('click', handleRawDataView);
   });
+
+  qsoListContainer.querySelectorAll('.btn-resubmit').forEach((btn) => {
+    btn.addEventListener('click', handleResubmitQsoLog);
+  });
 }
 
 function handleToggleQso(e) {
   const btn = e.target;
   const card = btn.closest('.qso-editor-card');
   const fieldsDiv = card.querySelector('.qso-editor-fields');
-  
+
   fieldsDiv.classList.toggle('hidden');
-  
+
   if (fieldsDiv.classList.contains('hidden')) {
     btn.textContent = '▼';
     btn.setAttribute('aria-expanded', 'false');
@@ -260,6 +280,36 @@ function handleRawDataView(e) {
   }
 
   openRawDataModal(qso);
+}
+
+async function handleResubmitQsoLog(e) {
+  const btn = e.target;
+  const index = parseInt(btn.dataset.index, 10);
+  const provider = btn.dataset.provider;
+  const providerLabel = provider === 'qrz' ? 'QRZ' : 'Clublog';
+  const originalText = btn.textContent;
+
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  try {
+    const result = await window.electron.resubmitQsoLog(index, provider);
+    if (result.success) {
+      if (result.qso) {
+        qsos[index] = result.qso;
+        normalizeCalculatedFields(qsos[index]);
+      }
+      btn.remove();
+    } else {
+      alert(`Resubmit to ${providerLabel} failed: ${result.error || 'Unknown error'}`);
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  } catch (err) {
+    alert(`Resubmit to ${providerLabel} error: ${err.message || err}`);
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
 }
 
 function formatRawValue(value) {
@@ -389,9 +439,9 @@ function handleAddBlankQso() {
   const newCard = qsoListContainer.querySelector(`.qso-editor-card[data-index="${newIndex}"]`);
   if (newCard) {
     newCard.classList.add('changed');
-    const firstEditableField = newCard.querySelector(
-      '.qso-field:not([readonly]):not([disabled])[data-field="call"]',
-    ) || newCard.querySelector('.qso-field:not([readonly]):not([disabled])');
+    const firstEditableField =
+      newCard.querySelector('.qso-field:not([readonly]):not([disabled])[data-field="call"]') ||
+      newCard.querySelector('.qso-field:not([readonly]):not([disabled])');
 
     if (firstEditableField) {
       firstEditableField.focus();

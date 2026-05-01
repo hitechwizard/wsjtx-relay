@@ -1,6 +1,7 @@
 function registerQsoHandlers({
   ipcMain,
   store,
+  qsoStore,
   getRelay,
   fetchImpl,
   isPlainObject,
@@ -75,9 +76,7 @@ function registerQsoHandlers({
     const qrzLoggingEnabled = store.get('qrzLoggingEnabled', false);
     const qrzApiKey = String(store.get('qrzApiKey', '') || '').trim();
     const shouldSubmitToQrz =
-      qrzLoggingEnabled &&
-      Boolean(qrzApiKey) &&
-      !hasLoggingSubmissionSuccess(nextQso, 'qrz');
+      qrzLoggingEnabled && Boolean(qrzApiKey) && !hasLoggingSubmissionSuccess(nextQso, 'qrz');
 
     if (shouldSubmitToQrz) {
       const qrzResult = await submitQsoToQrz({
@@ -124,26 +123,28 @@ function registerQsoHandlers({
         nextQso = markLoggingSubmissionSuccess(nextQso, 'clublog');
         logToActivityLog(`Clublog submission succeeded`);
       } else {
-        const failureMessage = String(clublogResult.error || 'Unknown Clublog logging failure').trim();
-        nextQso = markLoggingSubmissionFailure(nextQso, 'qrz', failureMessage);
+        const failureMessage = String(
+          clublogResult.error || 'Unknown Clublog logging failure',
+        ).trim();
+        nextQso = markLoggingSubmissionFailure(nextQso, 'clublog', failureMessage);
         console.warn(`Clublog logging failed: ${failureMessage}`);
         logToActivityLog(`Clublog submission failed: ${failureMessage}`);
       }
     }
 
-    const qsos = store.get('qsos', []);
+    const qsos = qsoStore.get('qsos', []);
     qsos.push(nextQso);
-    store.set('qsos', qsos);
+    qsoStore.set('qsos', qsos);
     return { success: true, qso: nextQso };
   });
 
   ipcMain.handle('clear-qsos', () => {
-    store.set('qsos', []);
+    qsoStore.set('qsos', []);
     return { success: true };
   });
 
   ipcMain.handle('get-qsos', () => {
-    return store.get('qsos', []);
+    return qsoStore.get('qsos', []);
   });
 
   ipcMain.handle('update-qsos', async (event, qsos) => {
@@ -154,7 +155,7 @@ function registerQsoHandlers({
 
     const nextQsos = sortQsosForStorage(sanitizedQsos);
 
-    store.set('qsos', nextQsos);
+    qsoStore.set('qsos', nextQsos);
     return { success: true };
   });
 
@@ -163,10 +164,10 @@ function registerQsoHandlers({
       return { success: false, error: 'Invalid update-qso payload' };
     }
 
-    const qsos = store.get('qsos', []);
+    const qsos = qsoStore.get('qsos', []);
     const updateResult = updateQsoAtIndex(qsos, index, qso);
     if (updateResult.success) {
-      store.set('qsos', updateResult.qsos);
+      qsoStore.set('qsos', updateResult.qsos);
       return { success: true };
     }
     return { success: false, error: updateResult.error };
@@ -177,10 +178,10 @@ function registerQsoHandlers({
       return { success: false, error: 'Invalid delete-qso index' };
     }
 
-    const qsos = store.get('qsos', []);
+    const qsos = qsoStore.get('qsos', []);
     const deleteResult = deleteQsoAtIndex(qsos, index);
     if (deleteResult.success) {
-      store.set('qsos', deleteResult.qsos);
+      qsoStore.set('qsos', deleteResult.qsos);
       return { success: true };
     }
     return { success: false, error: deleteResult.error };
@@ -195,8 +196,81 @@ function registerQsoHandlers({
   });
 
   ipcMain.handle('resend-all-qsos', async () => {
-    const qsos = store.get('qsos', []);
+    const qsos = qsoStore.get('qsos', []);
     return resendViaRelay(getRelay(), qsos);
+  });
+
+  ipcMain.handle('resubmit-qso-log', async (event, index, provider) => {
+    if (!Number.isInteger(index) || index < 0) {
+      return { success: false, error: 'Invalid QSO index' };
+    }
+    if (provider !== 'qrz' && provider !== 'clublog') {
+      return { success: false, error: 'Invalid provider' };
+    }
+
+    const qsos = qsoStore.get('qsos', []);
+    if (index >= qsos.length) {
+      return { success: false, error: 'QSO not found' };
+    }
+
+    let qso = { ...qsos[index] };
+
+    if (provider === 'qrz') {
+      const qrzLoggingEnabled = store.get('qrzLoggingEnabled', false);
+      const qrzApiKey = String(store.get('qrzApiKey', '') || '').trim();
+      if (!qrzLoggingEnabled || !qrzApiKey) {
+        return { success: false, error: 'QRZ logging is not configured' };
+      }
+
+      const result = await submitQsoToQrz({ fetchImpl, apiKey: qrzApiKey, qso });
+      if (result.success) {
+        const logId = String(result.logId || '').trim();
+        qso = markLoggingSubmissionSuccess(qso, 'qrz', { logId });
+        logToActivityLog(`QRZ resubmission accepted QSO as entry #${logId}`);
+      } else {
+        const msg = String(result.error || 'Unknown QRZ logging failure').trim();
+        qso = markLoggingSubmissionFailure(qso, 'qrz', msg);
+        logToActivityLog(`QRZ resubmission failed: ${msg}`);
+        const updateResult = updateQsoAtIndex(qsoStore.get('qsos', []), index, qso);
+        if (updateResult.success) qsoStore.set('qsos', updateResult.qsos);
+        return { success: false, error: msg, qso };
+      }
+    } else {
+      const clublogLoggingEnabled = store.get('clublogLoggingEnabled', false);
+      const clublogCallsign = String(store.get('clublogCallsign', '') || '').trim();
+      const clublogPassword = String(store.get('clublogPassword', '') || '').trim();
+      const clublogEmail = String(store.get('clublogEmail', '') || '').trim();
+      if (!clublogLoggingEnabled || !clublogCallsign || !clublogPassword || !clublogEmail) {
+        return { success: false, error: 'Clublog logging is not configured' };
+      }
+
+      const result = await submitQsoToClublog({
+        fetchImpl,
+        callsign: clublogCallsign,
+        password: clublogPassword,
+        email: clublogEmail,
+        qso,
+      });
+      if (result.success) {
+        qso = markLoggingSubmissionSuccess(qso, 'clublog');
+        logToActivityLog('Clublog resubmission succeeded');
+      } else {
+        const msg = String(result.error || 'Unknown Clublog logging failure').trim();
+        qso = markLoggingSubmissionFailure(qso, 'clublog', msg);
+        logToActivityLog(`Clublog resubmission failed: ${msg}`);
+        const updateResult = updateQsoAtIndex(qsoStore.get('qsos', []), index, qso);
+        if (updateResult.success) qsoStore.set('qsos', updateResult.qsos);
+        return { success: false, error: msg, qso };
+      }
+    }
+
+    const freshQsos = qsoStore.get('qsos', []);
+    const updateResult = updateQsoAtIndex(freshQsos, index, qso);
+    if (updateResult.success) {
+      qsoStore.set('qsos', updateResult.qsos);
+      return { success: true, qso };
+    }
+    return { success: false, error: 'Failed to save updated QSO' };
   });
 }
 

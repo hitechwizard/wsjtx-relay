@@ -50,6 +50,10 @@
             <input type="checkbox" id="hideWorkedFilter" class="pota-filter-checkbox" />
             <span>Hide Worked</span>
           </label>
+          <label for="hideQrtFilter" class="pota-filter-checkbox-group">
+            <input type="checkbox" id="hideQrtFilter" class="pota-filter-checkbox" />
+            <span>Hide QRT</span>
+          </label>
         </div>
       </div>
 
@@ -64,6 +68,7 @@
               <col class="pota-col-mode" />
               <col class="pota-col-reference" />
               <col class="pota-col-name" />
+              <col class="pota-col-comments" />
               <col class="pota-col-location" />
               <col class="pota-col-spot-time" />
               <col class="pota-col-age" />
@@ -78,6 +83,7 @@
                 <th data-field="mode">Mode</th>
                 <th data-field="reference">Reference</th>
                 <th data-field="name">Name</th>
+                <th data-field="comments">Comments</th>
                 <th data-field="locationDesc">Location</th>
                 <th data-field="spotTime">Spot Time</th>
                 <th data-field="age">Age</th>
@@ -88,9 +94,7 @@
               <!-- Spots will be inserted here -->
             </tbody>
           </table>
-          <div id="noSpotsMessage" class="pota-no-spots" hidden>
-            No spots found.
-          </div>
+          <div id="noSpotsMessage" class="pota-no-spots" hidden>No spots found.</div>
         </div>
       </div>
     </div>

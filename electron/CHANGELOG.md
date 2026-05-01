@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.9 - 05/01/2026
+
+### Added
+
+- Added a red date-change separator line in the QSO log between entries that span a UTC date boundary.
+- Added a `Comments` column to POTA Spots between `Name` and `Location`, populated from the POTA spots API `comments` field.
+- Added CW RBN status badges in POTA Spots when comments begin with `RBN <db> db <wpm> WPM`, displayed as `<wpm> WPM @ <db> db` next to other status badges.
+- Added QRT status badges in POTA Spots when comments begin with `QRT` (case insensitive)
+- Added `Hide QRT` filter in POTA Spots
+- Added `Resubmit QRZ` and `Resubmit Clublog` buttons in QSO Editor card headers for QSOs that do not have a successful log submission for each enabled provider.
+
+### Fixed
+
+- Fixed manual QSO entry frequency input not updating the `Band` field when frequency is typed manually.
+- Fixed automatic `My Park` clearing so configuration-name derived park values are removed when the current WSJT-X configuration no longer uses the `[callsign]@[park id]` format.
+- Fixed ADIF export/import dropping QRZ and Clublog submission metadata by moving QSO log submission state to flattened `app_qrzlog_*` and `app_clublog_*` fields.
+- Moved QSO log persistence out of `config.json` into a dedicated `qsolog.json` store file, with one-time migration of existing QSO data.
+
 ## 1.0.8 - 03/26/2026
 
 ### Added
@@ -11,9 +29,7 @@
 
 ### Changed
 
-
 ### Fixed
-
 
 ## 1.0.7 - 03/14/2026
 

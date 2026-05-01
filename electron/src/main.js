@@ -39,10 +39,7 @@ const {
   shouldPopulateManualQsoForSpot,
 } = require('./main/potaSpotsService');
 const { sortQsosForStorage } = require('./main/qsoSortUtils');
-const {
-  hasNewerUpdateAvailable,
-  getUpdateBadgeState,
-} = require('./main/updateBadgeUtils');
+const { hasNewerUpdateAvailable, getUpdateBadgeState } = require('./main/updateBadgeUtils');
 const { hasInternetConnectivity } = require('./main/connectivityUtils');
 const {
   showInstallDownloadedUpdatePrompt,
@@ -56,12 +53,18 @@ const {
   showCheckForUpdatesFailed,
 } = require('./main/updatePrompts');
 const { createUpdateController } = require('./main/updateController');
-const { maybeEnrichQsoFromPotaSpotMap: maybeEnrichQsoWithPotaMap } = require('./main/potaEnrichmentService');
+const {
+  maybeEnrichQsoFromPotaSpotMap: maybeEnrichQsoWithPotaMap,
+} = require('./main/potaEnrichmentService');
 const { bindRelayEventForwarding } = require('./main/relayEventBindings');
 const { attachThemeOnLoad } = require('./main/windowThemeUtils');
 const { attachPersistBoundsOnClose } = require('./main/windowBoundsUtils');
-const { DEFAULT_ACTIVITY_PACKET_FILTERS, readSettingsSnapshot } = require('./main/settingsSnapshot');
+const {
+  DEFAULT_ACTIVITY_PACKET_FILTERS,
+  readSettingsSnapshot,
+} = require('./main/settingsSnapshot');
 const { updateQsoAtIndex, deleteQsoAtIndex } = require('./main/qsoStoreUtils');
+const { createQsoStore } = require('./main/qsoFileStore');
 const { validateForwardHostLookup } = require('./main/hostValidationService');
 const { buildApplicationMenuTemplate } = require('./main/menuTemplate');
 const { stopRelayIfRunning, resendViaRelay } = require('./main/relayRuntimeUtils');
@@ -82,7 +85,11 @@ const { registerUiCommandHandlers } = require('./main/ipc/uiCommandHandlers');
 const { registerAllIpcHandlers } = require('./main/ipc/registerAllHandlers');
 const { buildHandlerRegistrationOptions } = require('./main/ipc/buildHandlerRegistrationOptions');
 const { createRelayInstance } = require('./main/relayFactory');
-const { createActivityLogSender, createPotaRequestFailureLogger, createPotaSpotsFetcher } = require('./main/potaRequestUtils');
+const {
+  createActivityLogSender,
+  createPotaRequestFailureLogger,
+  createPotaSpotsFetcher,
+} = require('./main/potaRequestUtils');
 const { createEnsureRelayInitialized } = require('./main/ensureRelayInitializedFactory');
 const {
   createExamplesWindowFactory,
@@ -104,8 +111,14 @@ const { buildLifecycleHandlerCallbacks } = require('./main/buildLifecycleHandler
 const isMac = process.platform === 'darwin';
 const appState = createAppState();
 const APP_ICON_PATH = getAppIconPath(__dirname, process.platform);
-const { preloadPath, mainHtmlPath, exampleHtmlPath, settingsHtmlPath, qsoEditorHtmlPath, potaSpotsHtmlPath } =
-  getUiPaths(__dirname);
+const {
+  preloadPath,
+  mainHtmlPath,
+  exampleHtmlPath,
+  settingsHtmlPath,
+  qsoEditorHtmlPath,
+  potaSpotsHtmlPath,
+} = getUiPaths(__dirname);
 const fetchPotaSpots = createPotaSpotsFetcher(
   fetchPotaSpotsFromApi,
   https,
@@ -116,6 +129,7 @@ const fetchPotaSpots = createPotaSpotsFetcher(
 const store = new Store({
   defaults: getStoreDefaults(DEFAULT_ACTIVITY_PACKET_FILTERS),
 });
+const qsoStore = createQsoStore(Store, store);
 
 const logToActivityLog = createActivityLogSender(appState.getMainWindow);
 const logPotaRequestFailure = createPotaRequestFailureLogger(appState.getMainWindow);
@@ -244,6 +258,7 @@ registerAllIpcHandlers(
     registerUiCommandHandlers,
     ipcMain,
     store,
+    qsoStore,
     getRelay: appState.getRelay,
     fetchImpl: fetch,
     isPlainObject,
@@ -277,24 +292,15 @@ registerAllIpcHandlers(
     getPotaSpotsWindow: appState.getPotaSpotsWindow,
     openSettings: createSettingsWindow,
     closeSettings: () => {
-      closeWindowAndClearRef(
-        appState.getSettingsWindow,
-        () => appState.setSettingsWindow(null),
-      );
+      closeWindowAndClearRef(appState.getSettingsWindow, () => appState.setSettingsWindow(null));
     },
     openQsoEditor: createQsoEditorWindow,
     closeQsoEditor: () => {
-      closeWindowAndClearRef(
-        appState.getQsoEditorWindow,
-        () => appState.setQsoEditorWindow(null),
-      );
+      closeWindowAndClearRef(appState.getQsoEditorWindow, () => appState.setQsoEditorWindow(null));
     },
     openPotaSpots: createPotaSpotsWindow,
     closePotaSpots: () => {
-      closeWindowAndClearRef(
-        appState.getPotaSpotsWindow,
-        () => appState.setPotaSpotsWindow(null),
-      );
+      closeWindowAndClearRef(appState.getPotaSpotsWindow, () => appState.setPotaSpotsWindow(null));
     },
     sendToWindows,
     performUpdateAction: async () => {

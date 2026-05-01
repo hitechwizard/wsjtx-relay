@@ -1,67 +1,67 @@
+function getLoggingFieldKey(appId, key) {
+  const appKey = String(appId || '')
+    .trim()
+    .toLowerCase();
+  if (!appKey) {
+    return null;
+  }
+
+  if (appKey === 'qrz') {
+    return `app_qrzlog_${key}`;
+  }
+
+  if (appKey === 'clublog') {
+    return `app_clublog_${key}`;
+  }
+
+  return null;
+}
+
 function hasLoggingSubmissionSuccess(qso, appId) {
   if (!qso || typeof qso !== 'object') {
     return false;
   }
 
-  const appKey = String(appId || '').trim();
-  if (!appKey) {
+  const successKey = getLoggingFieldKey(appId, 'success');
+  if (!successKey) {
     return false;
   }
 
-  return Boolean(
-    qso.logSubmissions &&
-      typeof qso.logSubmissions === 'object' &&
-      qso.logSubmissions[appKey] &&
-      qso.logSubmissions[appKey].success === true,
-  );
+  return qso[successKey] === true;
 }
 
 function markLoggingSubmissionSuccess(qso, appId, details = {}) {
-  const appKey = String(appId || '').trim();
-  if (!appKey) {
+  const successKey = getLoggingFieldKey(appId, 'success');
+  const submittedAtKey = getLoggingFieldKey(appId, 'submitted_at');
+  const errorMessageKey = getLoggingFieldKey(appId, 'error_message');
+  const logIdKey = getLoggingFieldKey(appId, 'log_id');
+  if (!successKey || !submittedAtKey || !errorMessageKey || !logIdKey) {
     return qso;
   }
 
   const nextQso = { ...(qso || {}) };
-  const currentSubmissions =
-    nextQso.logSubmissions && typeof nextQso.logSubmissions === 'object'
-      ? nextQso.logSubmissions
-      : {};
-
-  nextQso.logSubmissions = {
-    ...currentSubmissions,
-    [appKey]: {
-      ...(currentSubmissions[appKey] || {}),
-      ...details,
-      success: true,
-      submittedAt: new Date().toISOString(),
-    },
-  };
+  nextQso[successKey] = true;
+  nextQso[submittedAtKey] = new Date().toISOString();
+  nextQso[errorMessageKey] = '';
+  if (Object.prototype.hasOwnProperty.call(details, 'logId')) {
+    nextQso[logIdKey] = String(details.logId || '').trim();
+  }
 
   return nextQso;
 }
 
 function markLoggingSubmissionFailure(qso, appId, errorMessage) {
-  const appKey = String(appId || '').trim();
-  if (!appKey) {
+  const successKey = getLoggingFieldKey(appId, 'success');
+  const submittedAtKey = getLoggingFieldKey(appId, 'submitted_at');
+  const errorMessageKey = getLoggingFieldKey(appId, 'error_message');
+  if (!successKey || !submittedAtKey || !errorMessageKey) {
     return qso;
   }
 
   const nextQso = { ...(qso || {}) };
-  const currentSubmissions =
-    nextQso.logSubmissions && typeof nextQso.logSubmissions === 'object'
-      ? nextQso.logSubmissions
-      : {};
-
-  nextQso.logSubmissions = {
-    ...currentSubmissions,
-    [appKey]: {
-      ...(currentSubmissions[appKey] || {}),
-      errorMessage: errorMessage,
-      success: false,
-      submittedAt: new Date().toISOString(),
-    },
-  };
+  nextQso[successKey] = false;
+  nextQso[submittedAtKey] = new Date().toISOString();
+  nextQso[errorMessageKey] = String(errorMessage || '').trim();
 
   return nextQso;
 }
@@ -76,9 +76,18 @@ function enrichQsoComment(qso) {
     return qso;
   }
 
-  const state = String(qso.state || '').trim().toUpperCase();
-  const isPotaEnriched = String(qso.sig || '').trim().toUpperCase() === 'POTA';
-  const sigInfo = isPotaEnriched ? String(qso.sig_info || '').trim().toUpperCase() : '';
+  const state = String(qso.state || '')
+    .trim()
+    .toUpperCase();
+  const isPotaEnriched =
+    String(qso.sig || '')
+      .trim()
+      .toUpperCase() === 'POTA';
+  const sigInfo = isPotaEnriched
+    ? String(qso.sig_info || '')
+        .trim()
+        .toUpperCase()
+    : '';
 
   if (!state && !sigInfo) {
     return qso;

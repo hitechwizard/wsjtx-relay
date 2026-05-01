@@ -209,71 +209,93 @@ function setupEventListeners() {
   setupManualFieldValidation();
 
   // Theme change listener
-  addSubscriptionDisposer(window.electron.onThemeChanged((theme) => {
-    applyTheme(theme);
-  }));
+  addSubscriptionDisposer(
+    window.electron.onThemeChanged((theme) => {
+      applyTheme(theme);
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onUpdateBadgeState((state) => {
-    applyUpdateBadgeState(state);
-  }));
+  addSubscriptionDisposer(
+    window.electron.onUpdateBadgeState((state) => {
+      applyUpdateBadgeState(state);
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onSettingsChanged((settings) => {
-    applySettingsToStatusIndicators(settings);
-    if (settings && settings.theme) {
-      applyTheme(settings.theme);
-    }
-  }));
+  addSubscriptionDisposer(
+    window.electron.onSettingsChanged((settings) => {
+      applySettingsToStatusIndicators(settings);
+      if (settings && settings.theme) {
+        applyTheme(settings.theme);
+      }
+    }),
+  );
 
   // QSO data refresh listener
-  addSubscriptionDisposer(window.electron.onQsoDataRefresh(() => {
-    refreshQsoLog();
-  }));
+  addSubscriptionDisposer(
+    window.electron.onQsoDataRefresh(() => {
+      refreshQsoLog();
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onPotaSpotSelected((spotData) => {
-    applySelectedPotaSpotToManualQso(spotData);
-  }));
+  addSubscriptionDisposer(
+    window.electron.onPotaSpotSelected((spotData) => {
+      applySelectedPotaSpotToManualQso(spotData);
+    }),
+  );
 
   // Relay events
-  addSubscriptionDisposer(window.electron.onRelayLog((msg) => {
-    blinkActivityRxIndicator();
-    if (!shouldLogPacketMessage(msg)) {
-      return;
-    }
-    addLogEntry(msg, 'normal');
-  }));
+  addSubscriptionDisposer(
+    window.electron.onRelayLog((msg) => {
+      blinkActivityRxIndicator();
+      if (!shouldLogPacketMessage(msg)) {
+        return;
+      }
+      addLogEntry(msg, 'normal');
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onRelayStatus((status) => {
-    updateStatus(status);
-  }));
+  addSubscriptionDisposer(
+    window.electron.onRelayStatus((status) => {
+      updateStatus(status);
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onRelayError((msg) => {
-    addLogEntry(`ERROR: ${msg}`, 'error');
-  }));
+  addSubscriptionDisposer(
+    window.electron.onRelayError((msg) => {
+      addLogEntry(`ERROR: ${msg}`, 'error');
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onRelayDecode((msg) => {
-    addLogEntry(msg, 'normal');
-  }));
+  addSubscriptionDisposer(
+    window.electron.onRelayDecode((msg) => {
+      addLogEntry(msg, 'normal');
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onRelayStatusUpdate((statusData) => {
-    updateStatusIndicators(statusData);
-  }));
+  addSubscriptionDisposer(
+    window.electron.onRelayStatusUpdate((statusData) => {
+      updateStatusIndicators(statusData);
+    }),
+  );
 
-  addSubscriptionDisposer(window.electron.onRelayQsoLogged(async (qso) => {
-    applyManualMyParkToLoggedQso(qso);
-    normalizeCalculatedFields(qso);
-    // Save QSO from relay to persistent storage
-    const saveResult = await window.electron.saveQso(qso);
-    const persistedQso = saveResult && saveResult.qso ? saveResult.qso : qso;
-    if (
-      saveResult &&
-      saveResult.success &&
-      typeof window.electron.notifyQsoDataChanged === 'function'
-    ) {
-      window.electron.notifyQsoDataChanged();
-    }
-    normalizeCalculatedFields(persistedQso);
-    addQsoEntry(persistedQso, 'normal');
-  }));
+  addSubscriptionDisposer(
+    window.electron.onRelayQsoLogged(async (qso) => {
+      applyManualMyParkToLoggedQso(qso);
+      normalizeCalculatedFields(qso);
+      // Save QSO from relay to persistent storage
+      const saveResult = await window.electron.saveQso(qso);
+      const persistedQso = saveResult && saveResult.qso ? saveResult.qso : qso;
+      if (
+        saveResult &&
+        saveResult.success &&
+        typeof window.electron.notifyQsoDataChanged === 'function'
+      ) {
+        window.electron.notifyQsoDataChanged();
+      }
+      normalizeCalculatedFields(persistedQso);
+      addQsoEntry(persistedQso, 'normal');
+    }),
+  );
 
   window.addEventListener('beforeunload', () => {
     disposeSubscriptions();
@@ -477,6 +499,16 @@ function toggleSectionVisibility(section, toggleButton) {
 }
 
 function setupManualFieldValidation() {
+  if (qsoFrequency) {
+    qsoFrequency.addEventListener('input', () => {
+      const freqMHz = parseFloat(qsoFrequency.value);
+      if (qsoBand) {
+        qsoBand.value = Number.isFinite(freqMHz) ? freqToBand(freqMHz) : '';
+      }
+      updateLogContactButtonState();
+    });
+  }
+
   const manualFieldMap = {
     call: 'qso-dxcall',
     sig_info: 'qso-siginfo',
@@ -841,7 +873,9 @@ function escapeHtml(text) {
 }
 
 function normalizeBandKey(band) {
-  return String(band || '').trim().toLowerCase();
+  return String(band || '')
+    .trim()
+    .toLowerCase();
 }
 
 function renderBandBadge(band) {
@@ -873,7 +907,7 @@ function parsePowerWatts(value) {
 function renderPowerBadge(powerText) {
   const label = String(powerText ?? '').trim();
   const span = document.createElement('span');
-  span.innerHTML = '-'
+  span.innerHTML = '-';
   if (!label || label === '-') {
     return span;
   }
@@ -890,7 +924,6 @@ function renderPowerBadge(powerText) {
 
   span.setAttribute('data-pwr', pwrLevel);
   return span;
-  
 }
 
 function addQsoEntry(qso, type = 'normal') {
@@ -922,12 +955,7 @@ function addQsoEntry(qso, type = 'normal') {
   }
 
   // Ensure columns are rendered in order
-  const columns = [
-    display.start,
-    display.call,
-    display.mode,
-    display.freq
-  ];
+  const columns = [display.start, display.call, display.mode, display.freq];
 
   columns.forEach((col) => {
     const span = document.createElement('span');
@@ -1038,13 +1066,11 @@ function addQsoEntry(qso, type = 'normal') {
     hasIndicators = true;
   }
 
-  const qrzSubmission =
-    qso && qso.logSubmissions && qso.logSubmissions.qrz ? qso.logSubmissions.qrz : null;
-  if (qrzSubmission && qrzSubmission.success === true) {
+  if (qso && qso.app_qrzlog_success === true) {
     const qrzBadge = document.createElement('span');
     qrzBadge.className = 'qso-app-badge qso-app-badge-qrz';
     qrzBadge.textContent = 'QRZ';
-    const submittedAt = String(qrzSubmission.submittedAt || '').trim();
+    const submittedAt = String(qso.app_qrzlog_submitted_at || '').trim();
     if (submittedAt) {
       qrzBadge.title = `Submitted to QRZ: ${submittedAt}`;
     } else {
@@ -1054,13 +1080,11 @@ function addQsoEntry(qso, type = 'normal') {
     hasIndicators = true;
   }
 
-  const clublogSubmission =
-    qso && qso.logSubmissions && qso.logSubmissions.clublog ? qso.logSubmissions.clublog : null;
-  if (clublogSubmission && clublogSubmission.success === true) {
+  if (qso && qso.app_clublog_success === true) {
     const clublogBadge = document.createElement('span');
     clublogBadge.className = 'qso-app-badge qso-app-badge-clublog';
     clublogBadge.textContent = 'CLUB';
-    const submittedAt = String(clublogSubmission.submittedAt || '').trim();
+    const submittedAt = String(qso.app_clublog_submitted_at || '').trim();
     if (submittedAt) {
       clublogBadge.title = `Submitted to Clublog: ${submittedAt}`;
     } else {
@@ -1072,6 +1096,18 @@ function addQsoEntry(qso, type = 'normal') {
 
   if (hasIndicators) {
     entry.appendChild(indicatorsWrap);
+  }
+
+  // Insert a date separator when the UTC date changes between entries
+  if (qsoList.length > 0) {
+    const prevIso = qsoList[qsoList.length - 1].start || qsoList[qsoList.length - 1].end || '';
+    const prevDate = prevIso.split('T')[0] || '';
+    if (prevDate && incomingDate && prevDate !== incomingDate) {
+      const separator = document.createElement('div');
+      separator.className = 'qso-date-separator';
+      separator.dataset.date = incomingDate;
+      qsoContainer.appendChild(separator);
+    }
   }
 
   qsoContainer.appendChild(entry);
@@ -1188,13 +1224,22 @@ function updateStatusIndicators(statusData) {
 }
 
 function updateMyParkFromConfigurationName(statusData) {
+  const mySigInfoInput = document.getElementById('qso-mysiginfo');
+  if (!mySigInfoInput) {
+    return;
+  }
+
   const configurationName = String(statusData.configurationName || '').trim();
   if (!configurationName || !configurationName.includes('@')) {
+    mySigInfoInput.value = '';
+    mySigInfoInput.setCustomValidity('');
     return;
   }
 
   const [configCall, ...parkParts] = configurationName.split('@');
   if (!configCall || parkParts.length !== 1) {
+    mySigInfoInput.value = '';
+    mySigInfoInput.setCustomValidity('');
     return;
   }
 
@@ -1202,17 +1247,16 @@ function updateMyParkFromConfigurationName(statusData) {
     .trim()
     .toUpperCase();
   if (!statusCall || configCall.trim().toUpperCase() !== statusCall) {
-    return;
-  }
-
-  const mySigInfoInput = document.getElementById('qso-mysiginfo');
-  if (!mySigInfoInput) {
+    mySigInfoInput.value = '';
+    mySigInfoInput.setCustomValidity('');
     return;
   }
 
   const normalizedPark = preprocessManualFieldValue('my_sig_info', parkParts[0]);
   const validationError = validateManualFieldValue('my_sig_info', normalizedPark);
   if (validationError) {
+    mySigInfoInput.value = '';
+    mySigInfoInput.setCustomValidity('');
     return;
   }
 
