@@ -81,7 +81,7 @@ class WsjtxUdpParser {
     this.fastMode = this.getBoolFromData(this.data, this.offset);
     this.specialOperationMode = this.getUint8FromData(this.data, this.offset);
     //0 -> NONE
-    // 1 -> NA VHF
+    //1 -> NA VHF
     //2 -> EU VHF
     //3 -> FIELD DAY
     //4 -> RTTY RU

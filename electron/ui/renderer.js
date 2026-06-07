@@ -34,6 +34,8 @@ const qsoTimeOn = document.getElementById('qso-timeon');
 const qsoDxCallInput = document.getElementById('qso-dxcall');
 const qsoRstSentInput = document.getElementById('qso-rst');
 const qsoRstRcvdInput = document.getElementById('qso-rcvd');
+const qsoClassInput = document.getElementById('qso-class');
+const qsoArrlSectionInput = document.getElementById('qso-arrlsect');
 const deCall = document.getElementById('deCall');
 const deGrid = document.getElementById('deGrid');
 const manualQsoSection = document.getElementById('manualQsoSection');
@@ -93,8 +95,19 @@ const APP_LOGO_SVG = `
 `;
 
 const qsoFields = window.wsjtxQsoFields || {};
+const arrlSectionAbbreviations =
+  window.wsjtxArrlSections ||
+  (qsoFields.arrl_sect && qsoFields.arrl_sect.values
+    ? qsoFields.arrl_sect.values.filter(Boolean)
+    : []);
 const freqToBand = window.wsjtxFreqToBand || (() => 'OOB');
 const normalizeCalculatedFields = window.wsjtxNormalizeCalculatedFields || (() => {});
+const manualFieldGroups = {
+  common: ['mode', 'freq', 'band', 'tx_pwr', 'call'],
+  pota: ['rst_sent', 'rst_rcvd', 'state', 'sig_info', 'my_sig_info', 'my_state'],
+  'arrl-field-day': ['operator', 'class', 'arrl_sect'],
+};
+let manualQsoEntryType = 'pota';
 
 if (
   !window.wsjtxQsoFields ||
@@ -114,12 +127,18 @@ const qsoInputExtractors = {
   station_callsign: () => document.getElementById('deCall')?.textContent || '',
   tx_pwr: () => document.getElementById('qso-txpwr')?.value || '',
   my_sig_info: () => document.getElementById('qso-mysiginfo')?.value || '',
+  my_state: () => document.getElementById('qso-mystate')?.value || '',
+  state: () => document.getElementById('qso-state')?.value || '',
   sig_info: () => document.getElementById('qso-siginfo')?.value || '',
+  operator: () => document.getElementById('qso-operator')?.value || '',
+  class: () => document.getElementById('qso-class')?.value || '',
+  arrl_sect: () => document.getElementById('qso-arrlsect')?.value || '',
   comment: () => '',
 };
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
+  populateArrlSectionOptions();
   await loadTheme();
   await loadSettings();
   setupEventListeners();
@@ -144,7 +163,15 @@ function setupEventListeners() {
   qsoEditorBtn.addEventListener('click', openQsoEditor);
   if (qsoLogContactBtn) qsoLogContactBtn.addEventListener('click', handleQsoLogContact);
   if (qsoTimeNowBtn) qsoTimeNowBtn.addEventListener('click', handleQsoTimeNow);
-  [qsoTimeOn, qsoDxCallInput, qsoRstSentInput, qsoRstRcvdInput].forEach((input) => {
+  [
+    qsoDateOn,
+    qsoTimeOn,
+    qsoDxCallInput,
+    qsoRstSentInput,
+    qsoRstRcvdInput,
+    qsoClassInput,
+    qsoArrlSectionInput,
+  ].forEach((input) => {
     if (input) {
       input.addEventListener('input', updateLogContactButtonState);
       input.addEventListener('change', updateLogContactButtonState);
@@ -190,6 +217,7 @@ function setupEventListeners() {
   const qsoDxCall = document.getElementById('qso-dxcall');
   const qsoMyState = document.getElementById('qso-mystate');
   const qsoState = document.getElementById('qso-state');
+  const qsoClass = document.getElementById('qso-class');
   if (qsoDxCall) {
     qsoDxCall.addEventListener('input', (e) => {
       e.target.value = e.target.value.toUpperCase();
@@ -203,6 +231,11 @@ function setupEventListeners() {
   if (qsoState) {
     qsoState.addEventListener('input', (e) => {
       e.target.value = e.target.value.toUpperCase();
+    });
+  }
+  if (qsoClass) {
+    qsoClass.addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase().replace(/\s+/g, '');
     });
   }
 
@@ -224,6 +257,7 @@ function setupEventListeners() {
   addSubscriptionDisposer(
     window.electron.onSettingsChanged((settings) => {
       applySettingsToStatusIndicators(settings);
+      applyManualQsoSettings(settings);
       if (settings && settings.theme) {
         applyTheme(settings.theme);
       }
@@ -311,6 +345,10 @@ function setupEventListeners() {
 }
 
 function applySelectedPotaSpotToManualQso(spotData) {
+  if (manualQsoEntryType !== 'pota') {
+    return;
+  }
+
   const selectedSpot = spotData || {};
 
   const activator = String(selectedSpot.activator || '')
@@ -341,6 +379,58 @@ function applySelectedPotaSpotToManualQso(spotData) {
   updateLogContactButtonState();
 }
 
+function populateArrlSectionOptions() {
+  if (!qsoArrlSectionInput) {
+    return;
+  }
+
+  const currentValue = qsoArrlSectionInput.value;
+  qsoArrlSectionInput.innerHTML = '<option value="">Select Section</option>';
+
+  arrlSectionAbbreviations.forEach((abbr) => {
+    const option = document.createElement('option');
+    option.value = abbr;
+    option.textContent = abbr;
+    qsoArrlSectionInput.appendChild(option);
+  });
+
+  if (arrlSectionAbbreviations.includes(currentValue)) {
+    qsoArrlSectionInput.value = currentValue;
+  }
+}
+
+function resolveManualQsoEntryType(rawValue) {
+  return String(rawValue || '')
+    .trim()
+    .toLowerCase() === 'arrl-field-day'
+    ? 'arrl-field-day'
+    : 'pota';
+}
+
+function applyManualQsoSettings(settings = {}) {
+  manualQsoEntryType = resolveManualQsoEntryType(settings.manualQsoEntryType);
+
+  const groups = manualQsoSection?.querySelectorAll('[data-manual-group]') || [];
+  groups.forEach((fieldWrapper) => {
+    const groupName = String(fieldWrapper.dataset.manualGroup || '').trim();
+    const shouldShow = groupName === 'common' || groupName === manualQsoEntryType;
+    fieldWrapper.hidden = !shouldShow;
+    fieldWrapper.classList.toggle('manual-field-hidden', !shouldShow);
+
+    fieldWrapper.querySelectorAll('input, select, textarea, button').forEach((control) => {
+      control.disabled = !shouldShow;
+    });
+  });
+
+  updateLogContactButtonState();
+}
+
+function getEnabledManualFieldNames() {
+  const commonFields = manualFieldGroups.common || [];
+  const typeFields = manualFieldGroups[manualQsoEntryType] || [];
+  return [...commonFields, ...typeFields];
+}
+
 function blinkActivityRxIndicator() {
   if (!activityRxIndicator) {
     return;
@@ -363,26 +453,37 @@ function updateLogContactButtonState() {
     return;
   }
 
+  const hasDateOn = Boolean((qsoDateOn?.value || '').trim());
   const hasTimeOn = Boolean((qsoTimeOn?.value || '').trim());
   const hasDxCall = Boolean((qsoDxCallInput?.value || '').trim());
-  const hasRstSent = Boolean((qsoRstSentInput?.value || '').trim());
-  const hasRstRcvd = Boolean((qsoRstRcvdInput?.value || '').trim());
   const hasDeCall = Boolean((deCall?.textContent || '').trim());
   const hasDeGrid = Boolean((deGrid?.textContent || '').trim());
   const hasFrequency = Boolean((qsoFrequency?.value || '').trim());
   const hasBand = Boolean((qsoBand?.value || '').trim());
   const hasMode = Boolean((document.getElementById('qso-mode')?.value || '').trim());
+  const hasRstSent = Boolean((qsoRstSentInput?.value || '').trim());
+  const hasRstRcvd = Boolean((qsoRstRcvdInput?.value || '').trim());
+  const fieldDayClass = String((qsoClassInput?.value || '').trim()).toUpperCase();
+  const hasFieldDayClass = /^\d+[A-F]$/.test(fieldDayClass);
+  const hasFieldDaySection = Boolean((qsoArrlSectionInput?.value || '').trim());
+
+  let hasTypeSpecificRequiredFields = true;
+  if (manualQsoEntryType === 'pota') {
+    hasTypeSpecificRequiredFields = hasRstSent && hasRstRcvd;
+  } else if (manualQsoEntryType === 'arrl-field-day') {
+    hasTypeSpecificRequiredFields = hasFieldDayClass && hasFieldDaySection;
+  }
 
   qsoLogContactBtn.disabled = !(
+    hasDateOn &&
     hasTimeOn &&
     hasDxCall &&
-    hasRstSent &&
-    hasRstRcvd &&
     hasDeCall &&
     hasDeGrid &&
     hasFrequency &&
     hasBand &&
-    hasMode
+    hasMode &&
+    hasTypeSpecificRequiredFields
   );
 }
 
@@ -515,6 +616,8 @@ function setupManualFieldValidation() {
     my_sig_info: 'qso-mysiginfo',
     state: 'qso-state',
     my_state: 'qso-mystate',
+    class: 'qso-class',
+    arrl_sect: 'qso-arrlsect',
   };
 
   Object.entries(manualFieldMap).forEach(([fieldName, elementId]) => {
@@ -546,6 +649,8 @@ function preprocessManualFieldValue(fieldName, value) {
     fieldName === 'station_callsign' ||
     fieldName === 'state' ||
     fieldName === 'my_state' ||
+    fieldName === 'arrl_sect' ||
+    fieldName === 'class' ||
     fieldName === 'sig_info' ||
     fieldName === 'my_sig_info'
   ) {
@@ -639,6 +744,7 @@ function applySettingsToStatusIndicators(settings) {
 async function loadSettings() {
   const settings = await window.electron.getSettings();
   applySettingsToStatusIndicators(settings);
+  applyManualQsoSettings(settings);
   renderAppLogo();
 
   // Load and display persisted QSOs
@@ -711,18 +817,19 @@ async function handleQsoLogContact() {
   const dateon = qsoDateOn?.value || '';
   const timeon = qsoTimeOn?.value || '';
   const timestamp = `${dateon}T${timeon}Z`;
+  if (!dateon || !timeon) {
+    alert('Date On and Time On are required.');
+    return;
+  }
 
   const qso = {
     start: timestamp,
     end: timestamp,
     my_gridsquare: document.getElementById('deGrid')?.textContent || '',
+    station_callsign: document.getElementById('deCall')?.textContent || '',
   };
 
-  Object.entries(qsoFields).forEach(([fieldName, config]) => {
-    if (config.hidden) {
-      return;
-    }
-
+  getEnabledManualFieldNames().forEach((fieldName) => {
     const extractor = qsoInputExtractors[fieldName];
     if (!extractor) {
       return;
@@ -734,30 +841,59 @@ async function handleQsoLogContact() {
 
   normalizeCalculatedFields(qso);
 
-  const pota = {
-    qso_date: dateon.replaceAll('-', ''),
-    time_on: timeon.replaceAll(':', ''),
-    my_state: (document.getElementById('qso-mystate')?.value || '').toUpperCase(),
-    state: (document.getElementById('qso-state')?.value || '').toUpperCase(),
-  };
+  if (manualQsoEntryType === 'pota') {
+    const pota = {
+      qso_date: dateon.replaceAll('-', ''),
+      time_on: timeon.replaceAll(':', ''),
+      my_state: (document.getElementById('qso-mystate')?.value || '').toUpperCase(),
+      state: (document.getElementById('qso-state')?.value || '').toUpperCase(),
+    };
 
-  Object.entries(pota).forEach(([key, value]) => {
-    if (value !== '') {
-      qso[key] = value;
+    Object.entries(pota).forEach(([key, value]) => {
+      if (value !== '') {
+        qso[key] = value;
+      }
+    });
+
+    const commentParts = [];
+    if (pota.state) {
+      commentParts.push(`State: ${pota.state}`);
     }
-  });
+    if (qso.sig_info) {
+      commentParts.push(`POTA: ${String(qso.sig_info).trim().toUpperCase()}`);
+    }
+    if (commentParts.length > 0) {
+      const existingComment = String(qso.comment || '').trim();
+      const detailComment = commentParts.join(' | ');
+      qso.comment = existingComment ? `${existingComment} | ${detailComment}` : detailComment;
+    }
+  }
 
-  const commentParts = [];
-  if (pota.state) {
-    commentParts.push(`State: ${pota.state}`);
-  }
-  if (qso.sig_info) {
-    commentParts.push(`POTA: ${String(qso.sig_info).trim().toUpperCase()}`);
-  }
-  if (commentParts.length > 0) {
-    const existingComment = String(qso.comment || '').trim();
-    const detailComment = commentParts.join(' | ');
-    qso.comment = existingComment ? `${existingComment} | ${detailComment}` : detailComment;
+  if (manualQsoEntryType === 'arrl-field-day') {
+    const fieldDayClass = String(qso.class || '')
+      .trim()
+      .toUpperCase();
+    const arrlSect = String(qso.arrl_sect || '')
+      .trim()
+      .toUpperCase();
+    const classPattern = /^\d+[A-F]$/;
+
+    if (!classPattern.test(fieldDayClass)) {
+      alert('Class must be a number followed by a letter A-F (for example: 1A).');
+      return;
+    }
+
+    if (!arrlSect || !arrlSectionAbbreviations.includes(arrlSect)) {
+      alert('Please select a valid ARRL Section abbreviation.');
+      return;
+    }
+
+    qso.class = fieldDayClass;
+    qso.arrl_sect = arrlSect;
+    qso.rst_sent = '';
+    qso.rst_rcvd = '';
+    qso.srx_string = `${fieldDayClass} ${arrlSect}`;
+    qso.contest_id = 'ARRL-FIELD-DAY';
   }
 
   // Save QSO to persistent storage
@@ -782,12 +918,20 @@ async function handleQsoLogContact() {
 
   // Reset certain fields
   qsoDateOn.value = '';
-  qsoTimeOn.value = '';
+  if (qsoTimeOn) {
+    qsoTimeOn.value = '';
+  }
   document.getElementById('qso-dxcall').value = '';
   document.getElementById('qso-rst').value = '';
   document.getElementById('qso-rcvd').value = '';
   document.getElementById('qso-state').value = '';
   document.getElementById('qso-siginfo').value = '';
+  if (qsoClassInput) {
+    qsoClassInput.value = '';
+  }
+  if (qsoArrlSectionInput) {
+    qsoArrlSectionInput.value = '';
+  }
   updateLogContactButtonState();
 }
 

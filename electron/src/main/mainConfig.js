@@ -39,6 +39,7 @@ function getStoreDefaults(defaultActivityPacketFilters) {
     clublogEmail: '',
     forwardDelaySeconds: 0.5,
     decodeSightingExpirationMinutes: 5,
+    manualQsoEntryType: 'pota',
     activityPacketFilters: [...defaultActivityPacketFilters],
     theme: 'light',
     windowBounds: { width: 1200, height: 800 },

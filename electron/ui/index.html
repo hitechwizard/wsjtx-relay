@@ -50,7 +50,11 @@
           </button>
         </h3>
         <div id="manualQsoSection" class="qso-grid">
-          <div class="form-group qso-field">
+          <div
+            class="form-group qso-field"
+            data-manual-field-key="mode"
+            data-manual-group="common"
+          >
             <label>Mode:</label>
             <span class="qso-value">
               <select id="qso-mode">
@@ -59,57 +63,136 @@
               </select>
             </span>
           </div>
-          <div class="form-group qso-field">
+          <div
+            class="form-group qso-field"
+            data-manual-field-key="my_sig_info"
+            data-manual-group="pota"
+          >
             <label>My Park:</label>
             <span class="qso-value"><input type="text" id="qso-mysiginfo" /></span>
           </div>
-          <div class="form-group qso-field">
+          <div
+            class="form-group qso-field"
+            data-manual-field-key="operator"
+            data-manual-group="arrl-field-day"
+            hidden
+          >
+            <label>Operator:</label>
+            <span class="qso-value"><input type="text" id="qso-operator" /></span>
+          </div>
+          <div
+            class="form-group qso-field"
+            data-manual-field-key="my_state"
+            data-manual-group="pota"
+          >
             <label>My State:</label>
             <span class="qso-value"><input type="text" id="qso-mystate" /></span>
           </div>
-          <div class="form-group qso-field">
+          <div
+            class="form-group qso-field"
+            data-manual-field-key="freq"
+            data-manual-group="common"
+          >
             <label>Frequency:</label>
             <span class="qso-value"><input type="number" id="qso-frequency" step="any" /></span>
           </div>
-          <div class="form-group qso-field">
+          <div
+            class="form-group qso-field"
+            data-manual-field-key="band"
+            data-manual-group="common"
+          >
             <label>Band:</label>
             <span class="qso-value"><input type="text" id="qso-band" disabled /></span>
           </div>
-          <div class="form-group qso-field">
+          <div
+            class="form-group qso-field"
+            data-manual-field-key="tx_pwr"
+            data-manual-group="common"
+          >
             <label>TX Power:</label>
             <span class="qso-value"><input type="number" id="qso-txpwr" /></span>
           </div>
-          <div class="form-group qso-field">
+          <div
+            class="form-group qso-field"
+            data-manual-field-key="start"
+            data-manual-group="common"
+          >
             <label>Date On:</label>
             <span class="qso-value"><input type="text" id="qso-dateon" /></span>
           </div>
-          <div class="form-group qso-field">
+          <div
+            class="form-group qso-field"
+            data-manual-field-key="time_on"
+            data-manual-group="common"
+          >
             <div class="qso-field-header">
               <label>Time On:</label>
               <button id="qsoTimeNow" class="btn btn-primary btn-sm qso-time-now-btn">Now</button>
             </div>
             <span class="qso-value"><input type="text" id="qso-timeon" /></span>
           </div>
-          <div class="form-group qso-field">
+          <div
+            class="form-group qso-field"
+            data-manual-field-key="call"
+            data-manual-group="common"
+          >
             <label>DX Call:</label>
             <span class="qso-value"><input type="text" id="qso-dxcall" /></span>
           </div>
-          <div class="form-group qso-field">
+          <div
+            class="form-group qso-field"
+            data-manual-field-key="rst_sent"
+            data-manual-group="pota"
+          >
             <label>RST Sent:</label>
             <span class="qso-value"><input type="text" id="qso-rst" /></span>
           </div>
-          <div class="form-group qso-field">
+          <div
+            class="form-group qso-field"
+            data-manual-field-key="rst_rcvd"
+            data-manual-group="pota"
+          >
             <label>RST Rcvd:</label>
             <span class="qso-value"><input type="text" id="qso-rcvd" /></span>
           </div>
-          <div class="form-group qso-field">
+          <div class="form-group qso-field" data-manual-field-key="state" data-manual-group="pota">
             <label>State:</label>
             <span class="qso-value"><input type="text" id="qso-state" /></span>
           </div>
-          <div class="form-group qso-field">
+          <div
+            class="form-group qso-field"
+            data-manual-field-key="sig_info"
+            data-manual-group="pota"
+          >
             <label>Their Park:</label>
             <span class="qso-value"><input type="text" id="qso-siginfo" /></span>
           </div>
+
+          <div
+            class="form-group qso-field"
+            data-manual-field-key="class"
+            data-manual-group="arrl-field-day"
+            hidden
+          >
+            <label>Class:</label>
+            <span class="qso-value"
+              ><input type="text" id="qso-class" placeholder="e.g., 1A"
+            /></span>
+          </div>
+          <div
+            class="form-group qso-field"
+            data-manual-field-key="arrl_sect"
+            data-manual-group="arrl-field-day"
+            hidden
+          >
+            <label>ARRL Section:</label>
+            <span class="qso-value">
+              <select id="qso-arrlsect">
+                <option value="">Select Section</option>
+              </select>
+            </span>
+          </div>
+
           <div class="qso-log-contact-wrap">
             <button id="qsoLogContact" class="btn btn-primary qso-log-contact-btn" disabled>
               Log Contact
@@ -228,9 +311,7 @@
           </h2>
           <div class="log-container" id="logContainer"></div>
           <div class="log-panel-footer">
-            <button id="clearLogBtn" class="btn btn-danger log-panel-footer-btn">
-              Clear Log
-            </button>
+            <button id="clearLogBtn" class="btn btn-danger log-panel-footer-btn">Clear Log</button>
           </div>
         </div>
         <div class="log-panel">
@@ -259,9 +340,7 @@
             </div>
           </div>
           <div class="log-panel-footer">
-            <button id="clearQsoBtn" class="btn btn-danger log-panel-footer-btn">
-              Clear Log
-            </button>
+            <button id="clearQsoBtn" class="btn btn-danger log-panel-footer-btn">Clear Log</button>
             <button id="qsoEditorBtn" class="btn btn-secondary log-panel-footer-btn">
               QSO Editor
             </button>

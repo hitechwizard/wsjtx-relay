@@ -1,4 +1,92 @@
 (function () {
+  const arrlSections = [
+    'AB',
+    'AK',
+    'AL',
+    'AR',
+    'AZ',
+    'BC',
+    'CO',
+    'CT',
+    'DE',
+    'EB',
+    'EMA',
+    'ENY',
+    'EPA',
+    'EWA',
+    'GA',
+    'GH',
+    'IA',
+    'ID',
+    'IL',
+    'IN',
+    'KS',
+    'KY',
+    'LA',
+    'LAX',
+    'MB',
+    'MDC',
+    'ME',
+    'MI',
+    'MN',
+    'MO',
+    'MS',
+    'MT',
+    'NB',
+    'NC',
+    'ND',
+    'NE',
+    'NFL',
+    'NH',
+    'NL',
+    'NLI',
+    'NM',
+    'NNJ',
+    'NNY',
+    'NS',
+    'NTX',
+    'NV',
+    'OH',
+    'OK',
+    'ONE',
+    'ONN',
+    'ONS',
+    'OR',
+    'ORG',
+    'PAC',
+    'PE',
+    'PR',
+    'QC',
+    'RI',
+    'SB',
+    'SC',
+    'SCV',
+    'SD',
+    'SDG',
+    'SF',
+    'SFL',
+    'SJV',
+    'SK',
+    'SNJ',
+    'STX',
+    'SV',
+    'TER',
+    'TN',
+    'UT',
+    'VA',
+    'VI',
+    'VT',
+    'WCF',
+    'WI',
+    'WMA',
+    'WNY',
+    'WPA',
+    'WTX',
+    'WV',
+    'WWA',
+    'WY',
+  ];
+
   const qsoFields = {
     call: { label: 'DX Call', type: 'string' },
     freq: { label: 'Frequency (Mhz)', type: 'number' },
@@ -41,6 +129,10 @@
     station_callsign: { label: 'DE Call', type: 'string' },
     my_state: { label: 'My State', type: 'string' },
     operator: { label: 'Operator', type: 'string' },
+    class: { label: 'Class', type: 'string', pattern: '^\\d+[A-Fa-f]$' },
+    arrl_sect: { label: 'ARRL Section', type: 'enum', values: ['', ...arrlSections] },
+    srx_string: { label: 'SRX String', type: 'string', hidden: true },
+    contest_id: { label: 'Contest ID', type: 'string', hidden: true },
     state: { label: 'State', type: 'string' },
     tx_pwr: { label: 'TX Pwr (w)', type: 'number' },
     start: { label: 'Start', type: 'string' },
@@ -113,6 +205,13 @@
     qso.state = String(qso.state || '')
       .toUpperCase()
       .trim();
+    qso.arrl_sect = String(qso.arrl_sect || '')
+      .toUpperCase()
+      .trim();
+    qso.class = String(qso.class || '')
+      .toUpperCase()
+      .trim();
+    qso.operator = String(qso.operator || '').trim();
     qso.my_sig_info = normalizeParkRef(qso.my_sig_info);
     qso.sig_info = normalizeParkRef(qso.sig_info);
 
@@ -136,6 +235,7 @@
   }
 
   window.wsjtxQsoFields = qsoFields;
+  window.wsjtxArrlSections = arrlSections;
   window.wsjtxFreqToBand = freqToBand;
   window.wsjtxNormalizeCalculatedFields = normalizeCalculatedFields;
 })();

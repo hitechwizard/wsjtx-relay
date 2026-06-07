@@ -34,8 +34,15 @@ function registerSettingsHandlers({
       0,
       3650,
     );
+    const manualQsoEntryType = String(payload.manualQsoEntryType || '')
+      .trim()
+      .toLowerCase();
+    const isManualQsoEntryTypeValid =
+      manualQsoEntryType === '' ||
+      manualQsoEntryType === 'pota' ||
+      manualQsoEntryType === 'arrl-field-day';
 
-    if (listenPort === null || forwards === null) {
+    if (listenPort === null || forwards === null || !isManualQsoEntryTypeValid) {
       return { success: false, error: 'Invalid listen port or forwards configuration' };
     }
 
@@ -81,6 +88,9 @@ function registerSettingsHandlers({
     }
     if (decodeSightingExpirationMinutes !== null) {
       store.set('decodeSightingExpirationMinutes', decodeSightingExpirationMinutes);
+    }
+    if (manualQsoEntryType) {
+      store.set('manualQsoEntryType', manualQsoEntryType);
     }
     if (Array.isArray(payload.activityPacketFilters)) {
       const sanitizedPacketFilters = payload.activityPacketFilters
