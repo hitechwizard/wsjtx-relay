@@ -460,6 +460,7 @@ function updateLogContactButtonState() {
   const hasDeGrid = Boolean((deGrid?.textContent || '').trim());
   const hasFrequency = Boolean((qsoFrequency?.value || '').trim());
   const hasBand = Boolean((qsoBand?.value || '').trim());
+  const hasTxPower = Boolean((document.getElementById('qso-txpwr')?.value || '').trim());
   const hasMode = Boolean((document.getElementById('qso-mode')?.value || '').trim());
   const hasRstSent = Boolean((qsoRstSentInput?.value || '').trim());
   const hasRstRcvd = Boolean((qsoRstRcvdInput?.value || '').trim());
@@ -482,6 +483,7 @@ function updateLogContactButtonState() {
     hasDeGrid &&
     hasFrequency &&
     hasBand &&
+    hasTxPower &&
     hasMode &&
     hasTypeSpecificRequiredFields
   );
