@@ -35,14 +35,7 @@
 
           <div class="form-group">
             <label for="listenPort">Listen Port:</label>
-            <input
-              type="number"
-              id="listenPort"
-              name="listenPort"
-              min="1"
-              max="65535"
-              required
-            />
+            <input type="number" id="listenPort" name="listenPort" min="1" max="65535" required />
             <small>Port to listen on localhost (default: 2237)</small>
           </div>
 
@@ -69,6 +62,15 @@
               On QSO save, query POTA activator spots and auto-fill DX grid/sig fields when
               callsign matches
             </small>
+          </div>
+
+          <div class="form-group">
+            <label for="manualQsoEntryType">Manual QSO Entry Type:</label>
+            <select id="manualQsoEntryType" name="manualQsoEntryType">
+              <option value="pota">POTA</option>
+              <option value="arrl-field-day">ARRL Field Day</option>
+            </select>
+            <small> Select which manual-entry field set appears in the main window </small>
           </div>
 
           <div class="form-group">
@@ -113,7 +115,9 @@
             <label for="qrzApiKey">API Key:</label>
             <div class="password-input-group">
               <input type="password" id="qrzApiKey" name="qrzApiKey" autocomplete="off" />
-              <button type="button" id="toggleQrzApiKeyBtn" class="btn btn-secondary">Reveal</button>
+              <button type="button" id="toggleQrzApiKeyBtn" class="btn btn-secondary">
+                Reveal
+              </button>
             </div>
             <small>Enable QRZ log submission and provide your QRZ API key</small>
           </div>
@@ -122,11 +126,7 @@
             <div class="settings-toggle-header">
               <span class="settings-toggle-title">Clublog Logging</span>
               <label class="settings-toggle-control" for="clublogLoggingEnabled">
-                <input
-                  type="checkbox"
-                  id="clublogLoggingEnabled"
-                  name="clublogLoggingEnabled"
-                />
+                <input type="checkbox" id="clublogLoggingEnabled" name="clublogLoggingEnabled" />
                 <span>Enabled</span>
               </label>
             </div>
@@ -149,7 +149,9 @@
                     name="clublogPassword"
                     autocomplete="current-password"
                   />
-                  <button type="button" id="toggleClublogPasswordBtn" class="btn btn-secondary">Reveal</button>
+                  <button type="button" id="toggleClublogPasswordBtn" class="btn btn-secondary">
+                    Reveal
+                  </button>
                 </div>
               </div>
             </div>

@@ -431,6 +431,10 @@ body {
   border-radius: 6px;
 }
 
+.qso-field.manual-field-hidden {
+  display: none !important;
+}
+
 .qso-field-header {
   display: flex;
   align-items: center;

@@ -1,5 +1,52 @@
 # Changelog
 
+## 1.1.0 - 06/07/2026
+
+### Added
+
+- Added a new `Manual QSO Entry Type` setting with selectable modes:
+  - `POTA`
+  - `ARRL Field Day`
+- Added persistence and validation for `manualQsoEntryType` in main-process settings handling and snapshots.
+- Added ARRL Field Day manual-entry fields in the main window:
+  - `Operator`
+  - `Class`
+  - `ARRL Section`
+- Added ARRL Section dropdown options using ARRL section abbreviations.
+- Added ARRL Field Day-specific QSO schema fields:
+  - `class`
+  - `arrl_sect`
+  - `srx_string`
+  - `contest_id`
+- Added dynamic manual-entry field grouping in the main UI:
+  - Common fields shown for all entry types.
+  - POTA-specific fields shown only for POTA mode.
+  - ARRL Field Day-specific fields shown only for ARRL Field Day mode.
+
+### Changed
+
+- Updated manual QSO processing to build payloads based on selected manual entry type.
+- Updated ARRL Field Day save behavior to store:
+  - `operator`
+  - `class`
+  - `arrl_sect`
+  - `srx_string` (computed as `Class + space + ARRL Section`)
+  - `contest_id` with constant value `ARRL-FIELD-DAY`
+- Updated ARRL Field Day save behavior to include empty RST fields in saved QSO payloads.
+- Restored manual time-entry workflow to prior behavior:
+  - `Date On` and `Time On` fields are used for manual QSO logging.
+  - `Now` button remains in the `Time On` field header and fills UTC date/time.
+- Updated manual QSO reset behavior so `Operator` is retained after logging (similar to `TX Power`).
+- Bumped Electron app version from `1.0.9` to `1.1.0`.
+
+### Fixed
+
+- Fixed manual entry mode switching so only fields for the selected type are shown.
+- Fixed ARRL Field Day `Log Contact` enablement to require valid class format (`number` followed by `A`-`F`).
+- Fixed POTA spot selection behavior so it no longer populates POTA fields when ARRL Field Day mode is active.
+- Fixed ARRL Field Day class/section normalization and validation in manual input handling.
+- Minor parser source cleanup: normalized spacing in WSJT-X special-operation mode comments.
+
 ## 1.0.9 - 05/01/2026
 
 ### Added

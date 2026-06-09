@@ -9,6 +9,7 @@ const themeLightInput = document.getElementById('themeLight');
 const themeDarkInput = document.getElementById('themeDark');
 const autoStartRelayInput = document.getElementById('autoStartRelay');
 const usePotaSpotMapInput = document.getElementById('usePotaSpotMap');
+const manualQsoEntryTypeInput = document.getElementById('manualQsoEntryType');
 const qrzLoggingEnabledInput = document.getElementById('qrzLoggingEnabled');
 const qrzApiKeyInput = document.getElementById('qrzApiKey');
 const toggleQrzApiKeyBtn = document.getElementById('toggleQrzApiKeyBtn');
@@ -56,6 +57,8 @@ async function loadSettings() {
   listenPortInput.value = settings.listenPort;
   autoStartRelayInput.checked = Boolean(settings.autoStartRelay);
   usePotaSpotMapInput.checked = Boolean(settings.usePotaSpotMap);
+  manualQsoEntryTypeInput.value =
+    settings.manualQsoEntryType === 'arrl-field-day' ? 'arrl-field-day' : 'pota';
   qrzLoggingEnabledInput.checked = Boolean(settings.qrzLoggingEnabled);
   qrzApiKeyInput.value = String(settings.qrzApiKey || '');
   clublogLoggingEnabledInput.checked = Boolean(settings.clublogLoggingEnabled);
@@ -63,8 +66,7 @@ async function loadSettings() {
   clublogPasswordInput.value = String(settings.clublogPassword || '');
   clublogEmailInput.value = String(settings.clublogEmail || '');
   forwardDelaySecondsInput.value = settings.forwardDelaySeconds ?? 0.5;
-  decodeSightingExpirationMinutesInput.value =
-    settings.decodeSightingExpirationMinutes ?? 5;
+  decodeSightingExpirationMinutesInput.value = settings.decodeSightingExpirationMinutes ?? 5;
   currentTheme = settings.theme || 'light';
   forwardsData = (settings.forwards || []).map((forward) => ({
     host: forward.host,
@@ -224,6 +226,8 @@ async function saveSettings(e) {
   const listenPort = parseInt(listenPortInput.value);
   const autoStartRelay = Boolean(autoStartRelayInput.checked);
   const usePotaSpotMap = Boolean(usePotaSpotMapInput.checked);
+  const manualQsoEntryType =
+    manualQsoEntryTypeInput.value === 'arrl-field-day' ? 'arrl-field-day' : 'pota';
   const qrzLoggingEnabled = Boolean(qrzLoggingEnabledInput.checked);
   const qrzApiKey = String(qrzApiKeyInput.value || '').trim();
   const clublogLoggingEnabled = Boolean(clublogLoggingEnabledInput.checked);
@@ -267,6 +271,7 @@ async function saveSettings(e) {
       forwards: forwardsData,
       autoStartRelay,
       usePotaSpotMap,
+      manualQsoEntryType,
       qrzLoggingEnabled,
       qrzApiKey,
       clublogLoggingEnabled,
