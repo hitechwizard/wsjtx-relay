@@ -2358,3 +2358,24 @@ body.dark-theme .pota-spot-row.pota-spot-tx-enabled:hover td {
 .pota-no-spots[hidden] {
   display: none !important;
 }
+
+.pota-api-error-banner {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d64b4b;
+  background: #ffe6e6;
+  color: #8a1f1f;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pota-api-error-banner[hidden] {
+  display: none !important;
+}
+
+body.dark-theme .pota-api-error-banner {
+  border-color: #b33a3a;
+  background: #4b1f1f;
+  color: #ffc9c9;
+}

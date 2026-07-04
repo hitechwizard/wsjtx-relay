@@ -381,15 +381,39 @@ class DxSummitSpotsManager {
         this.spots = this.reduceToLatestSpotByCallAndBand(normalized);
         this.lastUpdateTime = new Date();
         this.lastFetchTime = now;
+        this.clearApiError();
         this.updateFilterOptions();
         this.applyFilters();
         this.updateLastUpdateDisplay();
       } else {
-        console.error('Failed to fetch DX Summit spots:', response?.error || 'Unknown error');
+        const message = response?.error || 'Unknown error';
+        console.error('Failed to fetch DX Summit spots:', message);
+        this.showApiError(`Unable to reach DX Summit API: ${message}`);
       }
     } catch (error) {
       console.error('Error fetching DX Summit spots:', error);
+      this.showApiError(`Unable to reach DX Summit API: ${error?.message || error}`);
     }
+  }
+
+  showApiError(message) {
+    const apiErrorElement = document.getElementById('dxSummitApiError');
+    if (!apiErrorElement) {
+      return;
+    }
+
+    apiErrorElement.textContent = message;
+    apiErrorElement.hidden = false;
+  }
+
+  clearApiError() {
+    const apiErrorElement = document.getElementById('dxSummitApiError');
+    if (!apiErrorElement) {
+      return;
+    }
+
+    apiErrorElement.hidden = true;
+    apiErrorElement.textContent = '';
   }
 
   normalizeSpots(spots) {
