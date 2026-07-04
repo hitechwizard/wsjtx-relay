@@ -353,6 +353,7 @@ registerAllIpcHandlers(
     shouldPopulateManualQsoForSpot,
     shouldPopulateManualQsoForDxSpot,
     getMainWindow: appState.getMainWindow,
+    getFlrigMonitor: appState.getFlrigMonitor,
     restoreAndFocusWindow,
     getPotaSpotsWindow: appState.getPotaSpotsWindow,
     getDxSummitSpotsWindow: appState.getDxSummitSpotsWindow,

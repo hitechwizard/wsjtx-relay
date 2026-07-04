@@ -6,9 +6,20 @@ function registerPotaHandlers({
   fetchPotaSpots,
   shouldPopulateManualQsoForSpot,
   getMainWindow,
+  getFlrigMonitor,
   getRelay,
   restoreAndFocusWindow,
 }) {
+  const parseSpotFrequencyHz = (spot) => {
+    const rawFrequency = Number.parseFloat(String(spot?.frequency ?? '').trim());
+    if (!Number.isFinite(rawFrequency) || rawFrequency <= 0) {
+      return null;
+    }
+
+    // POTA spot frequencies are kHz from API; convert to Hz for flrig tuning.
+    return Math.round(rawFrequency * 1000);
+  };
+
   const normalizePotaSpotFilters = (filters) => ({
     modeFilter: String(filters?.modeFilter || ''),
     bandFilter: String(filters?.bandFilter || ''),
@@ -64,6 +75,21 @@ function registerPotaHandlers({
 
     if (shouldPopulateManualQsoForSpot(selectedSpot)) {
       mainWindow.webContents.send('pota-spot-selected', selectedSpot);
+
+      const flrigMonitor = typeof getFlrigMonitor === 'function' ? getFlrigMonitor() : null;
+      const shouldTuneViaFlrig =
+        flrigMonitor &&
+        typeof flrigMonitor.isConnected === 'function' &&
+        flrigMonitor.isConnected() &&
+        typeof flrigMonitor.tuneFrequencyHz === 'function';
+
+      if (shouldTuneViaFlrig) {
+        const frequencyHz = parseSpotFrequencyHz(selectedSpot);
+        if (frequencyHz) {
+          mainWindow.webContents.send('relay-log', `flrig tune requested: ${frequencyHz} Hz`);
+          await flrigMonitor.tuneFrequencyHz(frequencyHz);
+        }
+      }
     } else {
       if (!decodePacket) {
         return { success: false, error: 'No matching decode packet available for this spot' };

@@ -33,8 +33,22 @@ function xmlEscape(value) {
     .replaceAll("'", '&apos;');
 }
 
-function buildXmlRpcBody(methodName) {
-  return `<?xml version="1.0"?>\n<methodCall><methodName>${xmlEscape(methodName)}</methodName><params></params></methodCall>`;
+function buildXmlRpcBody(methodName, params = []) {
+  const serializedParams = Array.isArray(params)
+    ? params
+        .map((param) => {
+          const type = String(param?.type || 'string')
+            .trim()
+            .toLowerCase();
+          if (type === 'double' || type === 'int' || type === 'i4' || type === 'boolean') {
+            return `<param><value><${type}>${xmlEscape(param?.value)}</${type}></value></param>`;
+          }
+          return `<param><value><string>${xmlEscape(param?.value)}</string></value></param>`;
+        })
+        .join('')
+    : '';
+
+  return `<?xml version="1.0"?>\n<methodCall><methodName>${xmlEscape(methodName)}</methodName><params>${serializedParams}</params></methodCall>`;
 }
 
 const FLRIG_RPC_PATHS = ['/RPC2', '/xmlrpc', '/XMLRPC', '/'];
@@ -58,6 +72,7 @@ const FLRIG_TRANSMIT_METHODS = [
 ];
 const FLRIG_POWER_METHODS = ['rig.get_power', 'main.get_power', 'get_power'];
 const FLRIG_SWR_METHODS = ['rig.get_SWR'];
+const FLRIG_SET_FREQUENCY_METHODS = ['rig.set_frequency', 'main.set_frequency', 'rig.set_vfo'];
 
 const FLRIG_SWR_TIMEOUT_MS = 1800;
 
@@ -95,9 +110,16 @@ function extractXmlRpcValue(xml) {
   throw new Error('flrig XML-RPC response did not include a scalar value');
 }
 
-function callFlrigMethod({ host, port, methodName, timeoutMs = 1200, path = '/RPC2' }) {
+function callFlrigMethod({
+  host,
+  port,
+  methodName,
+  params = [],
+  timeoutMs = 1200,
+  path = '/RPC2',
+}) {
   return new Promise((resolve, reject) => {
-    const body = buildXmlRpcBody(methodName);
+    const body = buildXmlRpcBody(methodName, params);
 
     const request = http.request(
       {
@@ -272,6 +294,7 @@ function createFlrigMonitor({
   let endpoint = DEFAULT_FLRIG_ENDPOINT;
   let lastErrorMessage = '';
   let lastErrorAtMs = 0;
+  let connected = false;
   let lastKnownStatus = {
     frequency: null,
     transmitting: false,
@@ -395,6 +418,9 @@ function createFlrigMonitor({
           txPower: lastKnownStatus.txPower,
           swr: lastKnownStatus.swr,
         });
+      connected = Boolean(
+        versionProbe || frequencyResult || transmittingResult || infoFallbackResult,
+      );
       lastErrorMessage = '';
       lastErrorAtMs = 0;
     } catch (error) {
@@ -413,6 +439,7 @@ function createFlrigMonitor({
           txPower: '',
           swr: null,
         });
+      connected = false;
     } finally {
       isPolling = false;
     }
@@ -434,6 +461,7 @@ function createFlrigMonitor({
 
     if (!enabled) {
       stop();
+      connected = false;
       onStatusUpdate &&
         onStatusUpdate({
           source: 'flrig',
@@ -461,12 +489,51 @@ function createFlrigMonitor({
 
   const dispose = () => {
     stop();
+    connected = false;
+  };
+
+  const isConnected = () => enabled && connected;
+
+  const tuneFrequencyHz = async (frequencyHz) => {
+    const numericHz = Number(frequencyHz);
+    if (!Number.isFinite(numericHz) || numericHz <= 0) {
+      return { success: false, error: 'Invalid frequency value' };
+    }
+
+    if (!isConnected()) {
+      return { success: false, error: 'flrig is not connected' };
+    }
+
+    const parsedEndpoint = parseFlrigEndpoint(endpoint);
+    if (!parsedEndpoint) {
+      return { success: false, error: 'flrig endpoint is invalid; expected host:port' };
+    }
+
+    try {
+      const result = await callFirstAvailableMethod(parsedEndpoint, FLRIG_SET_FREQUENCY_METHODS, {
+        timeoutMs: 1200,
+        params: [{ type: 'double', value: numericHz }],
+      });
+
+      onDebugLog &&
+        onDebugLog(
+          `flrig tune command sent: ${result.methodName} ${Math.round(numericHz)} Hz -> ${result.value}`,
+        );
+
+      return { success: true, methodName: result.methodName, value: result.value };
+    } catch (error) {
+      const message = error && error.message ? error.message : String(error);
+      onDebugLog && onDebugLog(`flrig tune command failed: ${message}`);
+      return { success: false, error: message };
+    }
   };
 
   return {
     refreshFromStore,
     applySettings,
     dispose,
+    isConnected,
+    tuneFrequencyHz,
   };
 }
 
