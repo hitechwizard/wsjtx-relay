@@ -1,5 +1,54 @@
 # Changelog
 
+## 1.1.1 - 07/04/2026
+
+### Added
+
+- Added a new `DX Summit Spots` window and menu action (`Window -> DX Summit Spots`) with a dedicated UI and lifecycle wiring.
+- Added DX Summit API integration (`http://www.dxsummit.fi/api/v1/spots`) with periodic refresh and renderer/main-process IPC support.
+- Added DX Summit table view with action parity to POTA Spots, including:
+  - `Manual` action for `SSB`/`CW`
+  - `Reply` action for non-manual modes
+- Added DX Summit columns and sorting support for:
+  - `Call`
+  - `Status`
+  - `Frequency`
+  - `Offset`
+  - `Mode`
+  - `Comments`
+  - `Country`
+  - `Spot Time`
+  - `Age`
+- Added DX Summit filters for:
+  - `Mode`
+  - `Band`
+  - `Country`
+  - `Call` (text or `/regexp/flags`)
+  - `Hide Worked`
+  - `Hide QRT`
+- Added persistence for DX Summit filter state and window bounds.
+- Added a new Settings option for user-selectable DX Summit worked-match fields:
+  - `Call`
+  - `Band`
+  - `Mode`
+  - `Date`
+
+### Changed
+
+- Updated DX Summit deduplication to keep the most recent spot per `call + band`.
+- Updated DX Summit fetch strategy to query API mode partitions using `include_modes`.
+- Updated DX Summit mode handling to use API-query mode assignment when unambiguous and retain safe fallback parsing from comments when needed.
+- Updated DX Summit worked matching to use configurable key composition from selected Settings fields.
+- Updated DIGI worked matching so a `DIGI` spot can match previously logged QSOs in any non-`SSB`/non-`CW` mode when mode matching is enabled.
+- Updated DX Summit country filtering behavior to match anywhere in the country string (not prefix-only).
+- Updated DX Summit labels from `Region/Location` and `Location` to `Country`.
+
+### Fixed
+
+- Fixed DX Summit mode misclassification where all rows could incorrectly appear as `CW` after mode-query aggregation.
+- Fixed QRT detection to match `QRT` anywhere in comment text (not only at the beginning).
+- Fixed SNR status display/sorting so SNR is applied only to `DIGI` spots (not `CW`/`SSB`).
+
 ## 1.1.0 - 06/07/2026
 
 ### Added

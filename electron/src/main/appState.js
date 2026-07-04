@@ -4,6 +4,7 @@ function createAppState() {
   let qsoEditorWindow = null;
   let examplesWindow = null;
   let potaSpotsWindow = null;
+  let dxSummitSpotsWindow = null;
   let relay = null;
   let updateController = null;
 
@@ -28,6 +29,10 @@ function createAppState() {
     setPotaSpotsWindow: (value) => {
       potaSpotsWindow = value;
     },
+    getDxSummitSpotsWindow: () => dxSummitSpotsWindow,
+    setDxSummitSpotsWindow: (value) => {
+      dxSummitSpotsWindow = value;
+    },
     getRelay: () => relay,
     setRelay: (value) => {
       relay = value;
@@ -36,7 +41,14 @@ function createAppState() {
     setUpdateController: (value) => {
       updateController = value;
     },
-    getWindowRefs: () => [mainWindow, settingsWindow, qsoEditorWindow, examplesWindow, potaSpotsWindow],
+    getWindowRefs: () => [
+      mainWindow,
+      settingsWindow,
+      qsoEditorWindow,
+      examplesWindow,
+      potaSpotsWindow,
+      dxSummitSpotsWindow,
+    ],
   };
 }
 

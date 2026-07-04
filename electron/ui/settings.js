@@ -21,6 +21,9 @@ const clublogEmailInput = document.getElementById('clublogEmail');
 const decodeSightingExpirationMinutesInput = document.getElementById(
   'decodeSightingExpirationMinutes',
 );
+const dxSummitWorkedMatchFieldInputs = Array.from(
+  document.querySelectorAll('input[name="dxSummitWorkedMatchFields"]'),
+);
 
 let forwardsData = [];
 let currentTheme = 'light';
@@ -67,6 +70,23 @@ async function loadSettings() {
   clublogEmailInput.value = String(settings.clublogEmail || '');
   forwardDelaySecondsInput.value = settings.forwardDelaySeconds ?? 0.5;
   decodeSightingExpirationMinutesInput.value = settings.decodeSightingExpirationMinutes ?? 5;
+  const workedMatchFields = Array.isArray(settings.dxSummitWorkedMatchFields)
+    ? settings.dxSummitWorkedMatchFields
+    : ['call', 'band', 'mode', 'date'];
+  const workedMatchFieldSet = new Set(
+    workedMatchFields.map((value) =>
+      String(value || '')
+        .trim()
+        .toLowerCase(),
+    ),
+  );
+  dxSummitWorkedMatchFieldInputs.forEach((input) => {
+    input.checked = workedMatchFieldSet.has(
+      String(input.value || '')
+        .trim()
+        .toLowerCase(),
+    );
+  });
   currentTheme = settings.theme || 'light';
   forwardsData = (settings.forwards || []).map((forward) => ({
     host: forward.host,
@@ -236,6 +256,13 @@ async function saveSettings(e) {
   const clublogEmail = String(clublogEmailInput.value || '').trim();
   const forwardDelaySeconds = parseFloat(forwardDelaySecondsInput.value);
   const decodeSightingExpirationMinutes = parseInt(decodeSightingExpirationMinutesInput.value, 10);
+  const dxSummitWorkedMatchFields = dxSummitWorkedMatchFieldInputs
+    .filter((input) => input.checked)
+    .map((input) =>
+      String(input.value || '')
+        .trim()
+        .toLowerCase(),
+    );
   const theme = themeDarkInput.checked ? 'dark' : 'light';
 
   if (isNaN(listenPort) || listenPort < 1 || listenPort > 65535) {
@@ -250,6 +277,11 @@ async function saveSettings(e) {
 
   if (isNaN(decodeSightingExpirationMinutes) || decodeSightingExpirationMinutes < 0) {
     alert('Invalid decode sighting expiration (must be 0 or greater)');
+    return;
+  }
+
+  if (dxSummitWorkedMatchFields.length === 0) {
+    alert('Select at least one DX Summit worked match field');
     return;
   }
 
@@ -280,6 +312,7 @@ async function saveSettings(e) {
       clublogEmail,
       forwardDelaySeconds,
       decodeSightingExpirationMinutes,
+      dxSummitWorkedMatchFields,
       theme,
     });
 

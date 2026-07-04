@@ -34,6 +34,7 @@ function buildLifecycleHandlerCallbacks({
   createSettingsWindow,
   createQsoEditorWindow,
   createPotaSpotsWindow,
+  createDxSummitSpotsWindow,
   createExamplesWindow,
   handleWindowAllClosed,
   processPlatform,
@@ -89,6 +90,7 @@ function buildLifecycleHandlerCallbacks({
           },
           onOpenQsoEditor: createQsoEditorWindow,
           onOpenPotaSpots: createPotaSpotsWindow,
+          onOpenDxSummitSpots: createDxSummitSpotsWindow,
           onCheckForUpdates: () => {
             const activeUpdateController = updateControllerState.get();
             activeUpdateController && activeUpdateController.performUpdateAction();

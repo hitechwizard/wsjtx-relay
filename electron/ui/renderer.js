@@ -277,6 +277,14 @@ function setupEventListeners() {
     }),
   );
 
+  if (window.electron && typeof window.electron.onDxSummitSpotSelected === 'function') {
+    addSubscriptionDisposer(
+      window.electron.onDxSummitSpotSelected((spotData) => {
+        applySelectedDxSummitSpotToManualQso(spotData);
+      }),
+    );
+  }
+
   // Relay events
   addSubscriptionDisposer(
     window.electron.onRelayLog((msg) => {
@@ -374,6 +382,20 @@ function applySelectedPotaSpotToManualQso(spotData) {
   }
   if (stateInput) {
     stateInput.value = stateValue;
+  }
+
+  updateLogContactButtonState();
+}
+
+function applySelectedDxSummitSpotToManualQso(spotData) {
+  const selectedSpot = spotData || {};
+  const dxCall = String(selectedSpot.dxCall || selectedSpot.dx_call || '')
+    .trim()
+    .toUpperCase();
+
+  const dxCallInput = document.getElementById('qso-dxcall');
+  if (dxCallInput) {
+    dxCallInput.value = dxCall;
   }
 
   updateLogContactButtonState();

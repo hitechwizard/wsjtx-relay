@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' http://www.dxsummit.fi https://www.dxsummit.fi; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+    />
+    <title>DX Summit Spots</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="pota-spots-wrapper">
+      <div class="pota-spots-header">
+        <h1>DX Summit Spots</h1>
+        <div class="pota-spots-clocks" aria-label="UTC clocks">
+          <div class="pota-clock-card pota-clock-card-current">
+            <div class="pota-clock-label">UTC NOW</div>
+            <div id="utcClockTime" class="pota-clock-value" aria-live="polite">--:--:--</div>
+          </div>
+          <div class="pota-clock-card pota-clock-card-remaining">
+            <div class="pota-clock-label">UTC DAY LEFT</div>
+            <div id="utcDayRemaining" class="pota-clock-value" aria-live="polite">--:--:--</div>
+          </div>
+        </div>
+        <div class="pota-spots-controls">
+          <div class="pota-filter-group">
+            <label for="modeFilter">Mode:</label>
+            <select id="modeFilter" class="pota-filter-select">
+              <option value="">All Modes</option>
+            </select>
+          </div>
+          <div class="pota-filter-group">
+            <label for="bandFilter">Band:</label>
+            <select id="bandFilter" class="pota-filter-select">
+              <option value="">All Bands</option>
+            </select>
+          </div>
+          <div class="pota-filter-group">
+            <label for="regionFilter">Country:</label>
+            <input
+              type="text"
+              id="regionFilter"
+              class="pota-filter-input"
+              placeholder="e.g., GERMANY"
+            />
+          </div>
+          <div class="pota-filter-group">
+            <label for="callFilter">Call:</label>
+            <input
+              type="text"
+              id="callFilter"
+              class="pota-filter-input"
+              placeholder="Text or /regexp/i"
+            />
+          </div>
+          <label for="hideWorkedFilter" class="pota-filter-checkbox-group">
+            <input type="checkbox" id="hideWorkedFilter" class="pota-filter-checkbox" />
+            <span>Hide Worked</span>
+          </label>
+          <label for="hideQrtFilter" class="pota-filter-checkbox-group">
+            <input type="checkbox" id="hideQrtFilter" class="pota-filter-checkbox" />
+            <span>Hide QRT</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="pota-spots-content">
+        <div id="spotsTableContainer" class="pota-spots-table-container">
+          <table class="pota-spots-table">
+            <thead>
+              <tr>
+                <th data-field="dxCall">Call</th>
+                <th data-field="status">Status</th>
+                <th data-field="frequency">Frequency</th>
+                <th data-field="offset">Offset</th>
+                <th data-field="mode">Mode</th>
+                <th data-field="comments">Comments</th>
+                <th data-field="location">Country</th>
+                <th data-field="spotTime">Spot Time</th>
+                <th data-field="age">Age</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="spotsTableBody"></tbody>
+          </table>
+          <div id="noSpotsMessage" class="pota-no-spots" hidden>No spots found.</div>
+        </div>
+      </div>
+    </div>
+
+    <script src="dx-summit-spots.js"></script>
+  </body>
+</html>

@@ -10,6 +10,8 @@ const {
   INTERNET_CHECK_TIMEOUT_MS,
   POTA_SPOTS_URL,
   POTA_REQUEST_TIMEOUT_MS,
+  DX_SUMMIT_SPOTS_URL,
+  DX_SUMMIT_REQUEST_TIMEOUT_MS,
   SETTINGS_WINDOW_DEFAULT_WIDTH,
   SETTINGS_WINDOW_DEFAULT_HEIGHT,
   SETTINGS_WINDOW_MIN_WIDTH,
@@ -38,6 +40,10 @@ const {
   enrichQsoWithPotaSpot,
   shouldPopulateManualQsoForSpot,
 } = require('./main/potaSpotsService');
+const {
+  fetchDxSummitSpots: fetchDxSummitSpotsFromApi,
+  shouldPopulateManualQsoForDxSpot,
+} = require('./main/dxSummitSpotsService');
 const { sortQsosForStorage } = require('./main/qsoSortUtils');
 const { hasNewerUpdateAvailable, getUpdateBadgeState } = require('./main/updateBadgeUtils');
 const { hasInternetConnectivity } = require('./main/connectivityUtils');
@@ -79,6 +85,7 @@ const { restoreAndFocusWindow } = require('./main/windowFocusUtils');
 const { registerSettingsHandlers } = require('./main/ipc/settingsHandlers');
 const { registerQsoHandlers } = require('./main/ipc/qsoHandlers');
 const { registerPotaHandlers } = require('./main/ipc/potaHandlers');
+const { registerDxSummitHandlers } = require('./main/ipc/dxSummitHandlers');
 const { registerRelayHandlers } = require('./main/ipc/relayHandlers');
 const { registerAdifHandlers } = require('./main/ipc/adifHandlers');
 const { registerUiCommandHandlers } = require('./main/ipc/uiCommandHandlers');
@@ -97,6 +104,7 @@ const {
   createSettingsWindowFactory,
   createQsoEditorWindowFactory,
   createPotaSpotsWindowFactory,
+  createDxSummitSpotsWindowFactory,
 } = require('./main/windowFactories');
 const { registerLifecycleHandlers } = require('./main/registerLifecycleHandlers');
 const {
@@ -118,6 +126,7 @@ const {
   settingsHtmlPath,
   qsoEditorHtmlPath,
   potaSpotsHtmlPath,
+  dxSummitSpotsHtmlPath,
 } = getUiPaths(__dirname);
 const fetchPotaSpots = createPotaSpotsFetcher(
   fetchPotaSpotsFromApi,
@@ -125,6 +134,8 @@ const fetchPotaSpots = createPotaSpotsFetcher(
   POTA_SPOTS_URL,
   POTA_REQUEST_TIMEOUT_MS,
 );
+const fetchDxSummitSpots = () =>
+  fetchDxSummitSpotsFromApi(fetch, DX_SUMMIT_SPOTS_URL, DX_SUMMIT_REQUEST_TIMEOUT_MS);
 
 const store = new Store({
   defaults: getStoreDefaults(DEFAULT_ACTIVITY_PACKET_FILTERS),
@@ -142,6 +153,7 @@ const ensureRelayInitialized = createEnsureRelayInitialized({
   bindRelayEventForwarding,
   getMainWindow: appState.getMainWindow,
   getPotaSpotsWindow: appState.getPotaSpotsWindow,
+  getDxSummitSpotsWindow: appState.getDxSummitSpotsWindow,
   sendToWindows,
 });
 
@@ -247,6 +259,26 @@ const createPotaSpotsWindow = createPotaSpotsWindowFactory({
   store,
 });
 
+const createDxSummitSpotsWindow = createDxSummitSpotsWindowFactory({
+  BrowserWindow,
+  appIconPath: APP_ICON_PATH,
+  preloadPath,
+  hardenWindowNavigation,
+  attachThemeOnLoad,
+  getTheme: () => store.get('theme', 'light'),
+  attachPersistBoundsOnClose,
+  attachClearOnClosed,
+  attachShowWhenReady,
+  bringWindowToFront,
+  applyStoredPosition,
+  getDxSummitSpotsWindow: appState.getDxSummitSpotsWindow,
+  setDxSummitSpotsWindow: appState.setDxSummitSpotsWindow,
+  getDxSummitSpotsWindowBounds: () =>
+    store.get('dxSummitSpotsWindowBounds', { width: 1400, height: 700 }),
+  dxSummitSpotsHtmlPath,
+  store,
+});
+
 // IPC Handlers
 registerAllIpcHandlers(
   buildHandlerRegistrationOptions({
@@ -255,6 +287,7 @@ registerAllIpcHandlers(
     registerQsoHandlers,
     registerAdifHandlers,
     registerPotaHandlers,
+    registerDxSummitHandlers,
     registerUiCommandHandlers,
     ipcMain,
     store,
@@ -276,6 +309,7 @@ registerAllIpcHandlers(
     sortQsosForStorage,
     maybeEnrichQsoWithPotaMap,
     fetchPotaSpots,
+    fetchDxSummitSpots,
     enrichQsoWithPotaSpot,
     logPotaRequestFailure,
     logToActivityLog,
@@ -287,9 +321,11 @@ registerAllIpcHandlers(
     fsPromises: fs.promises,
     BrowserWindow,
     shouldPopulateManualQsoForSpot,
+    shouldPopulateManualQsoForDxSpot,
     getMainWindow: appState.getMainWindow,
     restoreAndFocusWindow,
     getPotaSpotsWindow: appState.getPotaSpotsWindow,
+    getDxSummitSpotsWindow: appState.getDxSummitSpotsWindow,
     openSettings: createSettingsWindow,
     closeSettings: () => {
       closeWindowAndClearRef(appState.getSettingsWindow, () => appState.setSettingsWindow(null));
@@ -299,8 +335,14 @@ registerAllIpcHandlers(
       closeWindowAndClearRef(appState.getQsoEditorWindow, () => appState.setQsoEditorWindow(null));
     },
     openPotaSpots: createPotaSpotsWindow,
+    openDxSummitSpots: createDxSummitSpotsWindow,
     closePotaSpots: () => {
       closeWindowAndClearRef(appState.getPotaSpotsWindow, () => appState.setPotaSpotsWindow(null));
+    },
+    closeDxSummitSpots: () => {
+      closeWindowAndClearRef(appState.getDxSummitSpotsWindow, () =>
+        appState.setDxSummitSpotsWindow(null),
+      );
     },
     sendToWindows,
     performUpdateAction: async () => {
@@ -354,6 +396,7 @@ registerLifecycleHandlers({
     createSettingsWindow,
     createQsoEditorWindow,
     createPotaSpotsWindow,
+    createDxSummitSpotsWindow,
     createExamplesWindow,
     handleWindowAllClosed,
     processPlatform: process.platform,

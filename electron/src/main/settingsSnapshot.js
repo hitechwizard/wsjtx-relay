@@ -23,6 +23,12 @@ function readSettingsSnapshot(store, options = {}) {
     clublogEmail: store.get('clublogEmail', ''),
     forwardDelaySeconds: store.get('forwardDelaySeconds', 0.5),
     decodeSightingExpirationMinutes: store.get('decodeSightingExpirationMinutes', 5),
+    dxSummitWorkedMatchFields: store.get('dxSummitWorkedMatchFields', [
+      'call',
+      'band',
+      'mode',
+      'date',
+    ]),
     manualQsoEntryType: store.get('manualQsoEntryType', 'pota'),
     activityPacketFilters: store.get('activityPacketFilters', [
       ...DEFAULT_ACTIVITY_PACKET_FILTERS,

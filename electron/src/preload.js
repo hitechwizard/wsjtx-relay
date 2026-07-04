@@ -39,6 +39,10 @@ const onPotaSpotSelected = createIpcSubscription(
   'pota-spot-selected',
   (event, spotData) => spotData,
 );
+const onDxSummitSpotSelected = createIpcSubscription(
+  'dx-summit-spot-selected',
+  (event, spotData) => spotData,
+);
 
 contextBridge.exposeInMainWorld('electron', {
   // Settings API
@@ -75,9 +79,11 @@ contextBridge.exposeInMainWorld('electron', {
   openSettings: () => ipcRenderer.send('open-settings'),
   openQsoEditor: () => ipcRenderer.send('open-qso-editor'),
   openPotaSpots: () => ipcRenderer.send('open-pota-spots'),
+  openDxSummitSpots: () => ipcRenderer.send('open-dx-summit-spots'),
   closeSettings: () => ipcRenderer.send('close-settings'),
   closeQsoEditor: () => ipcRenderer.send('close-qso-editor'),
   closePotaSpots: () => ipcRenderer.send('close-pota-spots'),
+  closeDxSummitSpots: () => ipcRenderer.send('close-dx-summit-spots'),
   performUpdateAction: () => ipcRenderer.invoke('perform-update-action'),
 
   // POTA Spots API
@@ -86,6 +92,13 @@ contextBridge.exposeInMainWorld('electron', {
   savePotaSpotsFilters: (filters) => ipcRenderer.invoke('save-pota-spots-filters', filters),
   selectPotaSpot: (spot) => ipcRenderer.invoke('select-pota-spot', spot),
   sendPotaHighlight: (payload) => ipcRenderer.invoke('send-pota-highlight', payload),
+
+  // DX Summit Spots API
+  fetchDxSummitSpots: () => ipcRenderer.invoke('fetch-dx-summit-spots'),
+  getDxSummitSpotsFilters: () => ipcRenderer.invoke('get-dx-summit-spots-filters'),
+  saveDxSummitSpotsFilters: (filters) =>
+    ipcRenderer.invoke('save-dx-summit-spots-filters', filters),
+  selectDxSummitSpot: (spot) => ipcRenderer.invoke('select-dx-summit-spot', spot),
 
   // Events from relay
   onRelayLog,
@@ -100,5 +113,6 @@ contextBridge.exposeInMainWorld('electron', {
   onSettingsChanged,
   onQsoDataRefresh,
   onPotaSpotSelected,
+  onDxSummitSpotSelected,
   notifyQsoDataChanged: () => ipcRenderer.send('qso-data-changed'),
 });

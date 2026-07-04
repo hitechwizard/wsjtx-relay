@@ -37,12 +37,30 @@ function registerSettingsHandlers({
     const manualQsoEntryType = String(payload.manualQsoEntryType || '')
       .trim()
       .toLowerCase();
+    const allowedWorkedMatchFields = new Set(['call', 'band', 'mode', 'date']);
+    const workedMatchFields = Array.isArray(payload.dxSummitWorkedMatchFields)
+      ? payload.dxSummitWorkedMatchFields
+          .map((value) =>
+            String(value || '')
+              .trim()
+              .toLowerCase(),
+          )
+          .filter((value) => allowedWorkedMatchFields.has(value))
+      : null;
     const isManualQsoEntryTypeValid =
       manualQsoEntryType === '' ||
       manualQsoEntryType === 'pota' ||
       manualQsoEntryType === 'arrl-field-day';
+    const isWorkedMatchFieldsValid =
+      workedMatchFields === null ||
+      (workedMatchFields.length > 0 && workedMatchFields.length <= allowedWorkedMatchFields.size);
 
-    if (listenPort === null || forwards === null || !isManualQsoEntryTypeValid) {
+    if (
+      listenPort === null ||
+      forwards === null ||
+      !isManualQsoEntryTypeValid ||
+      !isWorkedMatchFieldsValid
+    ) {
       return { success: false, error: 'Invalid listen port or forwards configuration' };
     }
 
@@ -91,6 +109,9 @@ function registerSettingsHandlers({
     }
     if (manualQsoEntryType) {
       store.set('manualQsoEntryType', manualQsoEntryType);
+    }
+    if (workedMatchFields !== null) {
+      store.set('dxSummitWorkedMatchFields', Array.from(new Set(workedMatchFields)));
     }
     if (Array.isArray(payload.activityPacketFilters)) {
       const sanitizedPacketFilters = payload.activityPacketFilters
