@@ -32,6 +32,7 @@ const qsoTimeNowBtn = document.getElementById('qsoTimeNow');
 const qsoDateOn = document.getElementById('qso-dateon');
 const qsoTimeOn = document.getElementById('qso-timeon');
 const qsoDxCallInput = document.getElementById('qso-dxcall');
+const qsoDxCallDupeTag = document.getElementById('qsoDxCallDupeTag');
 const qsoRstSentInput = document.getElementById('qso-rst');
 const qsoRstRcvdInput = document.getElementById('qso-rcvd');
 const qsoClassInput = document.getElementById('qso-class');
@@ -509,6 +510,91 @@ function updateLogContactButtonState() {
     hasMode &&
     hasTypeSpecificRequiredFields
   );
+
+  updateManualDxCallDupeIndicator();
+}
+
+function getQsoIsoTimestamp(qso) {
+  return String((qso && (qso.start || qso.end)) || '').trim();
+}
+
+function getQsoTimestampMs(qso) {
+  const isoTimestamp = getQsoIsoTimestamp(qso);
+  if (!isoTimestamp) {
+    return Number.NEGATIVE_INFINITY;
+  }
+
+  const timestampMs = Date.parse(isoTimestamp);
+  return Number.isFinite(timestampMs) ? timestampMs : Number.NEGATIVE_INFINITY;
+}
+
+function findLatestQsoByCall(callSign) {
+  const normalizedCall = String(callSign || '')
+    .trim()
+    .toUpperCase();
+
+  if (!normalizedCall) {
+    return null;
+  }
+
+  let latestMatch = null;
+  let latestMatchTimestampMs = Number.NEGATIVE_INFINITY;
+
+  qsoList.forEach((qso) => {
+    const qsoCall = String((qso && qso.call) || '')
+      .trim()
+      .toUpperCase();
+    if (qsoCall !== normalizedCall) {
+      return;
+    }
+
+    const timestampMs = getQsoTimestampMs(qso);
+    if (!latestMatch || timestampMs >= latestMatchTimestampMs) {
+      latestMatch = qso;
+      latestMatchTimestampMs = timestampMs;
+    }
+  });
+
+  return latestMatch;
+}
+
+function formatDupeTimestamp(isoTimestamp) {
+  const normalizedIso = String(isoTimestamp || '').trim();
+  if (!normalizedIso) {
+    return '';
+  }
+
+  const [datePart, timePart] = normalizedIso.split('T');
+  if (datePart && timePart && datePart.length >= 10 && timePart.length >= 5) {
+    return `${datePart.slice(5, 10)} @ ${timePart.slice(0, 5)}`;
+  }
+
+  return normalizedIso;
+}
+
+function updateManualDxCallDupeIndicator() {
+  if (!qsoDxCallDupeTag) {
+    return;
+  }
+
+  const normalizedCall = String(qsoDxCallInput?.value || '')
+    .trim()
+    .toUpperCase();
+  const latestMatch = findLatestQsoByCall(normalizedCall);
+
+  if (!normalizedCall || !latestMatch) {
+    qsoDxCallDupeTag.hidden = true;
+    qsoDxCallDupeTag.textContent = '';
+    qsoDxCallDupeTag.removeAttribute('title');
+    return;
+  }
+
+  const timestampLabel = formatDupeTimestamp(getQsoIsoTimestamp(latestMatch));
+  qsoDxCallDupeTag.textContent = timestampLabel ? `DUPE ${timestampLabel}` : 'DUPE';
+  qsoDxCallDupeTag.title = timestampLabel
+    ? `Duplicate contact found in log at ${timestampLabel}`
+    : 'Duplicate contact found in log';
+  qsoDxCallDupeTag.hidden = false;
 }
 
 function applyUpdateBadgeState(state) {
@@ -779,6 +865,7 @@ async function loadSettings() {
     addQsoEntry(qso, 'normal');
   });
   isBulkQsoRender = false;
+  updateManualDxCallDupeIndicator();
   applyQsoCallFilter();
   updateQsoTodayUtcCount();
   updateQsoLastHourCount();
@@ -1285,6 +1372,7 @@ function addQsoEntry(qso, type = 'normal') {
   if (isBulkQsoRender) {
     return;
   }
+  updateManualDxCallDupeIndicator();
   applyQsoCallFilter();
   // Apply row striping for readability
   applyQsoRowStripes();
@@ -1339,6 +1427,7 @@ async function refreshQsoLog() {
     addQsoEntry(qso, 'normal');
   });
   isBulkQsoRender = false;
+  updateManualDxCallDupeIndicator();
   applyQsoCallFilter();
   updateQsoTodayUtcCount();
   updateQsoLastHourCount();
@@ -1465,6 +1554,7 @@ function clearQsoLog() {
   // Clear persistent storage
   window.electron.clearQsos();
   qsoList = [];
+  updateManualDxCallDupeIndicator();
   updateQsoCount();
   updateQsoTodayUtcCount();
   updateQsoLastHourCount();
