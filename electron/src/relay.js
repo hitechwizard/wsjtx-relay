@@ -367,6 +367,13 @@ class WSJTXRelay extends EventEmitter {
         } else if (parsed.type === 5) {
           // QSO Logged
           message += ` ${parsed.mode} ${parsed.dxCall} ${parsed.dialFrequency} ${parsed.timeOn} ${parsed.timeOff}`;
+        } else if (parsed.type === 6) {
+          // Closed
+          this.lastStatusSnapshot = null;
+          this.emit('status-update', {
+            mode: null,
+            txEnabled: null,
+          });
         } else if (parsed.type === 12) {
           message += ` ADIF: ${parsed.adif || ''}`;
           parsed.adifData.forEach((qso) => {

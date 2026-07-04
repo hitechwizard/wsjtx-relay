@@ -1567,20 +1567,28 @@ function updateStatusIndicators(statusData) {
     qsoTxPwr.value = String(statusData.txPower || '');
   }
 
-  if (statusData.mode) {
+  if (statusData.mode === null) {
+    modeValue.textContent = '—';
+  } else if (statusData.mode) {
     modeValue.textContent = statusData.mode;
   }
 
   const shouldApplyTxEnabled = statusData.txEnabled !== undefined && !isFlrigUpdate;
   if (shouldApplyTxEnabled) {
-    if (statusData.txEnabled) {
-      txEnabledValue.textContent = 'Yes';
-      txEnabledValue.classList.remove('indicator-off');
-      txEnabledValue.classList.add('indicator-tx-enabled');
-    } else {
-      txEnabledValue.textContent = 'No';
+    if (statusData.txEnabled === null) {
+      txEnabledValue.textContent = '—';
       txEnabledValue.classList.remove('indicator-tx-enabled');
       txEnabledValue.classList.add('indicator-off');
+    } else {
+      if (statusData.txEnabled) {
+        txEnabledValue.textContent = 'Yes';
+        txEnabledValue.classList.remove('indicator-off');
+        txEnabledValue.classList.add('indicator-tx-enabled');
+      } else {
+        txEnabledValue.textContent = 'No';
+        txEnabledValue.classList.remove('indicator-tx-enabled');
+        txEnabledValue.classList.add('indicator-off');
+      }
     }
   }
 
