@@ -2,7 +2,8 @@ const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const fs = require('fs');
 const dns = require('dns');
 const https = require('https');
-const Store = require('electron-store');
+const ElectronStore = require('electron-store');
+const Store = ElectronStore.default || ElectronStore;
 const { autoUpdater } = require('electron-updater');
 const WSJTXRelay = require('./relay');
 const {

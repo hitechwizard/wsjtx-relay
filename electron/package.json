@@ -1,6 +1,6 @@
 {
   "name": "wsjtx-relay",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "WSJT-X Relay runs as a middle-man between WSJT-X and applications that consume WSJT-X UDP packets. It also has a fairly extensive QSO Editor allowing the user to import/export ADIF files. This simplifies operating during a POTA Activation and creating logs for upload.",
   "license": "BSD-3-Clause",
   "main": "src/main.js",
@@ -30,15 +30,15 @@
   },
   "dependencies": {
     "dateformat": "^5.0.3",
-    "electron-store": "^8.1.0",
-    "electron-updater": "^6.8.3"
+    "electron-store": "^11.0.2",
+    "electron-updater": "^6.8.9"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config": "^2.1.0",
-    "electron": "^40.6.0",
-    "electron-builder": "^26.8.1",
-    "image-to-ico": "^1.0.1",
-    "sharp": "^0.34.5"
+    "electron": "^43.0.0",
+    "electron-builder": "^26.15.3",
+    "png-to-ico": "^3.0.1",
+    "sharp": "^0.35.3"
   },
   "build": {
     "appId": "net.hitechwizard.wsjtxrelay",
