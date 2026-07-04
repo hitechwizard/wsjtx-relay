@@ -73,6 +73,7 @@ const FLRIG_TRANSMIT_METHODS = [
 const FLRIG_POWER_METHODS = ['rig.get_power', 'main.get_power', 'get_power'];
 const FLRIG_SWR_METHODS = ['rig.get_SWR'];
 const FLRIG_SET_FREQUENCY_METHODS = ['rig.set_frequency', 'main.set_frequency', 'rig.set_vfo'];
+const FLRIG_SET_MODE_METHODS = ['rig.set_mode', 'main.set_mode'];
 
 const FLRIG_SWR_TIMEOUT_MS = 1800;
 
@@ -510,17 +511,38 @@ function createFlrigMonitor({
     }
 
     try {
-      const result = await callFirstAvailableMethod(parsedEndpoint, FLRIG_SET_FREQUENCY_METHODS, {
+      const frequencyMHz = numericHz / 1000000;
+      const targetMode = frequencyMHz < 10 ? 'LSB' : 'USB';
+
+      const modeResult = await callFirstAvailableMethod(parsedEndpoint, FLRIG_SET_MODE_METHODS, {
         timeoutMs: 1200,
-        params: [{ type: 'double', value: numericHz }],
+        params: [{ type: 'string', value: targetMode }],
       });
 
+      const frequencyResult = await callFirstAvailableMethod(
+        parsedEndpoint,
+        FLRIG_SET_FREQUENCY_METHODS,
+        {
+          timeoutMs: 1200,
+          params: [{ type: 'double', value: numericHz }],
+        },
+      );
+
+      onDebugLog &&
+        onDebugLog(`flrig mode command sent: ${modeResult.methodName} ${targetMode} -> ${modeResult.value}`);
       onDebugLog &&
         onDebugLog(
-          `flrig tune command sent: ${result.methodName} ${Math.round(numericHz)} Hz -> ${result.value}`,
+          `flrig tune command sent: ${frequencyResult.methodName} ${Math.round(numericHz)} Hz -> ${frequencyResult.value}`,
         );
 
-      return { success: true, methodName: result.methodName, value: result.value };
+      return {
+        success: true,
+        frequencyMethodName: frequencyResult.methodName,
+        frequencyValue: frequencyResult.value,
+        modeMethodName: modeResult.methodName,
+        modeValue: modeResult.value,
+        mode: targetMode,
+      };
     } catch (error) {
       const message = error && error.message ? error.message : String(error);
       onDebugLog && onDebugLog(`flrig tune command failed: ${message}`);
