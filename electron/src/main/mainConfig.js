@@ -32,6 +32,8 @@ function getStoreDefaults(defaultActivityPacketFilters) {
   return {
     listenPort: 2237,
     forwards: [],
+    flrigEnabled: false,
+    flrigEndpoint: '127.0.0.1:12345',
     autoStartRelay: false,
     usePotaSpotMap: false,
     qrzLoggingEnabled: false,

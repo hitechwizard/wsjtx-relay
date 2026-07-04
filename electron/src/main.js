@@ -99,6 +99,7 @@ const {
   createPotaSpotsFetcher,
 } = require('./main/potaRequestUtils');
 const { createEnsureRelayInitialized } = require('./main/ensureRelayInitializedFactory');
+const { createFlrigMonitor, parseFlrigEndpoint } = require('./main/flrigMonitorService');
 const {
   createExamplesWindowFactory,
   createMainWindowFactory,
@@ -138,10 +139,31 @@ const fetchPotaSpots = createPotaSpotsFetcher(
 const fetchDxSummitSpots = () =>
   fetchDxSummitSpotsFromApi(fetch, DX_SUMMIT_SPOTS_URL, DX_SUMMIT_REQUEST_TIMEOUT_MS);
 
+const sendStatusUpdateToWindows = (statusData) => {
+  sendToWindows(
+    [appState.getMainWindow(), appState.getPotaSpotsWindow(), appState.getDxSummitSpotsWindow()],
+    'relay-status-update',
+    statusData,
+  );
+};
+
 const store = new Store({
   defaults: getStoreDefaults(DEFAULT_ACTIVITY_PACKET_FILTERS),
 });
 const qsoStore = createQsoStore(Store, store);
+const flrigMonitor = createFlrigMonitor({
+  store,
+  onStatusUpdate: sendStatusUpdateToWindows,
+  onError: (message) => {
+    const mainWindow = appState.getMainWindow();
+    mainWindow && mainWindow.webContents.send('relay-error', message);
+  },
+  onDebugLog: (message) => {
+    const mainWindow = appState.getMainWindow();
+    mainWindow && mainWindow.webContents.send('relay-log', message);
+  },
+});
+appState.setFlrigMonitor(flrigMonitor);
 
 const logToActivityLog = createActivityLogSender(appState.getMainWindow);
 const logPotaRequestFailure = createPotaRequestFailureLogger(appState.getMainWindow);
@@ -304,6 +326,13 @@ registerAllIpcHandlers(
     readSettingsSnapshot,
     dns,
     validateForwardHostLookup,
+    parseFlrigEndpoint,
+    onSettingsSaved: (updatedSettings) => {
+      flrigMonitor.applySettings({
+        nextEnabled: updatedSettings.flrigEnabled,
+        nextEndpoint: updatedSettings.flrigEndpoint,
+      });
+    },
     ensureRelayInitialized,
     stopRelayIfRunning,
     sanitizeQsoArray,
@@ -399,6 +428,10 @@ registerLifecycleHandlers({
     createPotaSpotsWindow,
     createDxSummitSpotsWindow,
     createExamplesWindow,
+    stopFlrigMonitor: () => {
+      const monitor = appState.getFlrigMonitor();
+      monitor && monitor.dispose();
+    },
     handleWindowAllClosed,
     processPlatform: process.platform,
     handleAppActivate,
@@ -406,4 +439,9 @@ registerLifecycleHandlers({
     getWindowRefs: appState.getWindowRefs,
     handleProcessExit,
   }),
+});
+
+app.on('ready', () => {
+  const monitor = appState.getFlrigMonitor();
+  monitor && monitor.refreshFromStore();
 });

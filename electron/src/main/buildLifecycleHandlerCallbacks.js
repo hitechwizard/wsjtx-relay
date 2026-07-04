@@ -36,6 +36,7 @@ function buildLifecycleHandlerCallbacks({
   createPotaSpotsWindow,
   createDxSummitSpotsWindow,
   createExamplesWindow,
+  stopFlrigMonitor,
   handleWindowAllClosed,
   processPlatform,
   handleAppActivate,
@@ -117,6 +118,7 @@ function buildLifecycleHandlerCallbacks({
       });
     },
     onExit: () => {
+      stopFlrigMonitor();
       handleProcessExit({ relay: getRelay(), stopRelayIfRunning });
     },
   };

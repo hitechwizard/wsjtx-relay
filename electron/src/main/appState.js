@@ -6,6 +6,7 @@ function createAppState() {
   let potaSpotsWindow = null;
   let dxSummitSpotsWindow = null;
   let relay = null;
+  let flrigMonitor = null;
   let updateController = null;
 
   return {
@@ -36,6 +37,10 @@ function createAppState() {
     getRelay: () => relay,
     setRelay: (value) => {
       relay = value;
+    },
+    getFlrigMonitor: () => flrigMonitor,
+    setFlrigMonitor: (value) => {
+      flrigMonitor = value;
     },
     getUpdateController: () => updateController,
     setUpdateController: (value) => {

@@ -8,6 +8,8 @@ const cancelBtn = document.getElementById('cancelBtn');
 const themeLightInput = document.getElementById('themeLight');
 const themeDarkInput = document.getElementById('themeDark');
 const autoStartRelayInput = document.getElementById('autoStartRelay');
+const flrigEnabledInput = document.getElementById('flrigEnabled');
+const flrigEndpointInput = document.getElementById('flrigEndpoint');
 const usePotaSpotMapInput = document.getElementById('usePotaSpotMap');
 const manualQsoEntryTypeInput = document.getElementById('manualQsoEntryType');
 const qrzLoggingEnabledInput = document.getElementById('qrzLoggingEnabled');
@@ -49,6 +51,7 @@ function setupEventListeners() {
   toggleClublogPasswordBtn.addEventListener('click', () => {
     togglePasswordVisibility(clublogPasswordInput, toggleClublogPasswordBtn);
   });
+  flrigEnabledInput.addEventListener('change', updateFlrigEndpointState);
   // Auto-uppercase Clublog callsign as user types
   clublogCallsignInput.addEventListener('input', (e) => {
     e.target.value = e.target.value.toUpperCase();
@@ -59,6 +62,8 @@ async function loadSettings() {
   const settings = await window.electron.getSettings();
   listenPortInput.value = settings.listenPort;
   autoStartRelayInput.checked = Boolean(settings.autoStartRelay);
+  flrigEnabledInput.checked = Boolean(settings.flrigEnabled);
+  flrigEndpointInput.value = String(settings.flrigEndpoint || '127.0.0.1:12345');
   usePotaSpotMapInput.checked = Boolean(settings.usePotaSpotMap);
   manualQsoEntryTypeInput.value =
     settings.manualQsoEntryType === 'arrl-field-day' ? 'arrl-field-day' : 'pota';
@@ -102,6 +107,14 @@ async function loadSettings() {
   }
 
   renderForwardsList();
+  updateFlrigEndpointState();
+}
+
+function updateFlrigEndpointState() {
+  if (!flrigEndpointInput) {
+    return;
+  }
+  flrigEndpointInput.disabled = !flrigEnabledInput.checked;
 }
 
 function togglePasswordVisibility(input, button) {
@@ -245,6 +258,8 @@ async function saveSettings(e) {
 
   const listenPort = parseInt(listenPortInput.value);
   const autoStartRelay = Boolean(autoStartRelayInput.checked);
+  const flrigEnabled = Boolean(flrigEnabledInput.checked);
+  const flrigEndpoint = String(flrigEndpointInput.value || '').trim();
   const usePotaSpotMap = Boolean(usePotaSpotMapInput.checked);
   const manualQsoEntryType =
     manualQsoEntryTypeInput.value === 'arrl-field-day' ? 'arrl-field-day' : 'pota';
@@ -275,6 +290,14 @@ async function saveSettings(e) {
     return;
   }
 
+  if (flrigEnabled) {
+    const parsedFlrigEndpoint = parseHostPort(flrigEndpoint);
+    if (!parsedFlrigEndpoint || !isValidForwardHost(parsedFlrigEndpoint.host)) {
+      alert('Invalid flrig endpoint. Use host:port (for example, 127.0.0.1:12345)');
+      return;
+    }
+  }
+
   if (isNaN(decodeSightingExpirationMinutes) || decodeSightingExpirationMinutes < 0) {
     alert('Invalid decode sighting expiration (must be 0 or greater)');
     return;
@@ -302,6 +325,8 @@ async function saveSettings(e) {
       listenPort,
       forwards: forwardsData,
       autoStartRelay,
+      flrigEnabled,
+      flrigEndpoint,
       usePotaSpotMap,
       manualQsoEntryType,
       qrzLoggingEnabled,
@@ -335,6 +360,27 @@ function isValidIPv4(ip) {
   const ipRegex =
     /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
   return ipRegex.test(ip);
+}
+
+function parseHostPort(value) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return null;
+  }
+
+  const separatorIndex = raw.lastIndexOf(':');
+  if (separatorIndex <= 0 || separatorIndex >= raw.length - 1) {
+    return null;
+  }
+
+  const host = raw.slice(0, separatorIndex).trim();
+  const port = Number.parseInt(raw.slice(separatorIndex + 1).trim(), 10);
+
+  if (!host || Number.isNaN(port) || port < 1 || port > 65535) {
+    return null;
+  }
+
+  return { host, port };
 }
 
 function isValidForwardHost(host) {

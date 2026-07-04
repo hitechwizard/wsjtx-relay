@@ -52,6 +52,24 @@
 
           <div class="form-group">
             <div class="settings-toggle-header">
+              <span class="settings-toggle-title">Use flrig Server</span>
+              <label class="settings-toggle-control" for="flrigEnabled">
+                <input type="checkbox" id="flrigEnabled" name="flrigEnabled" />
+                <span>Enabled</span>
+              </label>
+            </div>
+            <label for="flrigEndpoint">flrig Endpoint (host:port):</label>
+            <input
+              type="text"
+              id="flrigEndpoint"
+              name="flrigEndpoint"
+              placeholder="127.0.0.1:12345"
+            />
+            <small>When enabled, polls flrig for frequency, TX, power, and SWR status</small>
+          </div>
+
+          <div class="form-group">
+            <div class="settings-toggle-header">
               <span class="settings-toggle-title">Use POTA Spot Map</span>
               <label class="settings-toggle-control" for="usePotaSpotMap">
                 <input type="checkbox" id="usePotaSpotMap" name="usePotaSpotMap" />

@@ -20,6 +20,8 @@ function buildHandlerRegistrationOptions({
   readSettingsSnapshot,
   dns,
   validateForwardHostLookup,
+  parseFlrigEndpoint,
+  onSettingsSaved,
   ensureRelayInitialized,
   stopRelayIfRunning,
   sanitizeQsoArray,
@@ -76,6 +78,8 @@ function buildHandlerRegistrationOptions({
       readSettingsSnapshot,
       dns,
       validateForwardHostLookup,
+      parseFlrigEndpoint,
+      onSettingsSaved,
     },
     relayDependencies: {
       ipcMain,

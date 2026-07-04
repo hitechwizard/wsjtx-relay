@@ -35,6 +35,9 @@
 - Added user-facing API failure notifications (inline banner/toast-style messages) in spot windows so users are explicitly informed when live spot APIs are unreachable:
   - DX Summit Spots shows an API error banner when DX Summit fetch fails and clears it automatically after recovery.
   - POTA Spots shows an API error banner when POTA fetch fails and clears it automatically after recovery.
+- Added Manual QSO duplicate-call detection in the `DX Call` field header:
+  - Shows a `DUPE` tag while typing when the entered callsign already exists in the QSO log.
+  - Displays the most recent matching QSO timestamp using the same log display format (`MM-DD @ HH:MM`).
 
 ### Changed
 

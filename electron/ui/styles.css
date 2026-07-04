@@ -538,9 +538,74 @@ body {
   gap: 8px;
 }
 
+.indicator-listen-port-row .indicator-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .transmit-message {
   margin-left: 8px;
   font-size: 12px;
+}
+
+.connection-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 98px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.connection-badge[hidden] {
+  display: none !important;
+}
+
+.connection-badge.connected {
+  background-color: var(--green);
+}
+
+.connection-badge.disconnected {
+  background-color: var(--red);
+}
+
+.swr-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 74px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.swr-badge[hidden] {
+  display: none !important;
+}
+
+.swr-badge.swr-good {
+  background-color: var(--green);
+}
+
+.swr-badge.swr-warn {
+  background-color: var(--yellow);
+  color: #1f1f1f;
+}
+
+.swr-badge.swr-bad {
+  background-color: var(--red);
+}
+
+.swr-badge.swr-unknown {
+  background-color: var(--gray);
 }
 
 /* ============================================================================

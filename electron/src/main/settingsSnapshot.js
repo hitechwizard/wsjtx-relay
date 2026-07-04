@@ -13,6 +13,8 @@ function readSettingsSnapshot(store, options = {}) {
   const settings = {
     listenPort: store.get('listenPort'),
     forwards: store.get('forwards'),
+    flrigEnabled: store.get('flrigEnabled', store.get('rigctldEnabled', false)),
+    flrigEndpoint: store.get('flrigEndpoint', store.get('rigctldEndpoint', '127.0.0.1:12345')),
     autoStartRelay: store.get('autoStartRelay', false),
     usePotaSpotMap: store.get('usePotaSpotMap', false),
     qrzLoggingEnabled: store.get('qrzLoggingEnabled', false),

@@ -12,6 +12,8 @@ function registerSettingsHandlers({
   readSettingsSnapshot,
   dns,
   validateForwardHostLookup,
+  parseFlrigEndpoint,
+  onSettingsSaved,
 }) {
   ipcMain.handle('get-settings', () => {
     return readSettingsSnapshot(store, { includeQsos: true, qsoStore });
@@ -28,6 +30,11 @@ function registerSettingsHandlers({
 
     const listenPort = toClampedInteger(payload.listenPort, 1, 65535);
     const forwards = sanitizeForwards(payload.forwards);
+    const flrigEnabled = Boolean(payload.flrigEnabled);
+    const flrigEndpoint = String(payload.flrigEndpoint || '')
+      .trim()
+      .toLowerCase();
+    const parsedFlrigEndpoint = parseFlrigEndpoint(flrigEndpoint);
     const forwardDelaySeconds = toNonNegativeNumber(payload.forwardDelaySeconds);
     const decodeSightingExpirationMinutes = toClampedInteger(
       payload.decodeSightingExpirationMinutes,
@@ -58,14 +65,20 @@ function registerSettingsHandlers({
     if (
       listenPort === null ||
       forwards === null ||
+      (flrigEnabled && !parsedFlrigEndpoint) ||
       !isManualQsoEntryTypeValid ||
       !isWorkedMatchFieldsValid
     ) {
-      return { success: false, error: 'Invalid listen port or forwards configuration' };
+      return {
+        success: false,
+        error: 'Invalid listen port, forwards, or flrig endpoint configuration',
+      };
     }
 
     store.set('listenPort', listenPort);
     store.set('forwards', forwards);
+    store.set('flrigEnabled', flrigEnabled);
+    store.set('flrigEndpoint', flrigEndpoint || '127.0.0.1:12345');
     if (typeof payload.autoStartRelay === 'boolean') {
       store.set('autoStartRelay', payload.autoStartRelay);
     }
@@ -131,6 +144,10 @@ function registerSettingsHandlers({
     const updatedSettings = readSettingsSnapshot(store, { themeFallback: 'light' });
 
     sendToAllWindows('settings-changed', updatedSettings);
+
+    if (typeof onSettingsSaved === 'function') {
+      onSettingsSaved(updatedSettings);
+    }
 
     if (allowedThemes.has(String(payload.theme || '').trim())) {
       sendToAllWindows('theme-changed', String(payload.theme).trim());

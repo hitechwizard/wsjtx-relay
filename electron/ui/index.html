@@ -228,12 +228,16 @@
             <label>Transmitting:</label>
             <div class="indicator-content">
               <span id="transmittingValue" class="indicator-value indicator-off">—</span>
+              <span id="swrBadge" class="swr-badge" hidden></span>
               <span id="transmitMessage" class="transmit-message"></span>
             </div>
           </div>
-          <div class="indicator">
+          <div class="indicator indicator-listen-port-row">
             <label>Listen Port:</label>
-            <span id="listenPortValue" class="indicator-value">2237</span>
+            <div class="indicator-content">
+              <span id="listenPortValue" class="indicator-value">2237</span>
+              <span id="flrigConnectionBadge" class="connection-badge" hidden></span>
+            </div>
           </div>
           <div class="indicator">
             <label>Forwards:</label>
