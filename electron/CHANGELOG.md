@@ -32,6 +32,9 @@
   - `Band`
   - `Mode`
   - `Date`
+- Added user-facing API failure notifications (inline banner/toast-style messages) in spot windows so users are explicitly informed when live spot APIs are unreachable:
+  - DX Summit Spots shows an API error banner when DX Summit fetch fails and clears it automatically after recovery.
+  - POTA Spots shows an API error banner when POTA fetch fails and clears it automatically after recovery.
 
 ### Changed
 
