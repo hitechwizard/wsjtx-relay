@@ -470,11 +470,8 @@ function createFlrigMonitor({
 
   const refreshFromStore = () => {
     applySettings({
-      nextEnabled: store.get('flrigEnabled', store.get('rigctldEnabled', false)),
-      nextEndpoint: store.get(
-        'flrigEndpoint',
-        store.get('rigctldEndpoint', DEFAULT_FLRIG_ENDPOINT),
-      ),
+      nextEnabled: store.get('flrigEnabled', false),
+      nextEndpoint: store.get('flrigEndpoint', DEFAULT_FLRIG_ENDPOINT),
     });
   };
 

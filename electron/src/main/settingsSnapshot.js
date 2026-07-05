@@ -13,8 +13,8 @@ function readSettingsSnapshot(store, options = {}) {
   const settings = {
     listenPort: store.get('listenPort'),
     forwards: store.get('forwards'),
-    flrigEnabled: store.get('flrigEnabled', store.get('rigctldEnabled', false)),
-    flrigEndpoint: store.get('flrigEndpoint', store.get('rigctldEndpoint', '127.0.0.1:12345')),
+    flrigEnabled: store.get('flrigEnabled', false),
+    flrigEndpoint: store.get('flrigEndpoint', '127.0.0.1:12345'),
     defaultMyCall: store.get('defaultMyCall', ''),
     defaultMyGrid: store.get('defaultMyGrid', ''),
     autoStartRelay: store.get('autoStartRelay', false),
