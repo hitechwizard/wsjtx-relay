@@ -10,6 +10,8 @@ const themeDarkInput = document.getElementById('themeDark');
 const autoStartRelayInput = document.getElementById('autoStartRelay');
 const flrigEnabledInput = document.getElementById('flrigEnabled');
 const flrigEndpointInput = document.getElementById('flrigEndpoint');
+const defaultMyCallInput = document.getElementById('defaultMyCall');
+const defaultMyGridInput = document.getElementById('defaultMyGrid');
 const usePotaSpotMapInput = document.getElementById('usePotaSpotMap');
 const manualQsoEntryTypeInput = document.getElementById('manualQsoEntryType');
 const qrzLoggingEnabledInput = document.getElementById('qrzLoggingEnabled');
@@ -52,6 +54,16 @@ function setupEventListeners() {
     togglePasswordVisibility(clublogPasswordInput, toggleClublogPasswordBtn);
   });
   flrigEnabledInput.addEventListener('change', updateFlrigEndpointState);
+  defaultMyCallInput.addEventListener('input', (e) => {
+    e.target.value = String(e.target.value || '')
+      .toUpperCase()
+      .trim();
+  });
+  defaultMyGridInput.addEventListener('input', (e) => {
+    e.target.value = String(e.target.value || '')
+      .toUpperCase()
+      .trim();
+  });
   // Auto-uppercase Clublog callsign as user types
   clublogCallsignInput.addEventListener('input', (e) => {
     e.target.value = e.target.value.toUpperCase();
@@ -64,6 +76,8 @@ async function loadSettings() {
   autoStartRelayInput.checked = Boolean(settings.autoStartRelay);
   flrigEnabledInput.checked = Boolean(settings.flrigEnabled);
   flrigEndpointInput.value = String(settings.flrigEndpoint || '127.0.0.1:12345');
+  defaultMyCallInput.value = String(settings.defaultMyCall || '');
+  defaultMyGridInput.value = String(settings.defaultMyGrid || '');
   usePotaSpotMapInput.checked = Boolean(settings.usePotaSpotMap);
   manualQsoEntryTypeInput.value =
     settings.manualQsoEntryType === 'arrl-field-day' ? 'arrl-field-day' : 'pota';
@@ -260,6 +274,12 @@ async function saveSettings(e) {
   const autoStartRelay = Boolean(autoStartRelayInput.checked);
   const flrigEnabled = Boolean(flrigEnabledInput.checked);
   const flrigEndpoint = String(flrigEndpointInput.value || '').trim();
+  const defaultMyCall = String(defaultMyCallInput.value || '')
+    .trim()
+    .toUpperCase();
+  const defaultMyGrid = String(defaultMyGridInput.value || '')
+    .trim()
+    .toUpperCase();
   const usePotaSpotMap = Boolean(usePotaSpotMapInput.checked);
   const manualQsoEntryType =
     manualQsoEntryTypeInput.value === 'arrl-field-day' ? 'arrl-field-day' : 'pota';
@@ -303,6 +323,16 @@ async function saveSettings(e) {
     return;
   }
 
+  if (defaultMyCall && !/^[A-Z0-9/]{3,20}$/.test(defaultMyCall)) {
+    alert('Invalid Default My Call');
+    return;
+  }
+
+  if (defaultMyGrid && !/^[A-R]{2}[0-9]{2}([A-X]{2})?$/.test(defaultMyGrid)) {
+    alert('Invalid Default My Grid');
+    return;
+  }
+
   if (dxSummitWorkedMatchFields.length === 0) {
     alert('Select at least one DX Summit worked match field');
     return;
@@ -327,6 +357,8 @@ async function saveSettings(e) {
       autoStartRelay,
       flrigEnabled,
       flrigEndpoint,
+      defaultMyCall,
+      defaultMyGrid,
       usePotaSpotMap,
       manualQsoEntryType,
       qrzLoggingEnabled,

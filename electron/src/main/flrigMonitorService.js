@@ -529,7 +529,9 @@ function createFlrigMonitor({
       );
 
       onDebugLog &&
-        onDebugLog(`flrig mode command sent: ${modeResult.methodName} ${targetMode} -> ${modeResult.value}`);
+        onDebugLog(
+          `flrig mode command sent: ${modeResult.methodName} ${targetMode} -> ${modeResult.value}`,
+        );
       onDebugLog &&
         onDebugLog(
           `flrig tune command sent: ${frequencyResult.methodName} ${Math.round(numericHz)} Hz -> ${frequencyResult.value}`,

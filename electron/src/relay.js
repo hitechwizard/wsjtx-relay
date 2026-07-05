@@ -338,9 +338,8 @@ class WSJTXRelay extends EventEmitter {
           // Decode
           const decodeMode = String(parsed.mode || '').trim();
           const fallbackMode = String(this.lastStatusSnapshot?.mode || '').trim();
-          const resolvedMode = decodeMode && decodeMode !== '~' && decodeMode !== '+'
-            ? decodeMode
-            : fallbackMode;
+          const resolvedMode =
+            decodeMode && decodeMode !== '~' && decodeMode !== '+' ? decodeMode : fallbackMode;
 
           this.emit('decode-packet', {
             time: Number(parsed.time),

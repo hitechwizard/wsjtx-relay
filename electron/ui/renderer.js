@@ -864,6 +864,18 @@ function applySettingsToStatusIndicators(settings) {
     listenPortValue.textContent = settings.listenPort;
   }
 
+  if (deCall && !(deCall.textContent || '').trim()) {
+    deCall.textContent = String(settings.defaultMyCall || '')
+      .trim()
+      .toUpperCase();
+  }
+
+  if (deGrid && !(deGrid.textContent || '').trim()) {
+    deGrid.textContent = String(settings.defaultMyGrid || '')
+      .trim()
+      .toUpperCase();
+  }
+
   if (Array.isArray(settings.forwards)) {
     window.currentForwards = settings.forwards;
   } else {

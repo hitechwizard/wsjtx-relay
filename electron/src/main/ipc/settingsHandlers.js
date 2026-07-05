@@ -34,6 +34,12 @@ function registerSettingsHandlers({
     const flrigEndpoint = String(payload.flrigEndpoint || '')
       .trim()
       .toLowerCase();
+    const defaultMyCall = String(payload.defaultMyCall || '')
+      .trim()
+      .toUpperCase();
+    const defaultMyGrid = String(payload.defaultMyGrid || '')
+      .trim()
+      .toUpperCase();
     const parsedFlrigEndpoint = parseFlrigEndpoint(flrigEndpoint);
     const forwardDelaySeconds = toNonNegativeNumber(payload.forwardDelaySeconds);
     const decodeSightingExpirationMinutes = toClampedInteger(
@@ -66,12 +72,14 @@ function registerSettingsHandlers({
       listenPort === null ||
       forwards === null ||
       (flrigEnabled && !parsedFlrigEndpoint) ||
+      (defaultMyCall && !/^[A-Z0-9/]{3,20}$/.test(defaultMyCall)) ||
+      (defaultMyGrid && !/^[A-R]{2}[0-9]{2}([A-X]{2})?$/.test(defaultMyGrid)) ||
       !isManualQsoEntryTypeValid ||
       !isWorkedMatchFieldsValid
     ) {
       return {
         success: false,
-        error: 'Invalid listen port, forwards, or flrig endpoint configuration',
+        error: 'Invalid listen port, forwards, flrig endpoint, or default station configuration',
       };
     }
 
@@ -79,6 +87,8 @@ function registerSettingsHandlers({
     store.set('forwards', forwards);
     store.set('flrigEnabled', flrigEnabled);
     store.set('flrigEndpoint', flrigEndpoint || '127.0.0.1:12345');
+    store.set('defaultMyCall', defaultMyCall);
+    store.set('defaultMyGrid', defaultMyGrid);
     if (typeof payload.autoStartRelay === 'boolean') {
       store.set('autoStartRelay', payload.autoStartRelay);
     }

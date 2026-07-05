@@ -34,6 +34,8 @@ function getStoreDefaults(defaultActivityPacketFilters) {
     forwards: [],
     flrigEnabled: false,
     flrigEndpoint: '127.0.0.1:12345',
+    defaultMyCall: '',
+    defaultMyGrid: '',
     autoStartRelay: false,
     usePotaSpotMap: false,
     qrzLoggingEnabled: false,
