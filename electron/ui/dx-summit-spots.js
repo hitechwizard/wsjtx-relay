@@ -24,7 +24,7 @@ class DxSummitSpotsManager {
     };
     this.stationCallsign = '';
     this.persistedFilters = {
-      modeFilter: '',
+      modeFilters: ['CW', 'SSB', 'DIGI'],
       bandFilter: '',
       regionFilter: '',
       callFilter: '',
@@ -48,12 +48,24 @@ class DxSummitSpotsManager {
   }
 
   setupEventListeners() {
-    ['modeFilter', 'bandFilter', 'hideWorkedFilter', 'hideQrtFilter'].forEach((id) => {
+    [
+      'modeFilterCw',
+      'modeFilterSsb',
+      'modeFilterDigi',
+      'bandFilter',
+      'hideWorkedFilter',
+      'hideQrtFilter',
+    ].forEach((id) => {
       const element = document.getElementById(id);
       if (element) {
         element.addEventListener('change', () => {
+          const isModeToggle =
+            id === 'modeFilterCw' || id === 'modeFilterSsb' || id === 'modeFilterDigi';
           this.applyFilters();
           this.saveFilterState();
+          if (isModeToggle) {
+            this.fetchSpots(true);
+          }
         });
       }
     });
@@ -364,15 +376,27 @@ class DxSummitSpotsManager {
     }
   }
 
-  async fetchSpots() {
+  async fetchSpots(force = false) {
     const now = Date.now();
-    if (now - this.lastFetchTime < this.minUpdateIntervalMs && this.spots.length > 0) {
+    if (!force && now - this.lastFetchTime < this.minUpdateIntervalMs && this.spots.length > 0) {
+      return;
+    }
+
+    const modeFilters = this.getEnabledModeFilters();
+    if (modeFilters.length === 0) {
+      this.spots = [];
+      this.lastUpdateTime = new Date();
+      this.lastFetchTime = now;
+      this.clearApiError();
+      this.updateFilterOptions();
+      this.applyFilters();
+      this.updateLastUpdateDisplay();
       return;
     }
 
     try {
       const [response] = await Promise.all([
-        window.electron.fetchDxSummitSpots(),
+        window.electron.fetchDxSummitSpots(modeFilters),
         this.loadLoggedQsos(),
       ]);
 
@@ -518,13 +542,9 @@ class DxSummitSpotsManager {
   }
 
   updateFilterOptions() {
-    const modes = new Set();
     const bands = new Set();
 
     this.spots.forEach((spot) => {
-      if (spot.mode) {
-        modes.add(spot.mode);
-      }
       const freqMHz = this.parseFrequencyMHz(spot.frequency);
       if (Number.isFinite(freqMHz)) {
         const band = this.frequencyToBand(freqMHz);
@@ -533,19 +553,6 @@ class DxSummitSpotsManager {
         }
       }
     });
-
-    const modeSelect = document.getElementById('modeFilter');
-    const currentMode = modeSelect.value;
-    modeSelect.innerHTML = '<option value="">All Modes</option>';
-    Array.from(modes)
-      .sort()
-      .forEach((mode) => {
-        const option = document.createElement('option');
-        option.value = mode;
-        option.textContent = mode;
-        modeSelect.appendChild(option);
-      });
-    modeSelect.value = currentMode;
 
     const bandSelect = document.getElementById('bandFilter');
     const currentBand = bandSelect.value;
@@ -560,7 +567,7 @@ class DxSummitSpotsManager {
       });
     bandSelect.value = currentBand;
 
-    this.applyPersistedSelectFiltersIfAvailable();
+    this.applyPersistedBandFilterIfAvailable();
   }
 
   parseFrequencyMHz(frequencyKHz) {
@@ -624,7 +631,7 @@ class DxSummitSpotsManager {
       if (window.electron && typeof window.electron.getDxSummitSpotsFilters === 'function') {
         const state = await window.electron.getDxSummitSpotsFilters();
         this.persistedFilters = {
-          modeFilter: String(state?.modeFilter || ''),
+          modeFilters: this.normalizeModeFilters(state?.modeFilters, state?.modeFilter),
           bandFilter: String(state?.bandFilter || ''),
           regionFilter: String(state?.regionFilter || '').toUpperCase(),
           callFilter: String(state?.callFilter || ''),
@@ -639,7 +646,7 @@ class DxSummitSpotsManager {
 
   saveFilterState() {
     const state = {
-      modeFilter: document.getElementById('modeFilter').value,
+      modeFilters: this.getEnabledModeFilters(),
       bandFilter: document.getElementById('bandFilter').value,
       regionFilter: String(document.getElementById('regionFilter').value || '').toUpperCase(),
       callFilter: String(document.getElementById('callFilter').value || ''),
@@ -655,6 +662,23 @@ class DxSummitSpotsManager {
   }
 
   applyPersistedFilters() {
+    const modeFilters = this.normalizeModeFilters(this.persistedFilters.modeFilters);
+    const modeFilterSet = new Set(modeFilters);
+    const modeFilterCwInput = document.getElementById('modeFilterCw');
+    if (modeFilterCwInput) {
+      modeFilterCwInput.checked = modeFilterSet.has('CW');
+    }
+
+    const modeFilterSsbInput = document.getElementById('modeFilterSsb');
+    if (modeFilterSsbInput) {
+      modeFilterSsbInput.checked = modeFilterSet.has('SSB');
+    }
+
+    const modeFilterDigiInput = document.getElementById('modeFilterDigi');
+    if (modeFilterDigiInput) {
+      modeFilterDigiInput.checked = modeFilterSet.has('DIGI');
+    }
+
     const regionInput = document.getElementById('regionFilter');
     if (regionInput) {
       regionInput.value = this.persistedFilters.regionFilter || '';
@@ -676,20 +700,10 @@ class DxSummitSpotsManager {
     }
   }
 
-  applyPersistedSelectFiltersIfAvailable() {
-    const modeSelect = document.getElementById('modeFilter');
+  applyPersistedBandFilterIfAvailable() {
     const bandSelect = document.getElementById('bandFilter');
 
-    const persistedMode = String(this.persistedFilters.modeFilter || '');
     const persistedBand = String(this.persistedFilters.bandFilter || '');
-
-    if (
-      modeSelect &&
-      persistedMode &&
-      modeSelect.querySelector(`option[value="${persistedMode}"]`)
-    ) {
-      modeSelect.value = persistedMode;
-    }
 
     if (
       bandSelect &&
@@ -1069,7 +1083,7 @@ class DxSummitSpotsManager {
   }
 
   applyFilters() {
-    const modeFilter = document.getElementById('modeFilter').value.toUpperCase();
+    const enabledModeFilters = new Set(this.getEnabledModeFilters());
     const bandFilter = document.getElementById('bandFilter').value;
     const regionFilter = document.getElementById('regionFilter').value.toUpperCase();
     const callFilter = document.getElementById('callFilter').value;
@@ -1086,8 +1100,8 @@ class DxSummitSpotsManager {
         return false;
       }
 
-      const spotMode = String(spot.mode || '').toUpperCase();
-      if (modeFilter && spotMode !== modeFilter) {
+      const spotModeCategory = this.getSpotModeCategory(spot.mode);
+      if (enabledModeFilters.size > 0 && !enabledModeFilters.has(spotModeCategory)) {
         return false;
       }
 
@@ -1112,6 +1126,67 @@ class DxSummitSpotsManager {
 
     this.sortSpots();
     this.render();
+  }
+
+  normalizeModeFilters(modeFilters, legacyModeFilter = '') {
+    const allowed = new Set(['CW', 'SSB', 'DIGI']);
+
+    if (Array.isArray(modeFilters)) {
+      return Array.from(
+        new Set(
+          modeFilters
+            .map((value) =>
+              String(value || '')
+                .trim()
+                .toUpperCase(),
+            )
+            .filter((value) => allowed.has(value)),
+        ),
+      );
+    }
+
+    const legacy = String(legacyModeFilter || '')
+      .trim()
+      .toUpperCase();
+    if (legacy && allowed.has(legacy)) {
+      return [legacy];
+    }
+
+    return ['CW', 'SSB', 'DIGI'];
+  }
+
+  getEnabledModeFilters() {
+    const modeFilters = [];
+
+    if (document.getElementById('modeFilterCw')?.checked) {
+      modeFilters.push('CW');
+    }
+
+    if (document.getElementById('modeFilterSsb')?.checked) {
+      modeFilters.push('SSB');
+    }
+
+    if (document.getElementById('modeFilterDigi')?.checked) {
+      modeFilters.push('DIGI');
+    }
+
+    return modeFilters;
+  }
+
+  getSpotModeCategory(modeValue) {
+    const mode = String(modeValue || '')
+      .trim()
+      .toUpperCase();
+
+    if (mode === 'CW') {
+      return 'CW';
+    }
+
+    if (mode === 'SSB') {
+      return 'SSB';
+    }
+
+    return 'DIGI';
   }
 
   sortByField(field) {

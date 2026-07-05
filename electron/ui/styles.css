@@ -2079,6 +2079,25 @@ body.dark-theme .qso-pota-icon {
   gap: 8px;
 }
 
+.pota-mode-filter-group {
+  align-items: center;
+  gap: 4px;
+}
+
+.pota-mode-filter-options {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.pota-hide-filter-options {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
 .pota-filter-checkbox-group {
   display: inline-flex;
   align-items: center;

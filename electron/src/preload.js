@@ -94,7 +94,7 @@ contextBridge.exposeInMainWorld('electron', {
   sendPotaHighlight: (payload) => ipcRenderer.invoke('send-pota-highlight', payload),
 
   // DX Summit Spots API
-  fetchDxSummitSpots: () => ipcRenderer.invoke('fetch-dx-summit-spots'),
+  fetchDxSummitSpots: (modeFilters) => ipcRenderer.invoke('fetch-dx-summit-spots', modeFilters),
   getDxSummitSpotsFilters: () => ipcRenderer.invoke('get-dx-summit-spots-filters'),
   saveDxSummitSpotsFilters: (filters) =>
     ipcRenderer.invoke('save-dx-summit-spots-filters', filters),

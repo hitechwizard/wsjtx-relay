@@ -57,8 +57,35 @@ async function fetchDxSummitSpotsByInclude(
   }
 }
 
-async function fetchDxSummitSpots(fetchImpl, dxSummitSpotsUrl, requestTimeoutMs) {
-  const includeModes = ['DIGI', 'PHONE', 'CW'];
+function normalizeRequestedIncludeModes(modeFilters) {
+  const modeToInclude = {
+    CW: 'CW',
+    SSB: 'PHONE',
+    DIGI: 'DIGI',
+  };
+
+  if (modeFilters === undefined || modeFilters === null) {
+    return ['DIGI', 'PHONE', 'CW'];
+  }
+
+  const requestedModes = Array.isArray(modeFilters)
+    ? modeFilters
+        .map((value) =>
+          String(value || '')
+            .trim()
+            .toUpperCase(),
+        )
+        .filter((value) => value in modeToInclude)
+    : [];
+
+  return Array.from(new Set(requestedModes.map((value) => modeToInclude[value])));
+}
+
+async function fetchDxSummitSpots(fetchImpl, dxSummitSpotsUrl, requestTimeoutMs, modeFilters) {
+  const includeModes = normalizeRequestedIncludeModes(modeFilters);
+  if (includeModes.length === 0) {
+    return [];
+  }
   const responses = await Promise.all(
     includeModes.map((includeMode) =>
       fetchDxSummitSpotsByInclude(fetchImpl, dxSummitSpotsUrl, includeMode, requestTimeoutMs),
@@ -96,8 +123,8 @@ async function fetchDxSummitSpots(fetchImpl, dxSummitSpotsUrl, requestTimeoutMs)
     });
   });
 
-  return Array.from(byStableId.values()).map(({ record, includeModes }) => {
-    const includeList = Array.from(includeModes);
+  return Array.from(byStableId.values()).map(({ record, includeModes: matchedIncludes }) => {
+    const includeList = Array.from(matchedIncludes);
     if (includeList.length === 1) {
       return {
         ...record,

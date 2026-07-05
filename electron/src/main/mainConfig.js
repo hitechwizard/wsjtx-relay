@@ -65,7 +65,7 @@ function getStoreDefaults(defaultActivityPacketFilters) {
       hideQrt: false,
     },
     dxSummitSpotsFilters: {
-      modeFilter: '',
+      modeFilters: ['CW', 'SSB', 'DIGI'],
       bandFilter: '',
       regionFilter: '',
       callFilter: '',

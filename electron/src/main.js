@@ -136,8 +136,8 @@ const fetchPotaSpots = createPotaSpotsFetcher(
   POTA_SPOTS_URL,
   POTA_REQUEST_TIMEOUT_MS,
 );
-const fetchDxSummitSpots = () =>
-  fetchDxSummitSpotsFromApi(fetch, DX_SUMMIT_SPOTS_URL, DX_SUMMIT_REQUEST_TIMEOUT_MS);
+const fetchDxSummitSpots = (modeFilters) =>
+  fetchDxSummitSpotsFromApi(fetch, DX_SUMMIT_SPOTS_URL, DX_SUMMIT_REQUEST_TIMEOUT_MS, modeFilters);
 
 const sendStatusUpdateToWindows = (statusData) => {
   sendToWindows(

@@ -25,11 +25,22 @@
           </div>
         </div>
         <div class="pota-spots-controls">
-          <div class="pota-filter-group">
-            <label for="modeFilter">Mode:</label>
-            <select id="modeFilter" class="pota-filter-select">
-              <option value="">All Modes</option>
-            </select>
+          <div class="pota-filter-group pota-mode-filter-group">
+            <span>Modes:</span>
+            <div class="pota-mode-filter-options">
+              <label for="modeFilterCw" class="pota-filter-checkbox-group">
+                <input type="checkbox" id="modeFilterCw" class="pota-filter-checkbox" checked />
+                <span>CW</span>
+              </label>
+              <label for="modeFilterSsb" class="pota-filter-checkbox-group">
+                <input type="checkbox" id="modeFilterSsb" class="pota-filter-checkbox" checked />
+                <span>SSB</span>
+              </label>
+              <label for="modeFilterDigi" class="pota-filter-checkbox-group">
+                <input type="checkbox" id="modeFilterDigi" class="pota-filter-checkbox" checked />
+                <span>DIGI</span>
+              </label>
+            </div>
           </div>
           <div class="pota-filter-group">
             <label for="bandFilter">Band:</label>
@@ -55,14 +66,16 @@
               placeholder="Text or /regexp/i"
             />
           </div>
-          <label for="hideWorkedFilter" class="pota-filter-checkbox-group">
-            <input type="checkbox" id="hideWorkedFilter" class="pota-filter-checkbox" />
-            <span>Hide Worked</span>
-          </label>
-          <label for="hideQrtFilter" class="pota-filter-checkbox-group">
-            <input type="checkbox" id="hideQrtFilter" class="pota-filter-checkbox" />
-            <span>Hide QRT</span>
-          </label>
+          <div class="pota-hide-filter-options">
+            <label for="hideWorkedFilter" class="pota-filter-checkbox-group">
+              <input type="checkbox" id="hideWorkedFilter" class="pota-filter-checkbox" />
+              <span>Hide Worked</span>
+            </label>
+            <label for="hideQrtFilter" class="pota-filter-checkbox-group">
+              <input type="checkbox" id="hideQrtFilter" class="pota-filter-checkbox" />
+              <span>Hide QRT</span>
+            </label>
+          </div>
         </div>
       </div>
 

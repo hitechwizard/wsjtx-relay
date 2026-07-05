@@ -21,7 +21,7 @@ function registerDxSummitHandlers({
   };
 
   const normalizeDxSummitSpotFilters = (filters) => ({
-    modeFilter: String(filters?.modeFilter || ''),
+    modeFilters: normalizeDxSummitModeFilters(filters?.modeFilters, filters?.modeFilter),
     bandFilter: String(filters?.bandFilter || ''),
     regionFilter: String(filters?.regionFilter || ''),
     callFilter: String(filters?.callFilter || ''),
@@ -29,9 +29,33 @@ function registerDxSummitHandlers({
     hideQrt: Boolean(filters?.hideQrt),
   });
 
-  ipcMain.handle('fetch-dx-summit-spots', async () => {
+  function normalizeDxSummitModeFilters(modeFilters, legacyModeFilter) {
+    const allowed = new Set(['CW', 'SSB', 'DIGI']);
+
+    if (Array.isArray(modeFilters)) {
+      const normalized = modeFilters
+        .map((value) =>
+          String(value || '')
+            .trim()
+            .toUpperCase(),
+        )
+        .filter((value) => allowed.has(value));
+      return Array.from(new Set(normalized));
+    }
+
+    const legacy = String(legacyModeFilter || '')
+      .trim()
+      .toUpperCase();
+    if (legacy && allowed.has(legacy)) {
+      return [legacy];
+    }
+
+    return ['CW', 'SSB', 'DIGI'];
+  }
+
+  ipcMain.handle('fetch-dx-summit-spots', async (event, modeFilters) => {
     try {
-      const spots = await fetchDxSummitSpots();
+      const spots = await fetchDxSummitSpots(modeFilters);
       return { success: true, spots };
     } catch (error) {
       const message = error && error.message ? error.message : String(error);
@@ -41,7 +65,7 @@ function registerDxSummitHandlers({
 
   ipcMain.handle('get-dx-summit-spots-filters', () => {
     const storedFilters = store.get('dxSummitSpotsFilters', {
-      modeFilter: '',
+      modeFilters: ['CW', 'SSB', 'DIGI'],
       bandFilter: '',
       regionFilter: '',
       callFilter: '',
