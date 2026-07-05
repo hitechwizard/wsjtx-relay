@@ -558,12 +558,25 @@ function getQsoTimestampMs(qso) {
   return Number.isFinite(timestampMs) ? timestampMs : Number.NEGATIVE_INFINITY;
 }
 
-function findLatestQsoByCall(callSign) {
+function getQsoEffectiveMode(qso) {
+  const mode = String(qso?.mode || '')
+    .trim()
+    .toUpperCase();
+  const submode = String(qso?.submode || '')
+    .trim()
+    .toUpperCase();
+  return mode === 'MFSK' && submode ? submode : mode;
+}
+
+function findLatestQsoByCallAndMode(callSign, modeValue) {
   const normalizedCall = String(callSign || '')
     .trim()
     .toUpperCase();
+  const normalizedMode = String(modeValue || '')
+    .trim()
+    .toUpperCase();
 
-  if (!normalizedCall) {
+  if (!normalizedCall || !normalizedMode) {
     return null;
   }
 
@@ -575,6 +588,10 @@ function findLatestQsoByCall(callSign) {
       .trim()
       .toUpperCase();
     if (qsoCall !== normalizedCall) {
+      return;
+    }
+
+    if (getQsoEffectiveMode(qso) !== normalizedMode) {
       return;
     }
 
@@ -610,7 +627,10 @@ function updateManualDxCallDupeIndicator() {
   const normalizedCall = String(qsoDxCallInput?.value || '')
     .trim()
     .toUpperCase();
-  const latestMatch = findLatestQsoByCall(normalizedCall);
+  const normalizedMode = String(document.getElementById('qso-mode')?.value || '')
+    .trim()
+    .toUpperCase();
+  const latestMatch = findLatestQsoByCallAndMode(normalizedCall, normalizedMode);
 
   if (!normalizedCall || !latestMatch) {
     qsoDxCallDupeTag.hidden = true;

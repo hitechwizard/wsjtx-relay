@@ -58,22 +58,12 @@ const FLRIG_FREQUENCY_METHODS = [
   'rig.get_vfoB',
   'rig.get_freq',
   'rig.get_frequency',
-  'main.get_frequency',
-  'main.get_freq',
-  'get_vfo',
-  'get_freq',
 ];
-const FLRIG_TRANSMIT_METHODS = [
-  'rig.get_ptt',
-  'main.get_ptt',
-  'get_ptt',
-  'rig.get_trx_status',
-  'main.get_trx_status',
-];
-const FLRIG_POWER_METHODS = ['rig.get_power', 'main.get_power', 'get_power'];
+const FLRIG_TRANSMIT_METHODS = ['rig.get_ptt', 'rig.get_trx_status'];
+const FLRIG_POWER_METHODS = ['rig.get_power'];
 const FLRIG_SWR_METHODS = ['rig.get_SWR'];
-const FLRIG_SET_FREQUENCY_METHODS = ['rig.set_frequency', 'main.set_frequency', 'rig.set_vfo'];
-const FLRIG_SET_MODE_METHODS = ['rig.set_mode', 'main.set_mode'];
+const FLRIG_SET_FREQUENCY_METHODS = ['rig.set_frequency', 'rig.set_vfo'];
+const FLRIG_SET_MODE_METHODS = ['rig.set_mode'];
 
 const FLRIG_SWR_TIMEOUT_MS = 1800;
 
