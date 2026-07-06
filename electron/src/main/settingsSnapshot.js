@@ -13,6 +13,10 @@ function readSettingsSnapshot(store, options = {}) {
   const settings = {
     listenPort: store.get('listenPort'),
     forwards: store.get('forwards'),
+    flrigEnabled: store.get('flrigEnabled', false),
+    flrigEndpoint: store.get('flrigEndpoint', '127.0.0.1:12345'),
+    defaultMyCall: store.get('defaultMyCall', ''),
+    defaultMyGrid: store.get('defaultMyGrid', ''),
     autoStartRelay: store.get('autoStartRelay', false),
     usePotaSpotMap: store.get('usePotaSpotMap', false),
     qrzLoggingEnabled: store.get('qrzLoggingEnabled', false),
@@ -23,6 +27,12 @@ function readSettingsSnapshot(store, options = {}) {
     clublogEmail: store.get('clublogEmail', ''),
     forwardDelaySeconds: store.get('forwardDelaySeconds', 0.5),
     decodeSightingExpirationMinutes: store.get('decodeSightingExpirationMinutes', 5),
+    dxSummitWorkedMatchFields: store.get('dxSummitWorkedMatchFields', [
+      'call',
+      'band',
+      'mode',
+      'date',
+    ]),
     manualQsoEntryType: store.get('manualQsoEntryType', 'pota'),
     activityPacketFilters: store.get('activityPacketFilters', [
       ...DEFAULT_ACTIVITY_PACKET_FILTERS,

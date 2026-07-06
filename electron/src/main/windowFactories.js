@@ -325,10 +325,74 @@ function createPotaSpotsWindowFactory(options) {
   };
 }
 
+function createDxSummitSpotsWindowFactory(options) {
+  const {
+    BrowserWindow,
+    appIconPath,
+    preloadPath,
+    hardenWindowNavigation,
+    attachThemeOnLoad,
+    getTheme,
+    attachPersistBoundsOnClose,
+    attachClearOnClosed,
+    attachShowWhenReady,
+    bringWindowToFront,
+    applyStoredPosition,
+    getDxSummitSpotsWindow,
+    setDxSummitSpotsWindow,
+    getDxSummitSpotsWindowBounds,
+    dxSummitSpotsHtmlPath,
+    store,
+  } = options;
+
+  return function createDxSummitSpotsWindow() {
+    const currentWindow = getDxSummitSpotsWindow();
+    if (currentWindow) {
+      bringWindowToFront(currentWindow);
+      return;
+    }
+
+    const bounds = getDxSummitSpotsWindowBounds();
+
+    const windowOptions = applyStoredPosition(
+      {
+        width: bounds.width,
+        height: bounds.height,
+        show: false,
+        icon: appIconPath,
+        webPreferences: {
+          preload: preloadPath,
+          contextIsolation: true,
+          nodeIntegration: false,
+          sandbox: true,
+        },
+      },
+      bounds,
+    );
+
+    const nextWindow = new BrowserWindow(windowOptions);
+    setDxSummitSpotsWindow(nextWindow);
+
+    hardenWindowNavigation(nextWindow);
+    nextWindow.loadFile(dxSummitSpotsHtmlPath);
+
+    attachThemeOnLoad(nextWindow, getTheme);
+
+    attachClearOnClosed(nextWindow, () => {
+      setDxSummitSpotsWindow(null);
+    });
+
+    attachPersistBoundsOnClose(nextWindow, store, 'dxSummitSpotsWindowBounds');
+
+    attachShowWhenReady(nextWindow);
+  };
+}
+
 module.exports = {
   createExamplesWindowFactory,
   createMainWindowFactory,
   createSettingsWindowFactory,
   createQsoEditorWindowFactory,
   createPotaSpotsWindowFactory,
+  createDxSummitSpotsWindowFactory,
 };

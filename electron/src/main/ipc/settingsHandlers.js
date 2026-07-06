@@ -12,6 +12,8 @@ function registerSettingsHandlers({
   readSettingsSnapshot,
   dns,
   validateForwardHostLookup,
+  parseFlrigEndpoint,
+  onSettingsSaved,
 }) {
   ipcMain.handle('get-settings', () => {
     return readSettingsSnapshot(store, { includeQsos: true, qsoStore });
@@ -28,6 +30,37 @@ function registerSettingsHandlers({
 
     const listenPort = toClampedInteger(payload.listenPort, 1, 65535);
     const forwards = sanitizeForwards(payload.forwards);
+    const existingFlrigEnabled = Boolean(store.get('flrigEnabled', false));
+    const existingFlrigEndpoint = String(
+      store.get('flrigEndpoint', '127.0.0.1:12345') || '127.0.0.1:12345',
+    )
+      .trim()
+      .toLowerCase();
+    const hasFlrigEnabled = typeof payload.flrigEnabled === 'boolean';
+    const hasFlrigEndpoint = payload.flrigEndpoint !== undefined;
+    const flrigEnabled = hasFlrigEnabled ? payload.flrigEnabled : existingFlrigEnabled;
+    const flrigEndpoint = hasFlrigEndpoint
+      ? String(payload.flrigEndpoint || '')
+          .trim()
+          .toLowerCase()
+      : existingFlrigEndpoint;
+    const existingDefaultMyCall = String(store.get('defaultMyCall', '') || '')
+      .trim()
+      .toUpperCase();
+    const existingDefaultMyGrid = String(store.get('defaultMyGrid', '') || '')
+      .trim()
+      .toUpperCase();
+    const hasDefaultMyCall = payload.defaultMyCall !== undefined;
+    const hasDefaultMyGrid = payload.defaultMyGrid !== undefined;
+    const defaultMyCall = String(payload.defaultMyCall || '')
+      .trim()
+      .toUpperCase();
+    const defaultMyGrid = String(payload.defaultMyGrid || '')
+      .trim()
+      .toUpperCase();
+    const nextDefaultMyCall = hasDefaultMyCall ? defaultMyCall : existingDefaultMyCall;
+    const nextDefaultMyGrid = hasDefaultMyGrid ? defaultMyGrid : existingDefaultMyGrid;
+    const parsedFlrigEndpoint = parseFlrigEndpoint(flrigEndpoint);
     const forwardDelaySeconds = toNonNegativeNumber(payload.forwardDelaySeconds);
     const decodeSightingExpirationMinutes = toClampedInteger(
       payload.decodeSightingExpirationMinutes,
@@ -37,17 +70,55 @@ function registerSettingsHandlers({
     const manualQsoEntryType = String(payload.manualQsoEntryType || '')
       .trim()
       .toLowerCase();
+    const allowedWorkedMatchFields = new Set(['call', 'band', 'mode', 'date']);
+    const workedMatchFields = Array.isArray(payload.dxSummitWorkedMatchFields)
+      ? payload.dxSummitWorkedMatchFields
+          .map((value) =>
+            String(value || '')
+              .trim()
+              .toLowerCase(),
+          )
+          .filter((value) => allowedWorkedMatchFields.has(value))
+      : null;
     const isManualQsoEntryTypeValid =
       manualQsoEntryType === '' ||
       manualQsoEntryType === 'pota' ||
       manualQsoEntryType === 'arrl-field-day';
+    const isWorkedMatchFieldsValid =
+      workedMatchFields === null ||
+      (workedMatchFields.length > 0 && workedMatchFields.length <= allowedWorkedMatchFields.size);
 
-    if (listenPort === null || forwards === null || !isManualQsoEntryTypeValid) {
-      return { success: false, error: 'Invalid listen port or forwards configuration' };
+    if (
+      listenPort === null ||
+      forwards === null ||
+      (flrigEnabled && !parsedFlrigEndpoint) ||
+      (hasDefaultMyCall && nextDefaultMyCall && !/^[A-Z0-9/]{3,20}$/.test(nextDefaultMyCall)) ||
+      (hasDefaultMyGrid &&
+        nextDefaultMyGrid &&
+        !/^[A-R]{2}[0-9]{2}([A-X]{2})?$/.test(nextDefaultMyGrid)) ||
+      !isManualQsoEntryTypeValid ||
+      !isWorkedMatchFieldsValid
+    ) {
+      return {
+        success: false,
+        error: 'Invalid listen port, forwards, flrig endpoint, or default station configuration',
+      };
     }
 
     store.set('listenPort', listenPort);
     store.set('forwards', forwards);
+    if (hasFlrigEnabled) {
+      store.set('flrigEnabled', flrigEnabled);
+    }
+    if (hasFlrigEndpoint) {
+      store.set('flrigEndpoint', flrigEndpoint || '127.0.0.1:12345');
+    }
+    if (hasDefaultMyCall) {
+      store.set('defaultMyCall', nextDefaultMyCall);
+    }
+    if (hasDefaultMyGrid) {
+      store.set('defaultMyGrid', nextDefaultMyGrid);
+    }
     if (typeof payload.autoStartRelay === 'boolean') {
       store.set('autoStartRelay', payload.autoStartRelay);
     }
@@ -92,6 +163,9 @@ function registerSettingsHandlers({
     if (manualQsoEntryType) {
       store.set('manualQsoEntryType', manualQsoEntryType);
     }
+    if (workedMatchFields !== null) {
+      store.set('dxSummitWorkedMatchFields', Array.from(new Set(workedMatchFields)));
+    }
     if (Array.isArray(payload.activityPacketFilters)) {
       const sanitizedPacketFilters = payload.activityPacketFilters
         .map((value) => String(value || '').trim())
@@ -110,6 +184,10 @@ function registerSettingsHandlers({
     const updatedSettings = readSettingsSnapshot(store, { themeFallback: 'light' });
 
     sendToAllWindows('settings-changed', updatedSettings);
+
+    if (typeof onSettingsSaved === 'function') {
+      onSettingsSaved(updatedSettings);
+    }
 
     if (allowedThemes.has(String(payload.theme || '').trim())) {
       sendToAllWindows('theme-changed', String(payload.theme).trim());

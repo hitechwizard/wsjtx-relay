@@ -34,7 +34,9 @@ function buildLifecycleHandlerCallbacks({
   createSettingsWindow,
   createQsoEditorWindow,
   createPotaSpotsWindow,
+  createDxSummitSpotsWindow,
   createExamplesWindow,
+  stopFlrigMonitor,
   handleWindowAllClosed,
   processPlatform,
   handleAppActivate,
@@ -89,6 +91,7 @@ function buildLifecycleHandlerCallbacks({
           },
           onOpenQsoEditor: createQsoEditorWindow,
           onOpenPotaSpots: createPotaSpotsWindow,
+          onOpenDxSummitSpots: createDxSummitSpotsWindow,
           onCheckForUpdates: () => {
             const activeUpdateController = updateControllerState.get();
             activeUpdateController && activeUpdateController.performUpdateAction();
@@ -115,6 +118,7 @@ function buildLifecycleHandlerCallbacks({
       });
     },
     onExit: () => {
+      stopFlrigMonitor();
       handleProcessExit({ relay: getRelay(), stopRelayIfRunning });
     },
   };

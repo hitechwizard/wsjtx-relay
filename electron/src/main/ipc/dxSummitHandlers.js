@@ -1,10 +1,10 @@
-function registerPotaHandlers({
+function registerDxSummitHandlers({
   ipcMain,
   BrowserWindow,
   store,
   isPlainObject,
-  fetchPotaSpots,
-  shouldPopulateManualQsoForSpot,
+  fetchDxSummitSpots,
+  shouldPopulateManualQsoForDxSpot,
   getMainWindow,
   getFlrigMonitor,
   getRelay,
@@ -16,21 +16,46 @@ function registerPotaHandlers({
       return null;
     }
 
-    // POTA spot frequencies are kHz from API; convert to Hz for flrig tuning.
+    // DX Summit list is normalized to kHz in renderer; convert to Hz for flrig tuning.
     return Math.round(rawFrequency * 1000);
   };
 
-  const normalizePotaSpotFilters = (filters) => ({
-    modeFilter: String(filters?.modeFilter || ''),
+  const normalizeDxSummitSpotFilters = (filters) => ({
+    modeFilters: normalizeDxSummitModeFilters(filters?.modeFilters, filters?.modeFilter),
     bandFilter: String(filters?.bandFilter || ''),
     regionFilter: String(filters?.regionFilter || ''),
+    callFilter: String(filters?.callFilter || ''),
     hideWorked: Boolean(filters?.hideWorked),
     hideQrt: Boolean(filters?.hideQrt),
   });
 
-  ipcMain.handle('fetch-pota-spots', async () => {
+  function normalizeDxSummitModeFilters(modeFilters, legacyModeFilter) {
+    const allowed = new Set(['CW', 'SSB', 'DIGI']);
+
+    if (Array.isArray(modeFilters)) {
+      const normalized = modeFilters
+        .map((value) =>
+          String(value || '')
+            .trim()
+            .toUpperCase(),
+        )
+        .filter((value) => allowed.has(value));
+      return Array.from(new Set(normalized));
+    }
+
+    const legacy = String(legacyModeFilter || '')
+      .trim()
+      .toUpperCase();
+    if (legacy && allowed.has(legacy)) {
+      return [legacy];
+    }
+
+    return ['CW', 'SSB', 'DIGI'];
+  }
+
+  ipcMain.handle('fetch-dx-summit-spots', async (event, modeFilters) => {
     try {
-      const spots = await fetchPotaSpots();
+      const spots = await fetchDxSummitSpots(modeFilters);
       return { success: true, spots };
     } catch (error) {
       const message = error && error.message ? error.message : String(error);
@@ -38,31 +63,32 @@ function registerPotaHandlers({
     }
   });
 
-  ipcMain.handle('get-pota-spots-filters', () => {
-    const storedFilters = store.get('potaSpotsFilters', {
-      modeFilter: '',
+  ipcMain.handle('get-dx-summit-spots-filters', () => {
+    const storedFilters = store.get('dxSummitSpotsFilters', {
+      modeFilters: ['CW', 'SSB', 'DIGI'],
       bandFilter: '',
       regionFilter: '',
+      callFilter: '',
       hideWorked: false,
       hideQrt: false,
     });
 
-    const normalizedFilters = normalizePotaSpotFilters(storedFilters);
-    store.set('potaSpotsFilters', normalizedFilters);
+    const normalizedFilters = normalizeDxSummitSpotFilters(storedFilters);
+    store.set('dxSummitSpotsFilters', normalizedFilters);
     return normalizedFilters;
   });
 
-  ipcMain.handle('save-pota-spots-filters', (event, filters) => {
+  ipcMain.handle('save-dx-summit-spots-filters', (event, filters) => {
     if (!isPlainObject(filters)) {
       return { success: false, error: 'Invalid filter payload' };
     }
 
-    const nextFilters = normalizePotaSpotFilters(filters);
-    store.set('potaSpotsFilters', nextFilters);
+    const nextFilters = normalizeDxSummitSpotFilters(filters);
+    store.set('dxSummitSpotsFilters', nextFilters);
     return { success: true };
   });
 
-  ipcMain.handle('select-pota-spot', async (event, spot) => {
+  ipcMain.handle('select-dx-summit-spot', async (event, spot) => {
     const sourceWindow = BrowserWindow.fromWebContents(event.sender);
     const payload = isPlainObject(spot) && 'spot' in spot ? spot : { spot, decodePacket: null };
     const selectedSpot = isPlainObject(payload?.spot) ? payload.spot : {};
@@ -73,8 +99,8 @@ function registerPotaHandlers({
       return { success: false, error: 'Main window is not available' };
     }
 
-    if (shouldPopulateManualQsoForSpot(selectedSpot)) {
-      mainWindow.webContents.send('pota-spot-selected', selectedSpot);
+    if (shouldPopulateManualQsoForDxSpot(selectedSpot)) {
+      mainWindow.webContents.send('dx-summit-spot-selected', selectedSpot);
 
       const flrigMonitor = typeof getFlrigMonitor === 'function' ? getFlrigMonitor() : null;
       const shouldTuneViaFlrig =
@@ -114,55 +140,8 @@ function registerPotaHandlers({
 
     return { success: true };
   });
-
-  ipcMain.handle('send-pota-highlight', async (event, payload) => {
-    const highlightPayload = isPlainObject(payload) ? payload : {};
-    const decodePacket = isPlainObject(highlightPayload.decodePacket)
-      ? highlightPayload.decodePacket
-      : null;
-    const callsign = String(highlightPayload.callsign || '')
-      .trim()
-      .toUpperCase();
-
-    if (!callsign) {
-      return { success: false, error: 'Missing callsign for highlight packet' };
-    }
-
-    const relay = getRelay();
-    if (!relay || !relay.running || typeof relay.sendHighlightPacket !== 'function') {
-      return { success: false, error: 'Relay is not running' };
-    }
-
-    try {
-      await relay.sendHighlightPacket({
-        decodePacket,
-        callsign,
-        bgColor: {
-          spec: 1,
-          alpha: 65535,
-          red: 0,
-          green: 25700,
-          blue: 0,
-        },
-        fgColor: {
-          spec: 1,
-          alpha: 65535,
-          red: 65535,
-          green: 65535,
-          blue: 0,
-        },
-        highlightLast: true,
-      });
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error && error.message ? error.message : String(error),
-      };
-    }
-  });
 }
 
 module.exports = {
-  registerPotaHandlers,
+  registerDxSummitHandlers,
 };

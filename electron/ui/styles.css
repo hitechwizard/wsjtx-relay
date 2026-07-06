@@ -446,6 +446,17 @@ body {
   margin-bottom: 0;
 }
 
+.qso-manual-dupe-tag {
+  background-color: var(--red);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
 .qso-time-now-btn {
   margin: 0;
   padding: 4px 10px;
@@ -527,9 +538,74 @@ body {
   gap: 8px;
 }
 
+.indicator-listen-port-row .indicator-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .transmit-message {
   margin-left: 8px;
   font-size: 12px;
+}
+
+.connection-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 98px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.connection-badge[hidden] {
+  display: none !important;
+}
+
+.connection-badge.connected {
+  background-color: var(--green);
+}
+
+.connection-badge.disconnected {
+  background-color: var(--red);
+}
+
+.swr-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 74px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.swr-badge[hidden] {
+  display: none !important;
+}
+
+.swr-badge.swr-good {
+  background-color: var(--green);
+}
+
+.swr-badge.swr-warn {
+  background-color: var(--yellow);
+  color: #1f1f1f;
+}
+
+.swr-badge.swr-bad {
+  background-color: var(--red);
+}
+
+.swr-badge.swr-unknown {
+  background-color: var(--gray);
 }
 
 /* ============================================================================
@@ -2003,6 +2079,25 @@ body.dark-theme .qso-pota-icon {
   gap: 8px;
 }
 
+.pota-mode-filter-group {
+  align-items: center;
+  gap: 4px;
+}
+
+.pota-mode-filter-options {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.pota-hide-filter-options {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
 .pota-filter-checkbox-group {
   display: inline-flex;
   align-items: center;
@@ -2357,4 +2452,25 @@ body.dark-theme .pota-spot-row.pota-spot-tx-enabled:hover td {
 
 .pota-no-spots[hidden] {
   display: none !important;
+}
+
+.pota-api-error-banner {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d64b4b;
+  background: #ffe6e6;
+  color: #8a1f1f;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pota-api-error-banner[hidden] {
+  display: none !important;
+}
+
+body.dark-theme .pota-api-error-banner {
+  border-color: #b33a3a;
+  background: #4b1f1f;
+  color: #ffc9c9;
 }

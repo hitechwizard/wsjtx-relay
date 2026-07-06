@@ -7,6 +7,7 @@ function createEnsureRelayInitialized({
   bindRelayEventForwarding,
   getMainWindow,
   getPotaSpotsWindow,
+  getDxSummitSpotsWindow,
   sendToWindows,
 }) {
   return function ensureRelayInitialized() {
@@ -27,6 +28,7 @@ function createEnsureRelayInitialized({
       bindRelayEventForwarding,
       getMainWindow,
       getPotaSpotsWindow,
+      getDxSummitSpotsWindow,
       sendToWindows,
     });
 

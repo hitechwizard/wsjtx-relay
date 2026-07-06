@@ -23,15 +23,19 @@ const frequencyValue = document.getElementById('frequencyValue');
 const modeValue = document.getElementById('modeValue');
 const txEnabledValue = document.getElementById('txEnabledValue');
 const transmittingValue = document.getElementById('transmittingValue');
+const flrigConnectionBadge = document.getElementById('flrigConnectionBadge');
+const swrBadge = document.getElementById('swrBadge');
 const transmitMessage = document.getElementById('transmitMessage');
 
 const qsoFrequency = document.getElementById('qso-frequency');
 const qsoBand = document.getElementById('qso-band');
+const qsoTxPwr = document.getElementById('qso-txpwr');
 const qsoLogContactBtn = document.getElementById('qsoLogContact');
 const qsoTimeNowBtn = document.getElementById('qsoTimeNow');
 const qsoDateOn = document.getElementById('qso-dateon');
 const qsoTimeOn = document.getElementById('qso-timeon');
 const qsoDxCallInput = document.getElementById('qso-dxcall');
+const qsoDxCallDupeTag = document.getElementById('qsoDxCallDupeTag');
 const qsoRstSentInput = document.getElementById('qso-rst');
 const qsoRstRcvdInput = document.getElementById('qso-rcvd');
 const qsoClassInput = document.getElementById('qso-class');
@@ -50,6 +54,8 @@ let selectedActivityPacketTypes = new Set();
 let isBulkQsoRender = false;
 let activityPacketFilterSaveTimer = null;
 let activityRxBlinkTimer = null;
+let flrigUsageEnabled = false;
+let flrigConnected = false;
 const subscriptionDisposers = [];
 
 function addSubscriptionDisposer(disposer) {
@@ -277,6 +283,14 @@ function setupEventListeners() {
     }),
   );
 
+  if (window.electron && typeof window.electron.onDxSummitSpotSelected === 'function') {
+    addSubscriptionDisposer(
+      window.electron.onDxSummitSpotSelected((spotData) => {
+        applySelectedDxSummitSpotToManualQso(spotData);
+      }),
+    );
+  }
+
   // Relay events
   addSubscriptionDisposer(
     window.electron.onRelayLog((msg) => {
@@ -374,6 +388,45 @@ function applySelectedPotaSpotToManualQso(spotData) {
   }
   if (stateInput) {
     stateInput.value = stateValue;
+  }
+
+  updateLogContactButtonState();
+}
+
+function applySelectedDxSummitSpotToManualQso(spotData) {
+  const selectedSpot = spotData || {};
+  const dxCall = String(selectedSpot.dxCall || selectedSpot.dx_call || '')
+    .trim()
+    .toUpperCase();
+
+  const dxCallInput = document.getElementById('qso-dxcall');
+  if (dxCallInput) {
+    dxCallInput.value = dxCall;
+  }
+
+  updateLogContactButtonState();
+}
+
+function formatFrequencyMHz(value) {
+  const numeric = Number.parseFloat(String(value ?? '').trim());
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return '';
+  }
+
+  return numeric.toFixed(4);
+}
+
+function setManualFrequency(value) {
+  if (!qsoFrequency) {
+    return;
+  }
+
+  const formatted = formatFrequencyMHz(value);
+  qsoFrequency.value = formatted;
+
+  if (qsoBand) {
+    const freqMHz = Number.parseFloat(formatted);
+    qsoBand.value = Number.isFinite(freqMHz) ? freqToBand(freqMHz) : '';
   }
 
   updateLogContactButtonState();
@@ -487,6 +540,111 @@ function updateLogContactButtonState() {
     hasMode &&
     hasTypeSpecificRequiredFields
   );
+
+  updateManualDxCallDupeIndicator();
+}
+
+function getQsoIsoTimestamp(qso) {
+  return String((qso && (qso.start || qso.end)) || '').trim();
+}
+
+function getQsoTimestampMs(qso) {
+  const isoTimestamp = getQsoIsoTimestamp(qso);
+  if (!isoTimestamp) {
+    return Number.NEGATIVE_INFINITY;
+  }
+
+  const timestampMs = Date.parse(isoTimestamp);
+  return Number.isFinite(timestampMs) ? timestampMs : Number.NEGATIVE_INFINITY;
+}
+
+function getQsoEffectiveMode(qso) {
+  const mode = String(qso?.mode || '')
+    .trim()
+    .toUpperCase();
+  const submode = String(qso?.submode || '')
+    .trim()
+    .toUpperCase();
+  return mode === 'MFSK' && submode ? submode : mode;
+}
+
+function findLatestQsoByCallAndMode(callSign, modeValue) {
+  const normalizedCall = String(callSign || '')
+    .trim()
+    .toUpperCase();
+  const normalizedMode = String(modeValue || '')
+    .trim()
+    .toUpperCase();
+
+  if (!normalizedCall || !normalizedMode) {
+    return null;
+  }
+
+  let latestMatch = null;
+  let latestMatchTimestampMs = Number.NEGATIVE_INFINITY;
+
+  qsoList.forEach((qso) => {
+    const qsoCall = String((qso && qso.call) || '')
+      .trim()
+      .toUpperCase();
+    if (qsoCall !== normalizedCall) {
+      return;
+    }
+
+    if (getQsoEffectiveMode(qso) !== normalizedMode) {
+      return;
+    }
+
+    const timestampMs = getQsoTimestampMs(qso);
+    if (!latestMatch || timestampMs >= latestMatchTimestampMs) {
+      latestMatch = qso;
+      latestMatchTimestampMs = timestampMs;
+    }
+  });
+
+  return latestMatch;
+}
+
+function formatDupeTimestamp(isoTimestamp) {
+  const normalizedIso = String(isoTimestamp || '').trim();
+  if (!normalizedIso) {
+    return '';
+  }
+
+  const [datePart, timePart] = normalizedIso.split('T');
+  if (datePart && timePart && datePart.length >= 10 && timePart.length >= 5) {
+    return `${datePart.slice(5, 10)} @ ${timePart.slice(0, 5)}`;
+  }
+
+  return normalizedIso;
+}
+
+function updateManualDxCallDupeIndicator() {
+  if (!qsoDxCallDupeTag) {
+    return;
+  }
+
+  const normalizedCall = String(qsoDxCallInput?.value || '')
+    .trim()
+    .toUpperCase();
+  const normalizedMode = String(document.getElementById('qso-mode')?.value || '')
+    .trim()
+    .toUpperCase();
+  const latestMatch = findLatestQsoByCallAndMode(normalizedCall, normalizedMode);
+
+  if (!normalizedCall || !latestMatch) {
+    qsoDxCallDupeTag.hidden = true;
+    qsoDxCallDupeTag.textContent = '';
+    qsoDxCallDupeTag.removeAttribute('title');
+    return;
+  }
+
+  const timestampLabel = formatDupeTimestamp(getQsoIsoTimestamp(latestMatch));
+  qsoDxCallDupeTag.textContent = timestampLabel ? `DUPE ${timestampLabel}` : 'DUPE';
+  qsoDxCallDupeTag.title = timestampLabel
+    ? `Duplicate contact found in log at ${timestampLabel}`
+    : 'Duplicate contact found in log';
+  qsoDxCallDupeTag.hidden = false;
 }
 
 function applyUpdateBadgeState(state) {
@@ -610,6 +768,10 @@ function setupManualFieldValidation() {
       }
       updateLogContactButtonState();
     });
+
+    qsoFrequency.addEventListener('blur', () => {
+      setManualFrequency(qsoFrequency.value);
+    });
   }
 
   const manualFieldMap = {
@@ -709,8 +871,29 @@ function applySettingsToStatusIndicators(settings) {
     return;
   }
 
+  flrigUsageEnabled = Boolean(settings.flrigEnabled);
+  if (!flrigUsageEnabled) {
+    flrigConnected = false;
+    renderFlrigConnectionBadge();
+    renderSWRBadge(null);
+  } else {
+    renderFlrigConnectionBadge();
+  }
+
   if (typeof settings.listenPort !== 'undefined') {
     listenPortValue.textContent = settings.listenPort;
+  }
+
+  if (deCall && !(deCall.textContent || '').trim()) {
+    deCall.textContent = String(settings.defaultMyCall || '')
+      .trim()
+      .toUpperCase();
+  }
+
+  if (deGrid && !(deGrid.textContent || '').trim()) {
+    deGrid.textContent = String(settings.defaultMyGrid || '')
+      .trim()
+      .toUpperCase();
   }
 
   if (Array.isArray(settings.forwards)) {
@@ -743,6 +926,69 @@ function applySettingsToStatusIndicators(settings) {
   }
 }
 
+function renderSWRBadge(swrValue, isTransmitting = false) {
+  if (!swrBadge) {
+    return;
+  }
+
+  if (!isTransmitting) {
+    swrBadge.classList.remove('swr-good', 'swr-warn', 'swr-bad', 'swr-unknown');
+    swrBadge.textContent = '';
+    swrBadge.hidden = true;
+    return;
+  }
+
+  const swr = Number(swrValue);
+  swrBadge.classList.remove('swr-good', 'swr-warn', 'swr-bad', 'swr-unknown');
+
+  if (!Number.isFinite(swr) || swr <= 0) {
+    if (isTransmitting && flrigUsageEnabled && flrigConnected) {
+      swrBadge.textContent = 'SWR --';
+      swrBadge.classList.add('swr-unknown');
+      swrBadge.hidden = false;
+      return;
+    }
+
+    swrBadge.textContent = '';
+    swrBadge.hidden = true;
+    return;
+  }
+
+  swrBadge.textContent = `SWR ${swr.toFixed(2)}`;
+  if (swr < 1.5) {
+    swrBadge.classList.add('swr-good');
+  } else if (swr <= 2.5) {
+    swrBadge.classList.add('swr-warn');
+  } else {
+    swrBadge.classList.add('swr-bad');
+  }
+  swrBadge.hidden = false;
+}
+
+function renderFlrigConnectionBadge() {
+  if (!flrigConnectionBadge) {
+    return;
+  }
+
+  flrigConnectionBadge.classList.remove('connected', 'disconnected');
+
+  if (!flrigUsageEnabled) {
+    flrigConnectionBadge.textContent = '';
+    flrigConnectionBadge.hidden = true;
+    return;
+  }
+
+  if (flrigConnected) {
+    flrigConnectionBadge.textContent = 'flrig Connected';
+    flrigConnectionBadge.classList.add('connected');
+  } else {
+    flrigConnectionBadge.textContent = 'flrig Disconnected';
+    flrigConnectionBadge.classList.add('disconnected');
+  }
+
+  flrigConnectionBadge.hidden = false;
+}
+
 async function loadSettings() {
   const settings = await window.electron.getSettings();
   applySettingsToStatusIndicators(settings);
@@ -757,6 +1003,7 @@ async function loadSettings() {
     addQsoEntry(qso, 'normal');
   });
   isBulkQsoRender = false;
+  updateManualDxCallDupeIndicator();
   applyQsoCallFilter();
   updateQsoTodayUtcCount();
   updateQsoLastHourCount();
@@ -1263,6 +1510,7 @@ function addQsoEntry(qso, type = 'normal') {
   if (isBulkQsoRender) {
     return;
   }
+  updateManualDxCallDupeIndicator();
   applyQsoCallFilter();
   // Apply row striping for readability
   applyQsoRowStripes();
@@ -1317,6 +1565,7 @@ async function refreshQsoLog() {
     addQsoEntry(qso, 'normal');
   });
   isBulkQsoRender = false;
+  updateManualDxCallDupeIndicator();
   applyQsoCallFilter();
   updateQsoTodayUtcCount();
   updateQsoLastHourCount();
@@ -1325,34 +1574,57 @@ async function refreshQsoLog() {
 }
 
 function updateStatusIndicators(statusData) {
-  deCall.textContent = statusData.deCall;
-  deGrid.textContent = statusData.deGrid;
+  if (statusData.deCall !== undefined) {
+    deCall.textContent = statusData.deCall;
+  }
+  if (statusData.deGrid !== undefined) {
+    deGrid.textContent = statusData.deGrid;
+  }
   updateLogContactButtonState();
-  updateMyParkFromConfigurationName(statusData);
-
-  if (statusData.frequency) {
-    frequencyValue.textContent = `${statusData.frequency} MHz`;
-    qsoFrequency.value = statusData.frequency;
-    qsoBand.value = freqToBand(statusData.frequency);
+  if (statusData.configurationName !== undefined || statusData.deCall !== undefined) {
+    updateMyParkFromConfigurationName(statusData);
   }
 
-  if (statusData.mode) {
+  const isFlrigUpdate = String(statusData?.source || '').trim() === 'flrig';
+  const shouldUseFlrigForRigState = flrigUsageEnabled;
+  const shouldApplyRigState =
+    !shouldUseFlrigForRigState || (shouldUseFlrigForRigState && isFlrigUpdate);
+
+  if (shouldApplyRigState && statusData.frequency) {
+    frequencyValue.textContent = `${statusData.frequency} MHz`;
+    setManualFrequency(statusData.frequency);
+  }
+
+  if (shouldApplyRigState && qsoTxPwr && statusData.txPower !== undefined) {
+    qsoTxPwr.value = String(statusData.txPower || '');
+  }
+
+  if (statusData.mode === null) {
+    modeValue.textContent = '—';
+  } else if (statusData.mode) {
     modeValue.textContent = statusData.mode;
   }
 
-  if (statusData.txEnabled !== undefined) {
-    if (statusData.txEnabled) {
-      txEnabledValue.textContent = 'Yes';
-      txEnabledValue.classList.remove('indicator-off');
-      txEnabledValue.classList.add('indicator-tx-enabled');
-    } else {
-      txEnabledValue.textContent = 'No';
+  const shouldApplyTxEnabled = statusData.txEnabled !== undefined && !isFlrigUpdate;
+  if (shouldApplyTxEnabled) {
+    if (statusData.txEnabled === null) {
+      txEnabledValue.textContent = '—';
       txEnabledValue.classList.remove('indicator-tx-enabled');
       txEnabledValue.classList.add('indicator-off');
+    } else {
+      if (statusData.txEnabled) {
+        txEnabledValue.textContent = 'Yes';
+        txEnabledValue.classList.remove('indicator-off');
+        txEnabledValue.classList.add('indicator-tx-enabled');
+      } else {
+        txEnabledValue.textContent = 'No';
+        txEnabledValue.classList.remove('indicator-tx-enabled');
+        txEnabledValue.classList.add('indicator-off');
+      }
     }
   }
 
-  if (statusData.transmitting !== undefined) {
+  if (shouldApplyRigState && statusData.transmitting !== undefined) {
     if (statusData.transmitting) {
       transmittingValue.textContent = 'Yes';
       transmittingValue.classList.remove('indicator-off');
@@ -1364,8 +1636,22 @@ function updateStatusIndicators(statusData) {
     }
   }
 
+  const transmittingNow =
+    shouldApplyRigState && statusData.transmitting !== undefined
+      ? Boolean(statusData.transmitting)
+      : transmittingValue.textContent === 'Yes';
+
   if (statusData.txMessage !== undefined) {
     transmitMessage.textContent = statusData.txMessage;
+  }
+
+  if (shouldUseFlrigForRigState && isFlrigUpdate && statusData.flrigConnected !== undefined) {
+    flrigConnected = Boolean(statusData.flrigConnected);
+    renderFlrigConnectionBadge();
+  }
+
+  if (shouldUseFlrigForRigState && isFlrigUpdate) {
+    renderSWRBadge(statusData.swr, transmittingNow);
   }
 }
 
@@ -1443,6 +1729,7 @@ function clearQsoLog() {
   // Clear persistent storage
   window.electron.clearQsos();
   qsoList = [];
+  updateManualDxCallDupeIndicator();
   updateQsoCount();
   updateQsoTodayUtcCount();
   updateQsoLastHourCount();

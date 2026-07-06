@@ -2,7 +2,8 @@ const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const fs = require('fs');
 const dns = require('dns');
 const https = require('https');
-const Store = require('electron-store');
+const ElectronStore = require('electron-store');
+const Store = ElectronStore.default || ElectronStore;
 const { autoUpdater } = require('electron-updater');
 const WSJTXRelay = require('./relay');
 const {
@@ -10,6 +11,8 @@ const {
   INTERNET_CHECK_TIMEOUT_MS,
   POTA_SPOTS_URL,
   POTA_REQUEST_TIMEOUT_MS,
+  DX_SUMMIT_SPOTS_URL,
+  DX_SUMMIT_REQUEST_TIMEOUT_MS,
   SETTINGS_WINDOW_DEFAULT_WIDTH,
   SETTINGS_WINDOW_DEFAULT_HEIGHT,
   SETTINGS_WINDOW_MIN_WIDTH,
@@ -38,6 +41,10 @@ const {
   enrichQsoWithPotaSpot,
   shouldPopulateManualQsoForSpot,
 } = require('./main/potaSpotsService');
+const {
+  fetchDxSummitSpots: fetchDxSummitSpotsFromApi,
+  shouldPopulateManualQsoForDxSpot,
+} = require('./main/dxSummitSpotsService');
 const { sortQsosForStorage } = require('./main/qsoSortUtils');
 const { hasNewerUpdateAvailable, getUpdateBadgeState } = require('./main/updateBadgeUtils');
 const { hasInternetConnectivity } = require('./main/connectivityUtils');
@@ -79,6 +86,7 @@ const { restoreAndFocusWindow } = require('./main/windowFocusUtils');
 const { registerSettingsHandlers } = require('./main/ipc/settingsHandlers');
 const { registerQsoHandlers } = require('./main/ipc/qsoHandlers');
 const { registerPotaHandlers } = require('./main/ipc/potaHandlers');
+const { registerDxSummitHandlers } = require('./main/ipc/dxSummitHandlers');
 const { registerRelayHandlers } = require('./main/ipc/relayHandlers');
 const { registerAdifHandlers } = require('./main/ipc/adifHandlers');
 const { registerUiCommandHandlers } = require('./main/ipc/uiCommandHandlers');
@@ -91,12 +99,14 @@ const {
   createPotaSpotsFetcher,
 } = require('./main/potaRequestUtils');
 const { createEnsureRelayInitialized } = require('./main/ensureRelayInitializedFactory');
+const { createFlrigMonitor, parseFlrigEndpoint } = require('./main/flrigMonitorService');
 const {
   createExamplesWindowFactory,
   createMainWindowFactory,
   createSettingsWindowFactory,
   createQsoEditorWindowFactory,
   createPotaSpotsWindowFactory,
+  createDxSummitSpotsWindowFactory,
 } = require('./main/windowFactories');
 const { registerLifecycleHandlers } = require('./main/registerLifecycleHandlers');
 const {
@@ -118,6 +128,7 @@ const {
   settingsHtmlPath,
   qsoEditorHtmlPath,
   potaSpotsHtmlPath,
+  dxSummitSpotsHtmlPath,
 } = getUiPaths(__dirname);
 const fetchPotaSpots = createPotaSpotsFetcher(
   fetchPotaSpotsFromApi,
@@ -125,11 +136,34 @@ const fetchPotaSpots = createPotaSpotsFetcher(
   POTA_SPOTS_URL,
   POTA_REQUEST_TIMEOUT_MS,
 );
+const fetchDxSummitSpots = (modeFilters) =>
+  fetchDxSummitSpotsFromApi(fetch, DX_SUMMIT_SPOTS_URL, DX_SUMMIT_REQUEST_TIMEOUT_MS, modeFilters);
+
+const sendStatusUpdateToWindows = (statusData) => {
+  sendToWindows(
+    [appState.getMainWindow(), appState.getPotaSpotsWindow(), appState.getDxSummitSpotsWindow()],
+    'relay-status-update',
+    statusData,
+  );
+};
 
 const store = new Store({
   defaults: getStoreDefaults(DEFAULT_ACTIVITY_PACKET_FILTERS),
 });
 const qsoStore = createQsoStore(Store, store);
+const flrigMonitor = createFlrigMonitor({
+  store,
+  onStatusUpdate: sendStatusUpdateToWindows,
+  onError: (message) => {
+    const mainWindow = appState.getMainWindow();
+    mainWindow && mainWindow.webContents.send('relay-error', message);
+  },
+  onDebugLog: (message) => {
+    const mainWindow = appState.getMainWindow();
+    mainWindow && mainWindow.webContents.send('relay-log', message);
+  },
+});
+appState.setFlrigMonitor(flrigMonitor);
 
 const logToActivityLog = createActivityLogSender(appState.getMainWindow);
 const logPotaRequestFailure = createPotaRequestFailureLogger(appState.getMainWindow);
@@ -142,6 +176,7 @@ const ensureRelayInitialized = createEnsureRelayInitialized({
   bindRelayEventForwarding,
   getMainWindow: appState.getMainWindow,
   getPotaSpotsWindow: appState.getPotaSpotsWindow,
+  getDxSummitSpotsWindow: appState.getDxSummitSpotsWindow,
   sendToWindows,
 });
 
@@ -247,6 +282,26 @@ const createPotaSpotsWindow = createPotaSpotsWindowFactory({
   store,
 });
 
+const createDxSummitSpotsWindow = createDxSummitSpotsWindowFactory({
+  BrowserWindow,
+  appIconPath: APP_ICON_PATH,
+  preloadPath,
+  hardenWindowNavigation,
+  attachThemeOnLoad,
+  getTheme: () => store.get('theme', 'light'),
+  attachPersistBoundsOnClose,
+  attachClearOnClosed,
+  attachShowWhenReady,
+  bringWindowToFront,
+  applyStoredPosition,
+  getDxSummitSpotsWindow: appState.getDxSummitSpotsWindow,
+  setDxSummitSpotsWindow: appState.setDxSummitSpotsWindow,
+  getDxSummitSpotsWindowBounds: () =>
+    store.get('dxSummitSpotsWindowBounds', { width: 1400, height: 700 }),
+  dxSummitSpotsHtmlPath,
+  store,
+});
+
 // IPC Handlers
 registerAllIpcHandlers(
   buildHandlerRegistrationOptions({
@@ -255,6 +310,7 @@ registerAllIpcHandlers(
     registerQsoHandlers,
     registerAdifHandlers,
     registerPotaHandlers,
+    registerDxSummitHandlers,
     registerUiCommandHandlers,
     ipcMain,
     store,
@@ -270,12 +326,20 @@ registerAllIpcHandlers(
     readSettingsSnapshot,
     dns,
     validateForwardHostLookup,
+    parseFlrigEndpoint,
+    onSettingsSaved: (updatedSettings) => {
+      flrigMonitor.applySettings({
+        nextEnabled: updatedSettings.flrigEnabled,
+        nextEndpoint: updatedSettings.flrigEndpoint,
+      });
+    },
     ensureRelayInitialized,
     stopRelayIfRunning,
     sanitizeQsoArray,
     sortQsosForStorage,
     maybeEnrichQsoWithPotaMap,
     fetchPotaSpots,
+    fetchDxSummitSpots,
     enrichQsoWithPotaSpot,
     logPotaRequestFailure,
     logToActivityLog,
@@ -287,9 +351,12 @@ registerAllIpcHandlers(
     fsPromises: fs.promises,
     BrowserWindow,
     shouldPopulateManualQsoForSpot,
+    shouldPopulateManualQsoForDxSpot,
     getMainWindow: appState.getMainWindow,
+    getFlrigMonitor: appState.getFlrigMonitor,
     restoreAndFocusWindow,
     getPotaSpotsWindow: appState.getPotaSpotsWindow,
+    getDxSummitSpotsWindow: appState.getDxSummitSpotsWindow,
     openSettings: createSettingsWindow,
     closeSettings: () => {
       closeWindowAndClearRef(appState.getSettingsWindow, () => appState.setSettingsWindow(null));
@@ -299,8 +366,14 @@ registerAllIpcHandlers(
       closeWindowAndClearRef(appState.getQsoEditorWindow, () => appState.setQsoEditorWindow(null));
     },
     openPotaSpots: createPotaSpotsWindow,
+    openDxSummitSpots: createDxSummitSpotsWindow,
     closePotaSpots: () => {
       closeWindowAndClearRef(appState.getPotaSpotsWindow, () => appState.setPotaSpotsWindow(null));
+    },
+    closeDxSummitSpots: () => {
+      closeWindowAndClearRef(appState.getDxSummitSpotsWindow, () =>
+        appState.setDxSummitSpotsWindow(null),
+      );
     },
     sendToWindows,
     performUpdateAction: async () => {
@@ -354,7 +427,12 @@ registerLifecycleHandlers({
     createSettingsWindow,
     createQsoEditorWindow,
     createPotaSpotsWindow,
+    createDxSummitSpotsWindow,
     createExamplesWindow,
+    stopFlrigMonitor: () => {
+      const monitor = appState.getFlrigMonitor();
+      monitor && monitor.dispose();
+    },
     handleWindowAllClosed,
     processPlatform: process.platform,
     handleAppActivate,
@@ -362,4 +440,9 @@ registerLifecycleHandlers({
     getWindowRefs: appState.getWindowRefs,
     handleProcessExit,
   }),
+});
+
+app.on('ready', () => {
+  const monitor = appState.getFlrigMonitor();
+  monitor && monitor.refreshFromStore();
 });

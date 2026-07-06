@@ -8,6 +8,10 @@ const cancelBtn = document.getElementById('cancelBtn');
 const themeLightInput = document.getElementById('themeLight');
 const themeDarkInput = document.getElementById('themeDark');
 const autoStartRelayInput = document.getElementById('autoStartRelay');
+const flrigEnabledInput = document.getElementById('flrigEnabled');
+const flrigEndpointInput = document.getElementById('flrigEndpoint');
+const defaultMyCallInput = document.getElementById('defaultMyCall');
+const defaultMyGridInput = document.getElementById('defaultMyGrid');
 const usePotaSpotMapInput = document.getElementById('usePotaSpotMap');
 const manualQsoEntryTypeInput = document.getElementById('manualQsoEntryType');
 const qrzLoggingEnabledInput = document.getElementById('qrzLoggingEnabled');
@@ -20,6 +24,9 @@ const toggleClublogPasswordBtn = document.getElementById('toggleClublogPasswordB
 const clublogEmailInput = document.getElementById('clublogEmail');
 const decodeSightingExpirationMinutesInput = document.getElementById(
   'decodeSightingExpirationMinutes',
+);
+const dxSummitWorkedMatchFieldInputs = Array.from(
+  document.querySelectorAll('input[name="dxSummitWorkedMatchFields"]'),
 );
 
 let forwardsData = [];
@@ -46,6 +53,17 @@ function setupEventListeners() {
   toggleClublogPasswordBtn.addEventListener('click', () => {
     togglePasswordVisibility(clublogPasswordInput, toggleClublogPasswordBtn);
   });
+  flrigEnabledInput.addEventListener('change', updateFlrigEndpointState);
+  defaultMyCallInput.addEventListener('input', (e) => {
+    e.target.value = String(e.target.value || '')
+      .toUpperCase()
+      .trim();
+  });
+  defaultMyGridInput.addEventListener('input', (e) => {
+    e.target.value = String(e.target.value || '')
+      .toUpperCase()
+      .trim();
+  });
   // Auto-uppercase Clublog callsign as user types
   clublogCallsignInput.addEventListener('input', (e) => {
     e.target.value = e.target.value.toUpperCase();
@@ -56,6 +74,10 @@ async function loadSettings() {
   const settings = await window.electron.getSettings();
   listenPortInput.value = settings.listenPort;
   autoStartRelayInput.checked = Boolean(settings.autoStartRelay);
+  flrigEnabledInput.checked = Boolean(settings.flrigEnabled);
+  flrigEndpointInput.value = String(settings.flrigEndpoint || '127.0.0.1:12345');
+  defaultMyCallInput.value = String(settings.defaultMyCall || '');
+  defaultMyGridInput.value = String(settings.defaultMyGrid || '');
   usePotaSpotMapInput.checked = Boolean(settings.usePotaSpotMap);
   manualQsoEntryTypeInput.value =
     settings.manualQsoEntryType === 'arrl-field-day' ? 'arrl-field-day' : 'pota';
@@ -67,6 +89,23 @@ async function loadSettings() {
   clublogEmailInput.value = String(settings.clublogEmail || '');
   forwardDelaySecondsInput.value = settings.forwardDelaySeconds ?? 0.5;
   decodeSightingExpirationMinutesInput.value = settings.decodeSightingExpirationMinutes ?? 5;
+  const workedMatchFields = Array.isArray(settings.dxSummitWorkedMatchFields)
+    ? settings.dxSummitWorkedMatchFields
+    : ['call', 'band', 'mode', 'date'];
+  const workedMatchFieldSet = new Set(
+    workedMatchFields.map((value) =>
+      String(value || '')
+        .trim()
+        .toLowerCase(),
+    ),
+  );
+  dxSummitWorkedMatchFieldInputs.forEach((input) => {
+    input.checked = workedMatchFieldSet.has(
+      String(input.value || '')
+        .trim()
+        .toLowerCase(),
+    );
+  });
   currentTheme = settings.theme || 'light';
   forwardsData = (settings.forwards || []).map((forward) => ({
     host: forward.host,
@@ -82,6 +121,14 @@ async function loadSettings() {
   }
 
   renderForwardsList();
+  updateFlrigEndpointState();
+}
+
+function updateFlrigEndpointState() {
+  if (!flrigEndpointInput) {
+    return;
+  }
+  flrigEndpointInput.disabled = !flrigEnabledInput.checked;
 }
 
 function togglePasswordVisibility(input, button) {
@@ -225,6 +272,14 @@ async function saveSettings(e) {
 
   const listenPort = parseInt(listenPortInput.value);
   const autoStartRelay = Boolean(autoStartRelayInput.checked);
+  const flrigEnabled = Boolean(flrigEnabledInput.checked);
+  const flrigEndpoint = String(flrigEndpointInput.value || '').trim();
+  const defaultMyCall = String(defaultMyCallInput.value || '')
+    .trim()
+    .toUpperCase();
+  const defaultMyGrid = String(defaultMyGridInput.value || '')
+    .trim()
+    .toUpperCase();
   const usePotaSpotMap = Boolean(usePotaSpotMapInput.checked);
   const manualQsoEntryType =
     manualQsoEntryTypeInput.value === 'arrl-field-day' ? 'arrl-field-day' : 'pota';
@@ -236,6 +291,13 @@ async function saveSettings(e) {
   const clublogEmail = String(clublogEmailInput.value || '').trim();
   const forwardDelaySeconds = parseFloat(forwardDelaySecondsInput.value);
   const decodeSightingExpirationMinutes = parseInt(decodeSightingExpirationMinutesInput.value, 10);
+  const dxSummitWorkedMatchFields = dxSummitWorkedMatchFieldInputs
+    .filter((input) => input.checked)
+    .map((input) =>
+      String(input.value || '')
+        .trim()
+        .toLowerCase(),
+    );
   const theme = themeDarkInput.checked ? 'dark' : 'light';
 
   if (isNaN(listenPort) || listenPort < 1 || listenPort > 65535) {
@@ -248,8 +310,31 @@ async function saveSettings(e) {
     return;
   }
 
+  if (flrigEnabled) {
+    const parsedFlrigEndpoint = parseHostPort(flrigEndpoint);
+    if (!parsedFlrigEndpoint || !isValidForwardHost(parsedFlrigEndpoint.host)) {
+      alert('Invalid flrig endpoint. Use host:port (for example, 127.0.0.1:12345)');
+      return;
+    }
+  }
+
   if (isNaN(decodeSightingExpirationMinutes) || decodeSightingExpirationMinutes < 0) {
     alert('Invalid decode sighting expiration (must be 0 or greater)');
+    return;
+  }
+
+  if (defaultMyCall && !/^[A-Z0-9/]{3,20}$/.test(defaultMyCall)) {
+    alert('Invalid Default My Call');
+    return;
+  }
+
+  if (defaultMyGrid && !/^[A-R]{2}[0-9]{2}([A-X]{2})?$/.test(defaultMyGrid)) {
+    alert('Invalid Default My Grid');
+    return;
+  }
+
+  if (dxSummitWorkedMatchFields.length === 0) {
+    alert('Select at least one DX Summit worked match field');
     return;
   }
 
@@ -270,6 +355,10 @@ async function saveSettings(e) {
       listenPort,
       forwards: forwardsData,
       autoStartRelay,
+      flrigEnabled,
+      flrigEndpoint,
+      defaultMyCall,
+      defaultMyGrid,
       usePotaSpotMap,
       manualQsoEntryType,
       qrzLoggingEnabled,
@@ -280,6 +369,7 @@ async function saveSettings(e) {
       clublogEmail,
       forwardDelaySeconds,
       decodeSightingExpirationMinutes,
+      dxSummitWorkedMatchFields,
       theme,
     });
 
@@ -302,6 +392,27 @@ function isValidIPv4(ip) {
   const ipRegex =
     /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
   return ipRegex.test(ip);
+}
+
+function parseHostPort(value) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return null;
+  }
+
+  const separatorIndex = raw.lastIndexOf(':');
+  if (separatorIndex <= 0 || separatorIndex >= raw.length - 1) {
+    return null;
+  }
+
+  const host = raw.slice(0, separatorIndex).trim();
+  const port = Number.parseInt(raw.slice(separatorIndex + 1).trim(), 10);
+
+  if (!host || Number.isNaN(port) || port < 1 || port > 65535) {
+    return null;
+  }
+
+  return { host, port };
 }
 
 function isValidForwardHost(host) {

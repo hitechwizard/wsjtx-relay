@@ -4,7 +4,9 @@ function createAppState() {
   let qsoEditorWindow = null;
   let examplesWindow = null;
   let potaSpotsWindow = null;
+  let dxSummitSpotsWindow = null;
   let relay = null;
+  let flrigMonitor = null;
   let updateController = null;
 
   return {
@@ -28,15 +30,30 @@ function createAppState() {
     setPotaSpotsWindow: (value) => {
       potaSpotsWindow = value;
     },
+    getDxSummitSpotsWindow: () => dxSummitSpotsWindow,
+    setDxSummitSpotsWindow: (value) => {
+      dxSummitSpotsWindow = value;
+    },
     getRelay: () => relay,
     setRelay: (value) => {
       relay = value;
+    },
+    getFlrigMonitor: () => flrigMonitor,
+    setFlrigMonitor: (value) => {
+      flrigMonitor = value;
     },
     getUpdateController: () => updateController,
     setUpdateController: (value) => {
       updateController = value;
     },
-    getWindowRefs: () => [mainWindow, settingsWindow, qsoEditorWindow, examplesWindow, potaSpotsWindow],
+    getWindowRefs: () => [
+      mainWindow,
+      settingsWindow,
+      qsoEditorWindow,
+      examplesWindow,
+      potaSpotsWindow,
+      dxSummitSpotsWindow,
+    ],
   };
 }
 

@@ -4,6 +4,8 @@ const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const INTERNET_CHECK_TIMEOUT_MS = 3000;
 const POTA_SPOTS_URL = 'https://api.pota.app/spot/activator';
 const POTA_REQUEST_TIMEOUT_MS = 5000;
+const DX_SUMMIT_SPOTS_URL = 'http://www.dxsummit.fi/api/v1/spots';
+const DX_SUMMIT_REQUEST_TIMEOUT_MS = 5000;
 const SETTINGS_WINDOW_DEFAULT_WIDTH = 1100;
 const SETTINGS_WINDOW_DEFAULT_HEIGHT = 760;
 const SETTINGS_WINDOW_MIN_WIDTH = 980;
@@ -22,6 +24,7 @@ function getUiPaths(dirname) {
     settingsHtmlPath: path.join(dirname, '../ui/settings.html'),
     qsoEditorHtmlPath: path.join(dirname, '../ui/qso-editor.html'),
     potaSpotsHtmlPath: path.join(dirname, '../ui/pota-spots.html'),
+    dxSummitSpotsHtmlPath: path.join(dirname, '../ui/dx-summit-spots.html'),
   };
 }
 
@@ -29,6 +32,10 @@ function getStoreDefaults(defaultActivityPacketFilters) {
   return {
     listenPort: 2237,
     forwards: [],
+    flrigEnabled: false,
+    flrigEndpoint: '127.0.0.1:12345',
+    defaultMyCall: '',
+    defaultMyGrid: '',
     autoStartRelay: false,
     usePotaSpotMap: false,
     qrzLoggingEnabled: false,
@@ -49,6 +56,7 @@ function getStoreDefaults(defaultActivityPacketFilters) {
     },
     qsoEditorWindowBounds: { width: 1000, height: 700 },
     potaSpotsWindowBounds: { width: 1400, height: 700 },
+    dxSummitSpotsWindowBounds: { width: 1400, height: 700 },
     potaSpotsFilters: {
       modeFilter: '',
       bandFilter: '',
@@ -56,6 +64,15 @@ function getStoreDefaults(defaultActivityPacketFilters) {
       hideWorked: false,
       hideQrt: false,
     },
+    dxSummitSpotsFilters: {
+      modeFilters: ['CW', 'SSB', 'DIGI'],
+      bandFilter: '',
+      regionFilter: '',
+      callFilter: '',
+      hideWorked: false,
+      hideQrt: false,
+    },
+    dxSummitWorkedMatchFields: ['call', 'band', 'mode', 'date'],
   };
 }
 
@@ -64,6 +81,8 @@ module.exports = {
   INTERNET_CHECK_TIMEOUT_MS,
   POTA_SPOTS_URL,
   POTA_REQUEST_TIMEOUT_MS,
+  DX_SUMMIT_SPOTS_URL,
+  DX_SUMMIT_REQUEST_TIMEOUT_MS,
   SETTINGS_WINDOW_DEFAULT_WIDTH,
   SETTINGS_WINDOW_DEFAULT_HEIGHT,
   SETTINGS_WINDOW_MIN_WIDTH,

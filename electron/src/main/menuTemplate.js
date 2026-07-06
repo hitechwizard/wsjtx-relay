@@ -6,6 +6,7 @@ function buildApplicationMenuTemplate({
   onExit,
   onOpenQsoEditor,
   onOpenPotaSpots,
+  onOpenDxSummitSpots,
   onCheckForUpdates,
   onOpenExamples,
 }) {
@@ -65,6 +66,11 @@ function buildApplicationMenuTemplate({
           label: 'POTA Spots',
           accelerator: 'CmdOrCtrl+P',
           click: onOpenPotaSpots,
+        },
+        {
+          label: 'DX Summit Spots',
+          accelerator: 'CmdOrCtrl+D',
+          click: onOpenDxSummitSpots,
         },
         { type: 'separator' },
         { role: 'minimize' },

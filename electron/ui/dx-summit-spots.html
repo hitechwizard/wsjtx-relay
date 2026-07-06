@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.pota.app; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' http://www.dxsummit.fi https://www.dxsummit.fi; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
     />
-    <title>POTA Spots</title>
+    <title>DX Summit Spots</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="pota-spots-wrapper">
       <div class="pota-spots-header">
-        <h1>POTA Spots</h1>
+        <h1>DX Summit Spots</h1>
         <div class="pota-spots-clocks" aria-label="UTC clocks">
           <div class="pota-clock-card pota-clock-card-current">
             <div class="pota-clock-label">UTC NOW</div>
@@ -25,11 +25,22 @@
           </div>
         </div>
         <div class="pota-spots-controls">
-          <div class="pota-filter-group">
-            <label for="modeFilter">Mode:</label>
-            <select id="modeFilter" class="pota-filter-select">
-              <option value="">All Modes</option>
-            </select>
+          <div class="pota-filter-group pota-mode-filter-group">
+            <span>Modes:</span>
+            <div class="pota-mode-filter-options">
+              <label for="modeFilterCw" class="pota-filter-checkbox-group">
+                <input type="checkbox" id="modeFilterCw" class="pota-filter-checkbox" checked />
+                <span>CW</span>
+              </label>
+              <label for="modeFilterSsb" class="pota-filter-checkbox-group">
+                <input type="checkbox" id="modeFilterSsb" class="pota-filter-checkbox" checked />
+                <span>SSB</span>
+              </label>
+              <label for="modeFilterDigi" class="pota-filter-checkbox-group">
+                <input type="checkbox" id="modeFilterDigi" class="pota-filter-checkbox" checked />
+                <span>DIGI</span>
+              </label>
+            </div>
           </div>
           <div class="pota-filter-group">
             <label for="bandFilter">Band:</label>
@@ -38,12 +49,21 @@
             </select>
           </div>
           <div class="pota-filter-group">
-            <label for="regionFilter">Region/Location:</label>
+            <label for="regionFilter">Country:</label>
             <input
               type="text"
               id="regionFilter"
               class="pota-filter-input"
-              placeholder="e.g., US, US-TX"
+              placeholder="e.g., GERMANY"
+            />
+          </div>
+          <div class="pota-filter-group">
+            <label for="callFilter">Call:</label>
+            <input
+              type="text"
+              id="callFilter"
+              class="pota-filter-input"
+              placeholder="Text or /regexp/i"
             />
           </div>
           <div class="pota-hide-filter-options">
@@ -61,47 +81,29 @@
 
       <div class="pota-spots-content">
         <div id="spotsTableContainer" class="pota-spots-table-container">
-          <div id="potaApiError" class="pota-api-error-banner" hidden></div>
+          <div id="dxSummitApiError" class="pota-api-error-banner" hidden></div>
           <table class="pota-spots-table">
-            <colgroup>
-              <col class="pota-col-activator" />
-              <col class="pota-col-status" />
-              <col class="pota-col-frequency" />
-              <col class="pota-col-offset" />
-              <col class="pota-col-mode" />
-              <col class="pota-col-reference" />
-              <col class="pota-col-name" />
-              <col class="pota-col-comments" />
-              <col class="pota-col-location" />
-              <col class="pota-col-spot-time" />
-              <col class="pota-col-age" />
-              <col class="pota-col-action" />
-            </colgroup>
             <thead>
               <tr>
-                <th data-field="activator">Activator</th>
+                <th data-field="dxCall">Call</th>
                 <th data-field="status">Status</th>
                 <th data-field="frequency">Frequency</th>
                 <th data-field="offset">Offset</th>
                 <th data-field="mode">Mode</th>
-                <th data-field="reference">Reference</th>
-                <th data-field="name">Name</th>
                 <th data-field="comments">Comments</th>
-                <th data-field="locationDesc">Location</th>
+                <th data-field="location">Country</th>
                 <th data-field="spotTime">Spot Time</th>
                 <th data-field="age">Age</th>
                 <th>Action</th>
               </tr>
             </thead>
-            <tbody id="spotsTableBody">
-              <!-- Spots will be inserted here -->
-            </tbody>
+            <tbody id="spotsTableBody"></tbody>
           </table>
           <div id="noSpotsMessage" class="pota-no-spots" hidden>No spots found.</div>
         </div>
       </div>
     </div>
 
-    <script src="pota-spots.js"></script>
+    <script src="dx-summit-spots.js"></script>
   </body>
 </html>

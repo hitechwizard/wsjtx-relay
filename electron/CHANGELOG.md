@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.1.1 - 07/04/2026
+
+### Added
+
+- Added flrig XML-RPC integration for radio status (frequency/TX/PTT/SWR), settings and UI indicators, compatibility/error logging hardening, and WSJT-X-owned `TX Enabled` behavior.
+- Added Settings fields for `Default My Call` and `Default My Grid` to initialize station values when WSJT-X status is unavailable.
+- Added a new `DX Summit Spots` window and menu action (`Window -> DX Summit Spots`) with a dedicated UI and lifecycle wiring.
+- Added DX Summit API integration (`http://www.dxsummit.fi/api/v1/spots`) with periodic refresh and renderer/main-process IPC support.
+- Added a new Settings option for user-selectable DX Summit worked-match fields:
+  - `Call`
+  - `Band`
+  - `Mode`
+  - `Date`
+- Added Manual QSO duplicate-call detection in the `DX Call` field header:
+  - Shows a `DUPE` tag while typing when the entered callsign already exists in the QSO log.
+  - Displays the most recent matching QSO timestamp using the same log display format (`MM-DD @ HH:MM`).
+
+### Changed
+
+### Fixed
+
 ## 1.1.0 - 06/07/2026
 
 ### Added

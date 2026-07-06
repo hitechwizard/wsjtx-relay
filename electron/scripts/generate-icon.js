@@ -6,9 +6,10 @@
  */
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const sharp = require('sharp');
-const imageToIco = require('image-to-ico');
+const pngToIco = require('png-to-ico').default;
 
 async function generateWindowsIcon() {
   const svgSource = path.join(__dirname, '..', 'assets', 'icon-source.svg');
@@ -26,37 +27,40 @@ async function generateWindowsIcon() {
     `Converting '${path.basename(svgSource)}' to Windows ICO with sizes: ${sizes.join(', ')}`,
   );
 
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wsjtx-relay-icon-'));
+
   try {
-    // Generate PNG buffers for each size
-    const images = [];
+    // Generate temporary PNG files at required sizes for ICO assembly.
+    const imagePaths = [];
 
     for (const size of sizes) {
       process.stdout.write(`  Generating ${size}x${size}... `);
 
-      const pngBuffer = await sharp(svgSource)
+      const imagePath = path.join(tempDir, `icon-${size}.png`);
+      await sharp(svgSource)
         .resize(size, size, {
           fit: 'contain',
           background: { r: 0, g: 0, b: 0, alpha: 0 },
         })
         .png()
-        .toBuffer();
+        .toFile(imagePath);
 
-      images.push(pngBuffer);
+      imagePaths.push(imagePath);
       console.log('✓');
     }
 
-    // Generate ICO file from PNG buffers using the primary image
-    // Use the largest image as primary and downsize as necessary
-    const icoBuffer = await imageToIco(images);
+    const icoBuffer = await pngToIco(imagePaths);
     fs.writeFileSync(outputPath, icoBuffer);
 
     const fileSize = fs.statSync(outputPath).size;
     console.log(`\n✓ Successfully created: ${outputPath}`);
     console.log(`  File size: ${(fileSize / 1024).toFixed(2)} KB`);
-    console.log(`  Included ${images.length} different sizes`);
+    console.log(`  Included ${imagePaths.length} different sizes`);
   } catch (error) {
     console.error('Error generating icon:', error.message);
     process.exit(1);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
   }
 }
 

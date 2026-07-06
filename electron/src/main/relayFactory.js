@@ -6,6 +6,7 @@ function createRelayInstance({
   bindRelayEventForwarding,
   getMainWindow,
   getPotaSpotsWindow,
+  getDxSummitSpotsWindow,
   sendToWindows,
 }) {
   const relayInstance = new WSJTXRelay(listenPort, forwards, forwardDelaySeconds);
@@ -14,6 +15,7 @@ function createRelayInstance({
     relayInstance,
     getMainWindow,
     getPotaSpotsWindow,
+    getDxSummitSpotsWindow,
     sendToWindows,
   });
 

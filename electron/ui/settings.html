@@ -40,6 +40,14 @@
           </div>
 
           <div class="form-group">
+            <label for="defaultMyCall">Default My Call:</label>
+            <input type="text" id="defaultMyCall" name="defaultMyCall" placeholder="e.g., W1ABC" />
+            <label for="defaultMyGrid">Default My Grid:</label>
+            <input type="text" id="defaultMyGrid" name="defaultMyGrid" placeholder="e.g., FN42" />
+            <small>Used to initialize My Call / My Grid when WSJT-X status is unavailable</small>
+          </div>
+
+          <div class="form-group">
             <div class="settings-toggle-header">
               <span class="settings-toggle-title">Auto Start Relay</span>
               <label class="settings-toggle-control" for="autoStartRelay">
@@ -48,6 +56,24 @@
               </label>
             </div>
             <small>Automatically start the relay when the app opens</small>
+          </div>
+
+          <div class="form-group">
+            <div class="settings-toggle-header">
+              <span class="settings-toggle-title">Use flrig Server</span>
+              <label class="settings-toggle-control" for="flrigEnabled">
+                <input type="checkbox" id="flrigEnabled" name="flrigEnabled" />
+                <span>Enabled</span>
+              </label>
+            </div>
+            <label for="flrigEndpoint">flrig Endpoint (host:port):</label>
+            <input
+              type="text"
+              id="flrigEndpoint"
+              name="flrigEndpoint"
+              placeholder="127.0.0.1:12345"
+            />
+            <small>When enabled, polls flrig for frequency, TX, power, and SWR status</small>
           </div>
 
           <div class="form-group">
@@ -71,6 +97,49 @@
               <option value="arrl-field-day">ARRL Field Day</option>
             </select>
             <small> Select which manual-entry field set appears in the main window </small>
+          </div>
+
+          <div class="form-group">
+            <label>DX Summit Worked Match Fields:</label>
+            <div class="settings-toggle-header">
+              <label class="settings-toggle-control" for="dxMatchCall">
+                <input
+                  type="checkbox"
+                  id="dxMatchCall"
+                  name="dxSummitWorkedMatchFields"
+                  value="call"
+                />
+                <span>Call</span>
+              </label>
+              <label class="settings-toggle-control" for="dxMatchBand">
+                <input
+                  type="checkbox"
+                  id="dxMatchBand"
+                  name="dxSummitWorkedMatchFields"
+                  value="band"
+                />
+                <span>Band</span>
+              </label>
+              <label class="settings-toggle-control" for="dxMatchMode">
+                <input
+                  type="checkbox"
+                  id="dxMatchMode"
+                  name="dxSummitWorkedMatchFields"
+                  value="mode"
+                />
+                <span>Mode</span>
+              </label>
+              <label class="settings-toggle-control" for="dxMatchDate">
+                <input
+                  type="checkbox"
+                  id="dxMatchDate"
+                  name="dxSummitWorkedMatchFields"
+                  value="date"
+                />
+                <span>Date</span>
+              </label>
+            </div>
+            <small>Choose which fields define a worked spot in DX Summit</small>
           </div>
 
           <div class="form-group">

@@ -1,4 +1,10 @@
-function bindRelayEventForwarding({ relayInstance, getMainWindow, getPotaSpotsWindow, sendToWindows }) {
+function bindRelayEventForwarding({
+  relayInstance,
+  getMainWindow,
+  getPotaSpotsWindow,
+  getDxSummitSpotsWindow,
+  sendToWindows,
+}) {
   relayInstance.on('log', (msg) => {
     const mainWindow = getMainWindow();
     mainWindow && mainWindow.webContents.send('relay-log', msg);
@@ -20,15 +26,23 @@ function bindRelayEventForwarding({ relayInstance, getMainWindow, getPotaSpotsWi
   });
 
   relayInstance.on('decode-packet', (packet) => {
-    sendToWindows([getMainWindow(), getPotaSpotsWindow()], 'relay-decode-packet', packet);
+    sendToWindows(
+      [getMainWindow(), getPotaSpotsWindow(), getDxSummitSpotsWindow()],
+      'relay-decode-packet',
+      packet,
+    );
   });
 
   relayInstance.on('clear-packet', () => {
-    sendToWindows([getPotaSpotsWindow()], 'relay-clear-packet');
+    sendToWindows([getPotaSpotsWindow(), getDxSummitSpotsWindow()], 'relay-clear-packet');
   });
 
   relayInstance.on('status-update', (statusData) => {
-    sendToWindows([getMainWindow(), getPotaSpotsWindow()], 'relay-status-update', statusData);
+    sendToWindows(
+      [getMainWindow(), getPotaSpotsWindow(), getDxSummitSpotsWindow()],
+      'relay-status-update',
+      statusData,
+    );
   });
 
   relayInstance.on('qso-logged', (qso) => {
