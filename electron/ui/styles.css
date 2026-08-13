@@ -1263,7 +1263,6 @@ body.dark-theme .qso-pota-icon {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-height: 220px;
 }
 
 .forwards-list {
@@ -1271,16 +1270,13 @@ body.dark-theme .qso-pota-icon {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex: 1;
-  min-height: 120px;
-  max-height: 320px;
-  overflow: auto;
 }
 
 .forward-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 12px;
   padding: 10px;
   background-color: var(--bg-tertiary);
   border: 1px solid var(--border-light);
@@ -1289,13 +1285,38 @@ body.dark-theme .qso-pota-icon {
   font-size: 13px;
 }
 
-.forward-item-addr {
+.forward-item-details {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.forward-item-addr {
+  flex: 0 0 calc(40% - 4px);
+  max-width: calc(40% - 4px);
   color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.forward-item-description {
+  flex: 0 0 calc(60% - 4px);
+  max-width: calc(60% - 4px);
+  min-width: 0;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 13px;
 }
 
 .forward-item-disabled .forward-item-addr {
   opacity: 0.6;
+}
+
+.forward-item-disabled .forward-item-description {
+  opacity: 0.75;
 }
 
 .forward-item-controls {
@@ -1330,7 +1351,9 @@ body.dark-theme .qso-pota-icon {
 }
 
 .forwards-add {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 40%) minmax(0, 60%) auto;
+  align-items: center;
   gap: 8px;
 }
 
@@ -1351,7 +1374,32 @@ body.dark-theme .qso-pota-icon {
 }
 
 .forwards-add input {
-  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .forward-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .forward-item-details {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .forward-item-description {
+    flex: 1 1 calc(60% - 4px);
+    max-width: calc(60% - 4px);
+  }
+
+  .forward-item-controls {
+    justify-content: space-between;
+  }
+
+  .forwards-add {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ============================================================================

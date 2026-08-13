@@ -45,6 +45,7 @@ function sanitizeForwards(rawForwards) {
       host,
       port,
       disabled: Boolean(forward.disabled),
+      description: String(forward.description || '').trim(),
     });
   }
 
