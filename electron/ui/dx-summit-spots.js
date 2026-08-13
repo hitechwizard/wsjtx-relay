@@ -1464,30 +1464,22 @@ class DxSummitSpotsManager {
   }
 
   handleRelayStatusUpdate(statusData) {
-    const nextDxCall = String(statusData?.dxcall || statusData?.dxCall || '')
-      .trim()
-      .toUpperCase();
-    const nextTxEnabled = Boolean(statusData?.txEnabled);
-    const nextTransmitting = Boolean(statusData?.transmitting);
-    const nextStationCallsign = String(statusData?.deCall || statusData?.decall || '')
-      .trim()
-      .toUpperCase();
+    const statusMergeUtils = window.wsjtxRelayStatusUtils;
+    if (typeof statusMergeUtils?.mergeRelayTxStatus !== 'function') {
+      return;
+    }
 
-    const hasChanges =
-      nextDxCall !== this.currentTxStatus.dxCall ||
-      nextTxEnabled !== this.currentTxStatus.txEnabled ||
-      nextTransmitting !== this.currentTxStatus.transmitting ||
-      nextStationCallsign !== this.stationCallsign;
+    const { nextTxStatus, nextStationCallsign, hasChanges } = statusMergeUtils.mergeRelayTxStatus(
+      this.currentTxStatus,
+      this.stationCallsign,
+      statusData,
+    );
 
     if (!hasChanges) {
       return;
     }
 
-    this.currentTxStatus = {
-      dxCall: nextDxCall,
-      txEnabled: nextTxEnabled,
-      transmitting: nextTransmitting,
-    };
+    this.currentTxStatus = nextTxStatus;
     this.stationCallsign = nextStationCallsign;
 
     this.render();
@@ -1562,7 +1554,7 @@ class DxSummitSpotsManager {
         const isTxTarget =
           Boolean(this.currentTxStatus.dxCall) && this.currentTxStatus.dxCall === normalizedDxCall;
         const isTxEnabledTarget = isTxTarget && this.currentTxStatus.txEnabled;
-        const isTransmittingTarget = isTxEnabledTarget && this.currentTxStatus.transmitting;
+        const isTransmittingTarget = isTxTarget && this.currentTxStatus.transmitting;
 
         const rowClassNames = ['pota-spot-row'];
         if (isWorked) {
