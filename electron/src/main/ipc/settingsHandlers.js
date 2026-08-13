@@ -15,6 +15,18 @@ function registerSettingsHandlers({
   parseFlrigEndpoint,
   onSettingsSaved,
 }) {
+  const normalizeManualQsoEntryType = (value) => {
+    const normalized = String(value || '')
+      .trim()
+      .toLowerCase();
+
+    if (normalized === 'arrl-field-day' || normalized === 'generic' || normalized === 'pota') {
+      return normalized;
+    }
+
+    return 'pota';
+  };
+
   ipcMain.handle('get-settings', () => {
     return readSettingsSnapshot(store, { includeQsos: true, qsoStore });
   });
@@ -67,9 +79,8 @@ function registerSettingsHandlers({
       0,
       3650,
     );
-    const manualQsoEntryType = String(payload.manualQsoEntryType || '')
-      .trim()
-      .toLowerCase();
+    const hasManualQsoEntryType = payload.manualQsoEntryType !== undefined;
+    const manualQsoEntryType = normalizeManualQsoEntryType(payload.manualQsoEntryType);
     const allowedWorkedMatchFields = new Set(['call', 'band', 'mode', 'date']);
     const workedMatchFields = Array.isArray(payload.dxSummitWorkedMatchFields)
       ? payload.dxSummitWorkedMatchFields
@@ -80,10 +91,6 @@ function registerSettingsHandlers({
           )
           .filter((value) => allowedWorkedMatchFields.has(value))
       : null;
-    const isManualQsoEntryTypeValid =
-      manualQsoEntryType === '' ||
-      manualQsoEntryType === 'pota' ||
-      manualQsoEntryType === 'arrl-field-day';
     const isWorkedMatchFieldsValid =
       workedMatchFields === null ||
       (workedMatchFields.length > 0 && workedMatchFields.length <= allowedWorkedMatchFields.size);
@@ -96,7 +103,6 @@ function registerSettingsHandlers({
       (hasDefaultMyGrid &&
         nextDefaultMyGrid &&
         !/^[A-R]{2}[0-9]{2}([A-X]{2})?$/.test(nextDefaultMyGrid)) ||
-      !isManualQsoEntryTypeValid ||
       !isWorkedMatchFieldsValid
     ) {
       return {
@@ -160,7 +166,7 @@ function registerSettingsHandlers({
     if (decodeSightingExpirationMinutes !== null) {
       store.set('decodeSightingExpirationMinutes', decodeSightingExpirationMinutes);
     }
-    if (manualQsoEntryType) {
+    if (hasManualQsoEntryType) {
       store.set('manualQsoEntryType', manualQsoEntryType);
     }
     if (workedMatchFields !== null) {

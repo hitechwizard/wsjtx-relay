@@ -33,6 +33,18 @@ const dxSummitWorkedMatchFieldInputs = Array.from(
 let forwardsData = [];
 let currentTheme = 'light';
 
+function normalizeManualQsoEntryType(value) {
+  const type = String(value || '')
+    .trim()
+    .toLowerCase();
+
+  if (type === 'arrl-field-day' || type === 'generic' || type === 'pota') {
+    return type;
+  }
+
+  return 'pota';
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   await loadTheme();
   await loadSettings();
@@ -85,8 +97,7 @@ async function loadSettings() {
   defaultMyCallInput.value = String(settings.defaultMyCall || '');
   defaultMyGridInput.value = String(settings.defaultMyGrid || '');
   usePotaSpotMapInput.checked = Boolean(settings.usePotaSpotMap);
-  manualQsoEntryTypeInput.value =
-    settings.manualQsoEntryType === 'arrl-field-day' ? 'arrl-field-day' : 'pota';
+  manualQsoEntryTypeInput.value = normalizeManualQsoEntryType(settings.manualQsoEntryType);
   qrzLoggingEnabledInput.checked = Boolean(settings.qrzLoggingEnabled);
   qrzApiKeyInput.value = String(settings.qrzApiKey || '');
   clublogLoggingEnabledInput.checked = Boolean(settings.clublogLoggingEnabled);
@@ -316,8 +327,7 @@ async function saveSettings(e) {
     .trim()
     .toUpperCase();
   const usePotaSpotMap = Boolean(usePotaSpotMapInput.checked);
-  const manualQsoEntryType =
-    manualQsoEntryTypeInput.value === 'arrl-field-day' ? 'arrl-field-day' : 'pota';
+  const manualQsoEntryType = normalizeManualQsoEntryType(manualQsoEntryTypeInput.value);
   const qrzLoggingEnabled = Boolean(qrzLoggingEnabledInput.checked);
   const qrzApiKey = String(qrzApiKeyInput.value || '').trim();
   const clublogLoggingEnabled = Boolean(clublogLoggingEnabledInput.checked);

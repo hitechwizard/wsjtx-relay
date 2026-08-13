@@ -42,6 +42,7 @@ const qsoClassInput = document.getElementById('qso-class');
 const qsoArrlSectionInput = document.getElementById('qso-arrlsect');
 const deCall = document.getElementById('deCall');
 const deGrid = document.getElementById('deGrid');
+const manualQsoEntryTitle = document.getElementById('manualQsoEntryTitle');
 const manualQsoSection = document.getElementById('manualQsoSection');
 const statusIndicatorsSection = document.getElementById('statusIndicatorsSection');
 const toggleManualQsoBtn = document.getElementById('toggleManualQsoBtn');
@@ -110,8 +111,15 @@ const freqToBand = window.wsjtxFreqToBand || (() => 'OOB');
 const normalizeCalculatedFields = window.wsjtxNormalizeCalculatedFields || (() => {});
 const manualFieldGroups = {
   common: ['mode', 'freq', 'band', 'tx_pwr', 'call'],
+  generic: ['rst_sent', 'rst_rcvd', 'state'],
   pota: ['rst_sent', 'rst_rcvd', 'state', 'sig_info', 'my_sig_info', 'my_state'],
   'arrl-field-day': ['operator', 'class', 'arrl_sect'],
+};
+
+const manualTypeGroupVisibility = {
+  generic: ['common', 'generic'],
+  pota: ['common', 'generic', 'pota'],
+  'arrl-field-day': ['common', 'arrl-field-day'],
 };
 let manualQsoEntryType = 'pota';
 
@@ -453,20 +461,41 @@ function populateArrlSectionOptions() {
 }
 
 function resolveManualQsoEntryType(rawValue) {
-  return String(rawValue || '')
+  const value = String(rawValue || '')
     .trim()
-    .toLowerCase() === 'arrl-field-day'
-    ? 'arrl-field-day'
-    : 'pota';
+    .toLowerCase();
+
+  if (value === 'arrl-field-day' || value === 'generic' || value === 'pota') {
+    return value;
+  }
+
+  return 'pota';
+}
+
+function getManualQsoEntryTypeLabel(entryType) {
+  if (entryType === 'generic') {
+    return 'Generic';
+  }
+
+  if (entryType === 'arrl-field-day') {
+    return 'ARRL Field Day';
+  }
+
+  return 'POTA';
 }
 
 function applyManualQsoSettings(settings = {}) {
   manualQsoEntryType = resolveManualQsoEntryType(settings.manualQsoEntryType);
+  const visibleGroups = new Set(manualTypeGroupVisibility[manualQsoEntryType] || ['common']);
+
+  if (manualQsoEntryTitle) {
+    manualQsoEntryTitle.textContent = `Manual QSO Entry - ${getManualQsoEntryTypeLabel(manualQsoEntryType)}`;
+  }
 
   const groups = manualQsoSection?.querySelectorAll('[data-manual-group]') || [];
   groups.forEach((fieldWrapper) => {
     const groupName = String(fieldWrapper.dataset.manualGroup || '').trim();
-    const shouldShow = groupName === 'common' || groupName === manualQsoEntryType;
+    const shouldShow = visibleGroups.has(groupName);
     fieldWrapper.hidden = !shouldShow;
     fieldWrapper.classList.toggle('manual-field-hidden', !shouldShow);
 
@@ -522,7 +551,7 @@ function updateLogContactButtonState() {
   const hasFieldDaySection = Boolean((qsoArrlSectionInput?.value || '').trim());
 
   let hasTypeSpecificRequiredFields = true;
-  if (manualQsoEntryType === 'pota') {
+  if (manualQsoEntryType === 'pota' || manualQsoEntryType === 'generic') {
     hasTypeSpecificRequiredFields = hasRstSent && hasRstRcvd;
   } else if (manualQsoEntryType === 'arrl-field-day') {
     hasTypeSpecificRequiredFields = hasFieldDayClass && hasFieldDaySection;
