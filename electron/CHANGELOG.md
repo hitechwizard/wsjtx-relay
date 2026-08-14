@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.1.2 - 08/12/2026
+
+### Added
+
+- Added a new `Generic` Manual QSO Entry type.
+- Added forward-endpoint `Description` support in Settings, including add-time and per-endpoint editing.
+- Added dynamic Manual QSO section-title labeling to include the active entry type (for example, `Manual QSO Entry - Generic`).
+
+### Changed
+
+- Updated Manual QSO field-group visibility logic to support `Generic` mode while preserving existing `POTA` and `ARRL Field Day` behavior.
+- Updated forward-endpoint Settings layout to use 40/60 address-description column alignment.
+- Updated forward-endpoint list sizing to expand and contract based on content.
+
+### Fixed
+
+- Fixed `TX Enabled` and transmit logic handling in POTA and DX Summit pages.
+
 ## 1.1.1 - 07/04/2026
 
 ### Added
