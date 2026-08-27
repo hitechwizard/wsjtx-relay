@@ -3,6 +3,7 @@ const listenPortInput = document.getElementById('listenPort');
 const forwardDelaySecondsInput = document.getElementById('forwardDelaySeconds');
 const forwardsList = document.getElementById('forwardsList');
 const newForwardInput = document.getElementById('newForward');
+const newForwardDescriptionInput = document.getElementById('newForwardDescription');
 const addForwardBtn = document.getElementById('addForwardBtn');
 const cancelBtn = document.getElementById('cancelBtn');
 const themeLightInput = document.getElementById('themeLight');
@@ -32,6 +33,18 @@ const dxSummitWorkedMatchFieldInputs = Array.from(
 let forwardsData = [];
 let currentTheme = 'light';
 
+function normalizeManualQsoEntryType(value) {
+  const type = String(value || '')
+    .trim()
+    .toLowerCase();
+
+  if (type === 'arrl-field-day' || type === 'generic' || type === 'pota') {
+    return type;
+  }
+
+  return 'pota';
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   await loadTheme();
   await loadSettings();
@@ -40,10 +53,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function setupEventListeners() {
   addForwardBtn.addEventListener('click', addForward);
-  newForwardInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      addForward();
+  [newForwardInput, newForwardDescriptionInput].forEach((input) => {
+    if (!input) {
+      return;
     }
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        addForward();
+      }
+    });
   });
   settingsForm.addEventListener('submit', saveSettings);
   cancelBtn.addEventListener('click', closeWindow);
@@ -79,8 +97,7 @@ async function loadSettings() {
   defaultMyCallInput.value = String(settings.defaultMyCall || '');
   defaultMyGridInput.value = String(settings.defaultMyGrid || '');
   usePotaSpotMapInput.checked = Boolean(settings.usePotaSpotMap);
-  manualQsoEntryTypeInput.value =
-    settings.manualQsoEntryType === 'arrl-field-day' ? 'arrl-field-day' : 'pota';
+  manualQsoEntryTypeInput.value = normalizeManualQsoEntryType(settings.manualQsoEntryType);
   qrzLoggingEnabledInput.checked = Boolean(settings.qrzLoggingEnabled);
   qrzApiKeyInput.value = String(settings.qrzApiKey || '');
   clublogLoggingEnabledInput.checked = Boolean(settings.clublogLoggingEnabled);
@@ -111,6 +128,7 @@ async function loadSettings() {
     host: forward.host,
     port: forward.port,
     disabled: Boolean(forward.disabled),
+    description: String(forward.description || '').trim(),
   }));
 
   // Set theme selection
@@ -147,9 +165,25 @@ function renderForwardsList() {
       item.classList.add('forward-item-disabled');
     }
 
+    const details = document.createElement('div');
+    details.className = 'forward-item-details';
+
     const addr = document.createElement('span');
     addr.className = 'forward-item-addr';
     addr.textContent = `${forward.host}:${forward.port}`;
+
+    const descriptionInput = document.createElement('input');
+    descriptionInput.type = 'text';
+    descriptionInput.className = 'forward-item-description';
+    descriptionInput.placeholder = 'Description (optional)';
+    descriptionInput.value = String(forward.description || '');
+    descriptionInput.setAttribute('aria-label', `Description for ${forward.host}:${forward.port}`);
+    descriptionInput.addEventListener('input', (event) => {
+      updateForwardDescription(index, event.target.value);
+    });
+
+    details.appendChild(addr);
+    details.appendChild(descriptionInput);
 
     const controls = document.createElement('div');
     controls.className = 'forward-item-controls';
@@ -178,7 +212,7 @@ function renderForwardsList() {
     controls.appendChild(enabledLabel);
     controls.appendChild(removeBtn);
 
-    item.appendChild(addr);
+    item.appendChild(details);
     item.appendChild(controls);
     forwardsList.appendChild(item);
   });
@@ -200,6 +234,7 @@ function applyTheme(theme) {
 
 async function addForward() {
   const value = newForwardInput.value.trim();
+  const description = String(newForwardDescriptionInput?.value || '').trim();
 
   if (!value) {
     alert('Please enter a forward address');
@@ -248,9 +283,20 @@ async function addForward() {
     return;
   }
 
-  forwardsData.push({ host, port, disabled: false });
+  forwardsData.push({ host, port, disabled: false, description });
   newForwardInput.value = '';
+  if (newForwardDescriptionInput) {
+    newForwardDescriptionInput.value = '';
+  }
   renderForwardsList();
+}
+
+function updateForwardDescription(index, description) {
+  if (!forwardsData[index]) {
+    return;
+  }
+
+  forwardsData[index].description = String(description || '');
 }
 
 function toggleForwardDisabled(index, disabled) {
@@ -281,8 +327,7 @@ async function saveSettings(e) {
     .trim()
     .toUpperCase();
   const usePotaSpotMap = Boolean(usePotaSpotMapInput.checked);
-  const manualQsoEntryType =
-    manualQsoEntryTypeInput.value === 'arrl-field-day' ? 'arrl-field-day' : 'pota';
+  const manualQsoEntryType = normalizeManualQsoEntryType(manualQsoEntryTypeInput.value);
   const qrzLoggingEnabled = Boolean(qrzLoggingEnabledInput.checked);
   const qrzApiKey = String(qrzApiKeyInput.value || '').trim();
   const clublogLoggingEnabled = Boolean(clublogLoggingEnabledInput.checked);

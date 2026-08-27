@@ -88,13 +88,6 @@ async function submitQsoToClublog({
     } catch {
       responseText = '';
     }
-
-    /*console.log('[Clublog] Response', {
-      status: response.status,
-      ok: response.ok,
-      body: responseText,
-    });
-    */
   } catch (error) {
     const message = error && error.message ? error.message : 'Unknown Clublog request error';
     return { success: false, error: message };
